@@ -17,17 +17,54 @@ from mag7_monitor import (
     pe_model,
     dcf_model,
     growth_model,
-    blended_fair,
+    blend_models,
     buy_zones,
     classify_price,
     fnum,
 )
 
-st.set_page_config(page_title="Stock Fair Value Monitor", page_icon="📈", layout="wide")
+st.set_page_config(
+    page_title="Stock Fair Value Monitor",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+NAV_PAGES = ["自选股", "单股分析", "历史快照", "账户"]
 
 logger = logging.getLogger("stock_fair_value_monitor")
 REMEMBER_COOKIE = "stock_monitor_refresh"
 REMEMBER_DAYS = 30
+
+
+def inject_layout_css() -> None:
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] {display: none;}
+        [data-testid="stSidebarCollapsedControl"] {display: none;}
+        [data-testid="stHeader"] {background: transparent;}
+        .block-container {
+            padding-top: 1.1rem;
+            padding-left: 2rem;
+            padding-right: 2rem;
+            max-width: 100%;
+        }
+        div[data-testid="stPopover"] > button {
+            width: 2.35rem;
+            height: 2.35rem;
+            min-height: 2.35rem;
+            padding: 0;
+            border-radius: 999px;
+            font-weight: 700;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+inject_layout_css()
 
 NAMES = {
     "AAPL": "Apple",
@@ -324,6 +361,95 @@ def zone_text(zone):
     return f"{money(zone[0])} – {money(zone[1])}"
 
 
+MODEL_LABELS = {"pe": "P/E", "dcf": "DCF", "growth": "Growth / PEG"}
+
+
+def model_status_text(obj) -> str:
+    if not obj:
+        return "无数据"
+    if obj.get("outlier"):
+        return "⚠ 偏离过大，已排除"
+    if obj.get("valid") is False:
+        return "⚠ 数据异常，已从综合估值中排除"
+    if obj.get("valid"):
+        return f"✓ {obj.get('confidence') or 'medium'}"
+    return "无数据"
+
+
+def money_full(x):
+    if x is None:
+        return "—"
+    try:
+        v = float(x)
+        if abs(v) >= 1e9:
+            return f"${v/1e9:,.2f}B"
+        if abs(v) >= 1e6:
+            return f"${v/1e6:,.2f}M"
+        return f"${v:,.2f}"
+    except Exception:
+        return "—"
+
+
+def render_valuation_diagnostics(r: dict):
+    f = r.get("financials") or {}
+    pe = r.get("pe") or {}
+    dcf = r.get("dcf") or {}
+    growth = r.get("growth") or {}
+    dcf_in = dcf.get("inputs") or {}
+    pe_in = pe.get("inputs") or {}
+    gr_in = growth.get("inputs") or {}
+    st.caption(
+        f"数据来源：{r.get('data_source') or 'Yahoo Finance / yfinance'}　"
+        f"财务数据期间：{f.get('fcf_period') or '—'}　"
+        f"价格日期：{r.get('date') or '—'}　"
+        f"估值计算时间：{r.get('valuation_run_at') or '—'}"
+    )
+    with st.expander("估值诊断"):
+        st.markdown(
+            f"""
+**P/E**
+- Forward EPS: {money(pe_in.get('forward_eps') or f.get('forward_eps'))}
+- PE range: {pe_in.get('pe_low')} – {pe_in.get('pe_high')}
+- Result: {model_status_text(pe)} {money(pe.get('mid'))}
+
+**DCF**
+- OCF: {money_full(dcf_in.get('operating_cash_flow') or f.get('operating_cash_flow'))}
+- Raw CapEx: {money_full(dcf_in.get('capital_expenditure_raw') or f.get('capital_expenditure_raw'))}
+- Normalized CapEx: {money_full(dcf_in.get('capital_expenditure') or f.get('capital_expenditure'))}
+- Normalized FCF: {money_full(dcf_in.get('normalized_fcf') or f.get('fcf'))} ({f.get('fcf_method') or '—'})
+- Yahoo TTM FCF: {money_full(f.get('fcf_ttm_info'))}
+- Cash: {money_full(dcf_in.get('cash') or f.get('cash'))}
+- Debt: {money_full(dcf_in.get('debt') or f.get('debt'))}
+- Shares: {f.get('shares')}
+- Discount rate: {dcf_in.get('discount_rate')}
+- Terminal growth: {dcf_in.get('terminal_growth')}
+- DCF status: {model_status_text(dcf)} ({dcf.get('reason') or 'ok'}) {money(dcf.get('mid'))}
+
+**Growth**
+- Forward EPS: {money(gr_in.get('forward_eps') or f.get('forward_eps'))}
+- Growth assumption: {gr_in.get('growth_used')}
+- PEG target: {gr_in.get('peg_target')}
+- Fair PE: {gr_in.get('fair_pe')}
+- Result: {model_status_text(growth)} {money(growth.get('mid'))}
+            """.strip()
+        )
+
+
+def blend_caption(blend) -> str:
+    if not blend:
+        return ""
+    included = [MODEL_LABELS.get(name, name) for name in blend.get("included") or []]
+    excluded = [MODEL_LABELS.get(item.get("name"), item.get("name")) for item in blend.get("excluded") or []]
+    parts = []
+    if included:
+        parts.append("综合基于：" + " + ".join(included))
+    if excluded:
+        parts.append("排除：" + "、".join(excluded))
+    if blend.get("insufficient_models"):
+        parts.append("有效估值模型不足")
+    return "　".join(parts)
+
+
 def recommendation_label(r):
     z = r.get("zones")
     p = r.get("price")
@@ -389,6 +515,9 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
     pe = dcf = growth = None
     fair = None
     note = ""
+    blend = None
+    financials = None
+    valuation_run_at = datetime.now(timezone.utc).isoformat()
 
     if historical:
         snap = get_cloud_snapshot(sb, user_id, ticker, as_of) if sb and user_id else None
@@ -401,17 +530,36 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
         else:
             note = "该日期之前没有云端估值快照，因此只显示当时技术面，避免用今天的盈利预期倒推过去。"
     else:
-        f = fundamentals_cached(ticker)
-        pe = pe_model(ticker, f.get("forward_eps"))
-        dcf = dcf_model(ticker, f.get("fcf"), f.get("shares"), f.get("cash"), f.get("debt"))
-        growth = growth_model(ticker, f.get("forward_eps"), f.get("earnings_growth"))
-        fair = blended_fair(pe, dcf, growth)
+        financials = fundamentals_cached(ticker)
+        pe = pe_model(ticker, financials.get("forward_eps"))
+        dcf = dcf_model(
+            ticker,
+            financials.get("fcf"),
+            financials.get("shares"),
+            financials.get("cash"),
+            financials.get("debt"),
+            extras={
+                "market_cap": financials.get("market_cap"),
+                "warnings": financials.get("warnings") or [],
+                "fcf_method": financials.get("fcf_method"),
+                "fcf_period": financials.get("fcf_period"),
+                "operating_cash_flow": financials.get("operating_cash_flow"),
+                "capital_expenditure_raw": financials.get("capital_expenditure_raw"),
+                "capital_expenditure": financials.get("capital_expenditure"),
+            },
+        )
+        growth = growth_model(ticker, financials.get("forward_eps"), financials.get("earnings_growth"))
+        blend = blend_models(pe, dcf, growth)
+        pe, dcf, growth = blend["models"]["pe"], blend["models"]["dcf"], blend["models"]["growth"]
+        fair = blend.get("fair")
         if ticker in MAG7:
             note = "最新估值使用七巨头专用假设 + 当前公开基本面数据。"
         else:
             note = "自定义股票使用通用估值假设；建议后续为重要持仓配置专属估值参数。"
+        if blend.get("excluded"):
+            note += " 部分模型因数据异常或偏离过大未参与综合估值。"
 
-    zones = buy_zones(fair, vp["mid"] if vp else None, sma200) if fair else None
+    zones = buy_zones(fair, vp["mid"] if vp else None, sma200) if fair and not (blend or {}).get("insufficient_models") else None
 
     r = {
         "ticker": ticker,
@@ -430,6 +578,10 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
         "note": note,
         "state": classify_price(price, fair) if fair else "技术面模式",
         "history": df,
+        "blend": blend,
+        "financials": financials,
+        "valuation_run_at": valuation_run_at,
+        "data_source": (financials or {}).get("data_source") or "Yahoo Finance / yfinance",
     }
     r["recommendation"] = recommendation_label(r)
     return r
@@ -719,22 +871,34 @@ if not st.session_state.get("_profile_ensured"):
 
 # ---------------- Main app ----------------
 
-st.title("📈 Stock Fair Value Monitor")
-st.caption("自选股数据库 + 三模型公允价值 + SMA30/50/200 + 成交密集区 + 分层买入区")
+header_left, header_right = st.columns([12, 1], vertical_alignment="center")
+with header_left:
+    st.title("📈 Stock Fair Value Monitor")
+    st.caption("自选股数据库 + 三模型公允价值 + SMA30/50/200 + 成交密集区 + 分层买入区")
+with header_right:
+    avatar = (user_email[:1] if user_email else "U").upper()
+    with st.popover(avatar, help=user_email or "账户"):
+        st.caption("已登录")
+        st.write(user_email)
+        if st.button("退出登录", use_container_width=True):
+            try:
+                db.auth.sign_out()
+            except Exception:
+                pass
+            _delete_remember_cookie(cookie_manager, "logout_delete_cookie")
+            clear_auth_session()
+            st.rerun()
 
-with st.sidebar:
-    st.markdown(f"**已登录**  \n{user_email}")
-    if st.button("退出登录", use_container_width=True):
-        try:
-            db.auth.sign_out()
-        except Exception:
-            pass
-        _delete_remember_cookie(cookie_manager, "logout_delete_cookie")
-        clear_auth_session()
-        st.rerun()
-
-    st.divider()
-    page = st.radio("页面", ["自选股", "单股分析", "历史快照", "账户"], index=0)
+if hasattr(st, "segmented_control"):
+    page = st.segmented_control(
+        "页面",
+        options=NAV_PAGES,
+        default="自选股",
+        key="nav_page",
+        label_visibility="collapsed",
+    ) or "自选股"
+else:
+    page = st.radio("页面", NAV_PAGES, horizontal=True, key="nav_page", label_visibility="collapsed")
 
 
 if page == "自选股":
@@ -871,12 +1035,17 @@ elif page == "单股分析":
         c2.metric("综合公允价值", money(r["fair"]), pct(delta_pct(r["fair"], r["price"])) if r["fair"] else None)
         c3.metric("SMA50", money(r["sma50"]), pct(delta_pct(r["price"], r["sma50"])) if r["sma50"] else None)
         c4.metric("SMA200", money(r["sma200"]), pct(delta_pct(r["price"], r["sma200"])) if r["sma200"] else None)
+        cap = blend_caption(r.get("blend"))
+        if cap:
+            st.caption(cap)
 
         if r["zones"]:
             z1, z2, z3 = st.columns(3)
             z1.info(f"**第一批区**\n\n{zone_text(r['zones']['first'])}")
             z2.success(f"**核心买入区**\n\n{zone_text(r['zones']['core'])}")
             z3.success(f"**深度价值区**\n\n{zone_text(r['zones']['deep'])}")
+        elif (r.get("blend") or {}).get("insufficient_models") or not r.get("fair"):
+            st.info("有效估值模型不足，暂不生成买入区。")
 
         left, right = st.columns([1.2, 1])
         with left:
@@ -892,12 +1061,31 @@ elif page == "单股分析":
         with right:
             model_rows = []
             for label, obj in [("P/E", r["pe"]), ("DCF", r["dcf"]), ("Growth / PEG", r["growth"])]:
-                model_rows.append({"模型": label, "低值": obj.get("low") if obj else None, "中枢": obj.get("mid") if obj else None, "高值": obj.get("high") if obj else None})
-            st.dataframe(pd.DataFrame(model_rows), use_container_width=True, hide_index=True,
-                         column_config={"低值": st.column_config.NumberColumn(format="$%.2f"), "中枢": st.column_config.NumberColumn(format="$%.2f"), "高值": st.column_config.NumberColumn(format="$%.2f")})
+                usable = bool(obj) and obj.get("valid") and not obj.get("outlier")
+                model_rows.append({
+                    "模型": label,
+                    "低值": obj.get("low") if usable else None,
+                    "中枢": obj.get("mid") if usable else None,
+                    "高值": obj.get("high") if usable else None,
+                    "状态": model_status_text(obj),
+                })
+            st.dataframe(
+                pd.DataFrame(model_rows),
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "低值": st.column_config.NumberColumn(format="$%.2f"),
+                    "中枢": st.column_config.NumberColumn(format="$%.2f"),
+                    "高值": st.column_config.NumberColumn(format="$%.2f"),
+                },
+            )
+            dcf_obj = r.get("dcf") or {}
+            if dcf_obj.get("valid") is False or dcf_obj.get("outlier"):
+                st.caption("DCF 暂不参与估值：当前自由现金流数据异常或模型可靠性不足。")
 
         st.line_chart(r["history"].tail(260)[["Close", "SMA30", "SMA50", "SMA200"]], use_container_width=True)
         st.caption(r["note"])
+        render_valuation_diagnostics(r)
         if use_latest and st.button("保存当前估值快照"):
             try:
                 save_snapshot(db, user_id, r)
