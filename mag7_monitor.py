@@ -116,6 +116,21 @@ def volume_profile_zone(df: pd.DataFrame, lookback=252, bins=24):
     }
 
 
+def annualized_volatility(df: pd.DataFrame, lookback=252) -> float | None:
+    if df is None or df.empty or "Close" not in df.columns:
+        return None
+    closes = df["Close"].dropna().tail(lookback + 1)
+    if len(closes) < 60:
+        return None
+    rets = closes.pct_change().dropna()
+    if len(rets) < 40:
+        return None
+    std = float(rets.std())
+    if not math.isfinite(std) or std < 0:
+        return None
+    return std * math.sqrt(252)
+
+
 def metric_field(value, source=None, period=None, unit="USD", raw=None):
     return {
         "value": fnum(value),
@@ -324,6 +339,8 @@ def get_live_fundamentals(ticker: str):
     tangible_bvps = nta / shares if nta and shares and shares > 0 else None
     dividend_rate = fnum(info.get("dividendRate"))
     beta = fnum(info.get("beta"))
+    operating_margin = fnum(info.get("operatingMargins") or info.get("operatingMargin"))
+    profit_margin = fnum(info.get("profitMargins"))
     sector = info.get("sector")
     industry = info.get("industry")
     quote_type = info.get("quoteType")
@@ -336,25 +353,35 @@ def get_live_fundamentals(ticker: str):
         annual_rows = []
 
     historical_eps = []
+    historical_margins = []
     try:
         inc = t.income_stmt
         if inc is not None and not inc.empty:
             for col in list(inc.columns)[:5]:
                 net_income = _cashflow_row(inc, ("Net Income", "Net Income Common Stockholders"), col)
                 share_count = _cashflow_row(inc, ("Diluted Average Shares", "Basic Average Shares"), col) or shares
+                revenue_row = _cashflow_row(inc, ("Total Revenue", "Operating Revenue"), col)
+                operating_income = _cashflow_row(inc, ("Operating Income", "EBIT"), col)
                 eps = None
                 if net_income is not None and share_count:
                     eps = net_income / share_count
-                if eps is None and net_income is None:
-                    continue
-                historical_eps.append({
-                    "period": _period_label(col),
-                    "net_income": net_income,
-                    "shares": share_count,
-                    "eps": fnum(eps),
-                })
+                if eps is not None or net_income is not None:
+                    historical_eps.append({
+                        "period": _period_label(col),
+                        "net_income": net_income,
+                        "shares": share_count,
+                        "eps": fnum(eps),
+                    })
+                if revenue_row and revenue_row > 0 and operating_income is not None:
+                    historical_margins.append({
+                        "period": _period_label(col),
+                        "revenue": revenue_row,
+                        "operating_income": operating_income,
+                        "operating_margin": operating_income / revenue_row,
+                    })
     except Exception:
         historical_eps = []
+        historical_margins = []
 
     latest_annual = annual_rows[0] if annual_rows else {}
     normalized = _normalize_fcf(annual_rows, ttm_fcf=ttm_fcf)
@@ -396,6 +423,9 @@ def get_live_fundamentals(ticker: str):
         "quote_type": quote_type,
         "long_name": long_name,
         "historical_eps": historical_eps,
+        "historical_margins": historical_margins,
+        "operating_margin": operating_margin,
+        "profit_margin": profit_margin,
         "normalized": {
             "forward_eps": metric_field(forward_eps, "ticker.info.forwardEps", unit="USD/share"),
             "trailing_eps": metric_field(trailing_eps, "ticker.info.trailingEps", unit="USD/share"),
@@ -562,6 +592,9 @@ def dcf_model(ticker, fcf, shares, cash, debt, extras=None):
         "equity_value": equity,
         "dcf_growth": g,
         "fcf_used": float(fcf),
+        "pv_explicit": pv,
+        "pv_terminal": pv_terminal,
+        "terminal_value_share": (pv_terminal / enterprise) if enterprise else None,
     })
     if per_share is None or not math.isfinite(per_share) or per_share <= 0:
         return model_result(

@@ -10,18 +10,22 @@ from supabase import create_client, Client
 
 from mag7_monitor import (
     add_indicators,
+    annualized_volatility,
     get_history,
     volume_profile_zone,
     get_live_fundamentals,
-    buy_zones,
     classify_price,
     fnum,
 )
 from valuation_engine import (
-    CLASS_LABELS,
+    MODEL_DISPLAY_NAMES,
     MODEL_VERSION,
     can_emit_buy_zones,
+    dynamic_buy_zones,
+    is_legacy_snapshot,
     normalize_ticker,
+    primary_valuation_view,
+    reconstruct_blend_from_snapshot,
     valuate,
 )
 
@@ -99,6 +103,10 @@ STATUS_META = {
     "观察 / 等回调": ("#F3F4F6", "#4B5563", "⚪"),
     "仅技术观察": ("#F3F4F6", "#4B5563", "⚪"),
     "低于深度价值区": ("#BBF7D0", "#14532D", "🟢"),
+    "参考关注区": ("#FEF3C7", "#92400E", "🟡"),
+    "参考折价区": ("#D1FAE5", "#047857", "🟢"),
+    "深度折价区": ("#DCFCE7", "#166534", "🟢"),
+    "低于深度折价区": ("#BBF7D0", "#14532D", "🟢"),
     "数据不足": ("#FEE2E2", "#991B1B", "🔴"),
 }
 
@@ -110,6 +118,30 @@ def money(x):
         return f"${float(x):,.2f}"
     except Exception:
         return "—"
+
+
+def money_conf(x, confidence: str | None = None):
+    if x is None:
+        return "—"
+    try:
+        v = float(x)
+    except Exception:
+        return "—"
+    if str(confidence or "").upper() == "LOW":
+        return f"${v:,.0f}"
+    return f"${v:,.2f}"
+
+
+def dashboard_fair_text(r: dict) -> str:
+    conf = str(r.get("confidence") or "").upper()
+    if conf in {"SPECIALIZED", "UNAVAILABLE"} or r.get("fair") is None:
+        return "—"
+    if conf == "LOW":
+        lo, hi = r.get("fair_low"), r.get("fair_high")
+        if lo is not None and hi is not None:
+            return f"{money_conf(lo, 'LOW')} – {money_conf(hi, 'LOW')}"
+        return money_conf(r.get("fair"), "LOW")
+    return money_conf(r.get("fair"), conf)
 
 
 def pct(v):
@@ -361,6 +393,20 @@ def public_db_error(operation: str, table: str, exc: Exception, client: Client |
     return "操作失败，请稍后重试。"
 
 
+def public_analysis_error(ticker: str, exc: Exception) -> str:
+    logger.warning(
+        "analysis failed ticker=%s error_type=%s",
+        ticker,
+        type(exc).__name__,
+    )
+    text = str(exc).lower()
+    if "no price data" in text or "delisted" in text:
+        return f"无法分析 {ticker}：没有找到有效行情，请确认代码是否正确。"
+    if "timeout" in text or "timed out" in text:
+        return f"无法分析 {ticker}：行情数据源超时，请稍后重试。"
+    return f"无法分析 {ticker}：行情或财务数据暂时不可用，请稍后重试。"
+
+
 @st.cache_data(ttl=900, show_spinner=False)
 def history_cached(ticker: str, as_of: str | None):
     return add_indicators(get_history(ticker, as_of))
@@ -432,16 +478,80 @@ def model_status_text(obj) -> str:
     return "无数据"
 
 
+def render_model_explanations(r: dict):
+    blend = r.get("blend") or {}
+    model_list = blend.get("model_list") or list((blend.get("models") or {}).values())
+    if not model_list:
+        return
+    st.markdown("#### 为什么得到这个估值？")
+    for obj in model_list:
+        name = obj.get("name") or MODEL_DISPLAY_NAMES.get(obj.get("model_id"), obj.get("model_id"))
+        applicable = obj.get("applicable") is not False
+        usable = applicable and obj.get("valid") and not obj.get("outlier")
+        with st.expander(f"{name} — {'纳入' if usable else '排除'}", expanded=False):
+            executed = obj.get("executed")
+            st.write(f"**executed:** {executed}")
+            if obj.get("outlier"):
+                st.write("**status:** executed but excluded as outlier")
+            elif not applicable:
+                st.write("**status:** not applicable / not executed")
+            elif obj.get("valid") is False:
+                st.write("**status:** executed but invalid")
+            else:
+                st.write("**status:** included")
+            st.write(f"**reason:** {obj.get('applicability_reason') or obj.get('reason') or '—'}")
+            st.write(f"**applicability:** {obj.get('why_applicable') or '—'}")
+            if usable:
+                inputs = obj.get("inputs") or {}
+                if inputs:
+                    st.write("**Key inputs:**")
+                    for key, value in list(inputs.items())[:8]:
+                        st.write(f"- {key}: {value}")
+                st.write(
+                    f"**Result:** {money(obj.get('low'))} / {money(obj.get('mid'))} / {money(obj.get('high'))}"
+                )
+                st.write(f"**Confidence:** {str(obj.get('confidence') or '—').upper()}")
+            elif obj.get("outlier"):
+                st.write("该模型已执行，但相对其他模型偏离过大，未纳入综合估值。")
+            elif executed is False:
+                st.caption("未执行计算：适用性检查未通过。")
+
+
+def render_cycle_panel(r: dict):
+    cycle = (r.get("blend") or {}).get("cycle") or r.get("cycle")
+    if not cycle:
+        return
+    st.markdown("#### Cycle normalization")
+    st.caption(cycle.get("note") or "周期估值使用中周期盈利，而非当前周期峰值/谷值。")
+    rows = [
+        ("Current EPS", cycle.get("current_eps")),
+        ("Forward EPS", cycle.get("forward_eps")),
+        ("Normalized EPS", cycle.get("cycle_normalized_eps")),
+        ("Historical EPS median", cycle.get("historical_eps_median")),
+        ("Current operating margin", cycle.get("current_operating_margin")),
+        ("Normalized operating margin", cycle.get("normalized_operating_margin")),
+        ("Normalized FCF", cycle.get("normalized_fcf")),
+    ]
+    st.dataframe(
+        pd.DataFrame({"指标": [a for a, _ in rows], "值": [b for _, b in rows]}),
+        hide_index=True,
+        use_container_width=True,
+    )
+    pe_range = cycle.get("cycle_pe_range")
+    if pe_range:
+        st.caption(f"Cycle PE range: {pe_range[0]} – {pe_range[1]}")
+
+
 def render_valuation_diagnostics(r: dict):
     f = r.get("financials") or {}
     blend = r.get("blend") or {}
     profile = blend.get("profile") or {}
     st.caption(
-        f"数据来源：{r.get('data_source') or 'Yahoo Finance / yfinance'}　"
-        f"财务数据期间：{f.get('fcf_period') or '—'}　"
-        f"价格日期：{r.get('date') or '—'}　"
-        f"估值计算时间：{r.get('valuation_run_at') or '—'}　"
-        f"模型版本：{r.get('model_version') or '—'}"
+        f"Price: {r.get('price_timestamp') or r.get('date') or '—'} (daily bar)　"
+        f"Financials: {f.get('fcf_period') or r.get('financials_period') or '—'}　"
+        f"Valuation run: {r.get('valuation_run_at') or '—'}　"
+        f"Snapshot: {r.get('snapshot_date') or '— (live, not a stored snapshot)'}　"
+        f"Model: {r.get('model_version') or '—'}"
     )
     with st.expander("估值诊断"):
         lines = [
@@ -492,22 +602,27 @@ def recommendation_label(r):
         return "仅技术观察"
     z = r["zones"]
     p = r["price"]
+    labels = z.get("labels") or {}
+    low_conf = conf == "LOW" or z.get("low_confidence")
+    deep_name = labels.get("deep") or ("深度折价区" if low_conf else "深度价值区")
+    core_name = labels.get("core") or ("参考折价区" if low_conf else "核心买入区")
+    first_name = labels.get("first") or ("参考关注区" if low_conf else "第一批区")
     deep = z.get("deep") or (None, None)
     core = z.get("core") or (None, None)
     first = z.get("first") or (None, None)
     if deep[0] is not None and p < deep[0]:
-        label = "低于深度价值区"
+        label = f"低于{deep_name}"
     elif deep[0] is not None and deep[1] is not None and deep[0] <= p <= deep[1]:
-        label = "深度价值区"
+        label = deep_name
     elif core[0] is not None and core[1] is not None and core[0] <= p <= core[1]:
-        label = "核心买入区"
+        label = core_name
     elif first[0] is not None and first[1] is not None and first[0] <= p <= first[1]:
-        label = "第一批区"
+        label = first_name
     elif first[1] is not None and p <= first[1] * 1.05:
-        label = "接近第一批区"
+        label = "接近第一批区" if not low_conf else f"接近{first_name}"
     else:
         label = "观察 / 等回调"
-    if conf == "LOW":
+    if low_conf and "低置信度" not in label:
         return f"{label}（低置信度）"
     return label
 
@@ -567,56 +682,36 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
     financials = None
     snap = None
     snap_zones = None
-    valuation_run_at = datetime.now(timezone.utc).isoformat()
+    snapshot_date = None
+    valuation_run_at = None if historical else datetime.now(timezone.utc).isoformat()
 
     if historical:
         snap = get_cloud_snapshot(sb, user_id, ticker, as_of) if sb and user_id else None
         if snap:
-            raw = snap.get("raw") if isinstance(snap.get("raw"), dict) else {}
+            blend = reconstruct_blend_from_snapshot(snap)
             pe = snap.get("pe_model")
             dcf = snap.get("dcf_model")
             growth = snap.get("growth_model")
             fair = snap.get("fair_value")
-            vclass = snap.get("valuation_class") or raw.get("valuation_class")
-            models_json = snap.get("models_json") or raw.get("models_json") or {}
-            if isinstance(models_json, dict):
-                model_list = list(models_json.values())
-                included = list(models_json.keys())
-            elif isinstance(models_json, list):
-                model_list = models_json
-                included = [obj.get("model_id") or obj.get("name") for obj in model_list if obj]
-            else:
-                model_list = [obj for obj in (pe, dcf, growth) if obj]
-                included = []
-            conf = (snap.get("confidence") or raw.get("confidence") or "MEDIUM")
-            if isinstance(conf, str):
-                conf = conf.upper()
-            blend = {
-                "fair": fair,
-                "confidence": conf,
-                "profile": {
-                    "valuation_class": vclass,
-                    "valuation_class_label": CLASS_LABELS.get(vclass, vclass),
-                },
-                "models": models_json if isinstance(models_json, dict) else {},
-                "model_list": model_list,
-                "model_version": snap.get("model_version") or raw.get("model_version") or "legacy",
-                "insufficient_models": fair is None,
-                "specialized": conf == "SPECIALIZED",
-                "included": included,
-            }
+            conf = str((blend or {}).get("confidence") or "").upper()
+            snapshot_date = snap.get("snapshot_date")
+            valuation_run_at = snap.get("created_at") or snap.get("updated_at")
             if snap.get("first_low") is not None:
                 snap_zones = {
                     "first": (snap.get("first_low"), snap.get("first_high")),
                     "core": (snap.get("core_low"), snap.get("core_high")),
                     "deep": (snap.get("deep_low"), snap.get("deep_high")),
+                    "low_confidence": conf == "LOW",
                 }
-            note = f"历史估值使用 {snap['snapshot_date']} 保存的云端估值快照。"
+            note = f"历史估值使用 {snap['snapshot_date']} 保存的云端估值快照，可靠性数据取当时结果。"
+            if is_legacy_snapshot(snap):
+                note += " 该历史快照创建于可靠性层之前，部分可靠性指标不可用。"
         else:
             note = "该日期没有历史估值快照，仅显示技术数据。"
     else:
         financials = fundamentals_cached(ticker)
-        blend = valuate(ticker, financials)
+        vol = annualized_volatility(df)
+        blend = valuate(ticker, financials, volatility=vol)
         models = blend.get("models") or {}
         pe = models.get("forward_pe") or models.get("normalized_pe") or models.get("price_to_book_roe")
         dcf = models.get("normalized_fcf_dcf") or models.get("residual_income")
@@ -624,9 +719,9 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
         fair = blend.get("fair")
         class_label = (blend.get("profile") or {}).get("valuation_class_label") or "Generic"
         if blend.get("specialized") or blend.get("confidence") in {"SPECIALIZED", "UNAVAILABLE"}:
-            note = f"估值类型：{class_label}。需要专项估值模型，暂不给出综合公允价值。"
+            note = f"估值类型：{class_label}。传统估值模型不适用，需要专项场景估值。"
         else:
-            note = f"估值类型：{class_label}。使用 V4 sector-aware 模型组合。"
+            note = f"估值类型：{class_label}。使用 V4.1 reliability layer。"
         if blend.get("excluded"):
             note += " 部分模型已排除。"
         if "high_valuation_uncertainty" in (blend.get("warnings") or []):
@@ -636,13 +731,21 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
         conf = str((blend or {}).get("confidence") or "").upper()
         if snap_zones and snap_zones["first"][0] is not None and conf not in {"SPECIALIZED", "UNAVAILABLE"}:
             zones = snap_zones
-        elif fair and conf not in {"SPECIALIZED", "UNAVAILABLE"}:
-            zones = buy_zones(fair, vp["mid"] if vp else None, sma200)
         else:
             zones = None
+    elif can_emit_buy_zones(blend) and blend.get("mos"):
+        zones = dynamic_buy_zones(
+            blend.get("fair"),
+            blend["mos"],
+            vp["mid"] if vp else None,
+            sma200,
+            low_confidence=str(blend.get("confidence")) == "LOW",
+        )
+        blend["zones"] = zones
     else:
-        zones = buy_zones(fair, vp["mid"] if vp else None, sma200) if can_emit_buy_zones(blend) else None
+        zones = None
     display_name = (financials or {}).get("long_name") or NAMES.get(ticker, ticker)
+    reliability = (blend or {}).get("reliability") or {}
 
     r = {
         "ticker": ticker,
@@ -657,18 +760,27 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
         "dcf": dcf,
         "growth": growth,
         "fair": fair,
+        "fair_low": (blend or {}).get("fair_low"),
+        "fair_high": (blend or {}).get("fair_high"),
         "zones": zones,
         "note": note,
         "state": classify_price(price, fair) if fair else "技术面模式",
         "history": df,
         "blend": blend,
         "financials": financials,
+        "financials_period": (financials or {}).get("fcf_period"),
+        "price_timestamp": trade_date,
+        "snapshot_date": snapshot_date,
         "valuation_run_at": valuation_run_at,
         "data_source": (financials or {}).get("data_source") or "Yahoo Finance / yfinance",
         "valuation_class": (blend or {}).get("profile", {}).get("valuation_class") if blend else None,
         "valuation_class_label": (blend or {}).get("profile", {}).get("valuation_class_label") if blend else None,
         "confidence": (blend or {}).get("confidence"),
-        "model_version": (blend or {}).get("model_version") or MODEL_VERSION,
+        "model_version": (blend or {}).get("model_version") if historical else ((blend or {}).get("model_version") or MODEL_VERSION),
+        "reliability_score": reliability.get("reliability_score"),
+        "dispersion_pct": reliability.get("dispersion_pct") if reliability.get("dispersion_pct") is not None else (blend or {}).get("dispersion"),
+        "volatility_1y": (blend or {}).get("volatility_1y"),
+        "cycle": (blend or {}).get("cycle"),
     }
     r["recommendation"] = recommendation_label(r)
     return r
@@ -706,6 +818,13 @@ def save_snapshot(sb: Client, user_id: str, r: dict):
             "models_json": (r.get("blend") or {}).get("models"),
             "model_version": r.get("model_version") or MODEL_VERSION,
             "weights_used": (r.get("blend") or {}).get("weights_used"),
+            "reliability_json": (r.get("blend") or {}).get("reliability"),
+            "blended_low": r.get("fair_low"),
+            "blended_high": r.get("fair_high"),
+            "reliability_score": r.get("reliability_score"),
+            "dispersion_pct": r.get("dispersion_pct"),
+            "volatility_1y": r.get("volatility_1y"),
+            "cycle": r.get("cycle") or (r.get("blend") or {}).get("cycle"),
         },
     }
     extra = {
@@ -713,6 +832,12 @@ def save_snapshot(sb: Client, user_id: str, r: dict):
         "confidence": r.get("confidence"),
         "models_json": (r.get("blend") or {}).get("models"),
         "model_version": r.get("model_version") or MODEL_VERSION,
+        "reliability_score": r.get("reliability_score"),
+        "dispersion_pct": r.get("dispersion_pct"),
+        "blended_low": r.get("fair_low"),
+        "blended_high": r.get("fair_high"),
+        "volatility_1y": r.get("volatility_1y"),
+        "reliability_json": (r.get("blend") or {}).get("reliability"),
     }
     try:
         sb.table("valuation_snapshots").upsert(
@@ -726,7 +851,7 @@ def save_snapshot(sb: Client, user_id: str, r: dict):
 
 def list_snapshots(sb: Client, user_id: str, ticker: str):
     current_user_id = assert_live_session(sb, user_id)
-    columns = "snapshot_date,price,fair_value,sma30,sma50,sma200,first_low,first_high,core_low,core_high,deep_low,deep_high,status,valuation_class,confidence,model_version"
+    columns = "snapshot_date,price,fair_value,sma30,sma50,sma200,first_low,first_high,core_low,core_high,deep_low,deep_high,status,valuation_class,confidence,model_version,reliability_score,dispersion_pct,blended_low,blended_high"
     legacy = "snapshot_date,price,fair_value,sma30,sma50,sma200,first_low,first_high,core_low,core_high,deep_low,deep_high,status"
     try:
         res = (
@@ -916,8 +1041,8 @@ def login_page():
                         else:
                             _delete_remember_cookie(cookie_manager, "clear_remember_cookie")
                         st.rerun()
-                except Exception:
-                    logger.exception("login failed")
+                except Exception as exc:
+                    logger.warning("login failed error_type=%s", type(exc).__name__)
                     st.error("登录失败：邮箱或密码不正确。")
 
         with tab_signup:
@@ -941,8 +1066,8 @@ def login_page():
                             st.rerun()
                         else:
                             st.success("注册成功。请先到邮箱完成验证，然后回来登录。")
-                    except Exception:
-                        logger.exception("signup failed")
+                    except Exception as exc:
+                        logger.warning("signup failed error_type=%s", type(exc).__name__)
                         st.error("注册失败，请稍后重试。")
 
         st.caption("密码由 Supabase Auth 安全处理；本程序不会把明文密码写入数据库或 GitHub。")
@@ -1076,9 +1201,11 @@ if page == "自选股":
                 "SMA50": r["sma50"],
                 "SMA200": r["sma200"],
                 "估值类型": r.get("valuation_class_label") or "—",
-                "公允价值": r["fair"],
+                "公允价值": dashboard_fair_text(r),
                 "置信度": r.get("confidence") or "—",
-                "距公允价值%": delta_pct(r["price"], r["fair"]),
+                "可靠性": r.get("reliability_score") if r.get("reliability_score") is not None else "—",
+                "模型分歧": f"{r['dispersion_pct']*100:.0f}%" if r.get("dispersion_pct") is not None else "—",
+                "距公允价值%": delta_pct(r["price"], r["fair"]) if str(r.get("confidence") or "").upper() not in {"LOW", "SPECIALIZED", "UNAVAILABLE"} else None,
                 "第一批区": zone_text(r["zones"]["first"]) if r["zones"] else "—",
                 "核心买入区": zone_text(r["zones"]["core"]) if r["zones"] else "—",
                 "深度价值区": zone_text(r["zones"]["deep"]) if r["zones"] else "—",
@@ -1086,11 +1213,10 @@ if page == "自选股":
                 "_core_gap": core_zone_gap(r["price"], r.get("zones")),
             })
         except Exception as e:
-            err_text = (
-                public_db_error("upsert", "valuation_snapshots", e, client=db)
-                if is_rls_or_auth_error(e)
-                else "数据不足"
-            )
+            if is_rls_or_auth_error(e):
+                err_text = public_db_error("upsert", "valuation_snapshots", e, client=db)
+            else:
+                err_text = public_analysis_error(t, e)
             rows.append({"股票": t, "备注": item.get("nickname") or "", "状态": "数据不足", "错误": err_text, "_core_gap": float("inf")})
         progress.progress(i / len(watch), text=f"正在更新 {i}/{len(watch)}")
     progress.empty()
@@ -1115,10 +1241,10 @@ if page == "自选股":
             "SMA30": st.column_config.NumberColumn(format="$%.2f"),
             "SMA50": st.column_config.NumberColumn(format="$%.2f"),
             "SMA200": st.column_config.NumberColumn(format="$%.2f"),
-            "公允价值": st.column_config.NumberColumn(format="$%.2f"),
             "距公允价值%": st.column_config.NumberColumn(format="%.1f%%"),
         },
     )
+    st.caption("可靠性评分衡量数据完整性、模型一致性及适用性，不是股票评级，也不代表未来收益概率。")
 
     st.markdown("#### 颜色说明")
     cols = st.columns(6)
@@ -1259,35 +1385,74 @@ elif page == "单股分析":
     cache_key = (current, as_of)
     if st.session_state.get("analysis_cache_key") != cache_key:
         with st.spinner(f"正在分析 {current}…"):
-            r = analyze_one(current, as_of, db, user_id)
+            try:
+                r = analyze_one(current, as_of, db, user_id)
+            except Exception as e:
+                st.error(public_analysis_error(current, e))
+                st.stop()
         st.session_state.last_analysis = r
         st.session_state.analysis_cache_key = cache_key
     r = st.session_state.get("last_analysis")
 
     if r:
         st.markdown(f"### {r['ticker']} · {r['name']} — {r['date']}")
+        if (r.get("blend") or {}).get("legacy"):
+            st.info("该历史快照创建于可靠性层之前，部分可靠性指标不可用。")
         meta1, meta2, meta3 = st.columns(3)
         meta1.metric("估值类型", r.get("valuation_class_label") or "—")
         meta2.metric("置信度", r.get("confidence") or "—")
-        meta3.write("")
+        score = r.get("reliability_score")
+        meta3.metric("可靠性评分", f"{score} / 100" if score is not None else "—")
         status_badge(r["recommendation"])
         st.write("")
+        rel = (r.get("blend") or {}).get("reliability") or {}
+        disp = r.get("dispersion_pct")
+        inc = rel.get("model_count_included")
+        total = rel.get("model_count_total")
+        conf = str(r.get("confidence") or "").upper()
+        view = (r.get("blend") or {}).get("view") or primary_valuation_view(r.get("blend") or {})
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("价格", money(r["price"]))
-        c2.metric("综合公允价值", money(r["fair"]), pct(delta_pct(r["fair"], r["price"])) if r["fair"] else None)
+        if view.get("mode") == "specialized":
+            c2.metric("公允价值", "不适用")
+            st.info("传统估值模型不适用，需要专项场景估值。仅显示技术观察。")
+        elif view.get("mode") == "unavailable":
+            c2.metric("公允价值", "数据不足")
+        elif view.get("mode") == "indicative_range":
+            c2.metric(
+                "Indicative Valuation Range",
+                f"{money_conf(view.get('low'), 'LOW')} – {money_conf(view.get('high'), 'LOW')}",
+            )
+            st.caption(
+                f"Reference midpoint: {money_conf(view.get('mid'), 'LOW')}  ·  Confidence: LOW"
+            )
+            st.caption("估值不确定性较高，区间是主信息，中枢仅供参考。不得把中枢当作精确公允价值。")
+        elif view.get("mode") == "point":
+            c2.metric("Fair Value", money_conf(view.get("mid"), "HIGH"))
+            st.caption(f"Range: {money(view.get('low'))} – {money(view.get('high'))}")
+        else:
+            c2.metric("Fair Value Estimate", money_conf(view.get("mid"), conf))
+            st.caption(f"Reasonable Range: {money(view.get('low'))} – {money(view.get('high'))}")
         c3.metric("SMA50", money(r["sma50"]), pct(delta_pct(r["price"], r["sma50"])) if r["sma50"] else None)
         c4.metric("SMA200", money(r["sma200"]), pct(delta_pct(r["price"], r["sma200"])) if r["sma200"] else None)
+        r1, r2, r3 = st.columns(3)
+        r1.metric("模型分歧", f"{disp*100:.0f}%" if disp is not None else "—")
+        r2.metric("有效模型", f"{inc} / {total}" if inc is not None and total is not None else "—")
+        r3.metric("数据质量", rel.get("data_quality") or "—")
         cap = blend_caption(r.get("blend"))
         if cap:
             st.caption(cap)
 
         if r["zones"]:
+            labels = (r["zones"] or {}).get("labels") or {}
             z1, z2, z3 = st.columns(3)
-            z1.info(f"**第一批区**\n\n{zone_text(r['zones']['first'])}")
-            z2.success(f"**核心买入区**\n\n{zone_text(r['zones']['core'])}")
-            z3.success(f"**深度价值区**\n\n{zone_text(r['zones']['deep'])}")
+            z1.info(f"**{labels.get('first', '第一批区')}**\n\n{zone_text(r['zones']['first'])}")
+            z2.success(f"**{labels.get('core', '核心买入区')}**\n\n{zone_text(r['zones']['core'])}")
+            z3.success(f"**{labels.get('deep', '深度价值区')}**\n\n{zone_text(r['zones']['deep'])}")
+            if conf == "LOW":
+                st.warning("估值不确定性较高，此价格区仅为模型参考。")
         elif (r.get("blend") or {}).get("specialized") or r.get("confidence") == "SPECIALIZED":
-            st.info("需要专项估值模型。仅显示技术指标，不生成价值买入区。")
+            st.info("传统估值模型不适用，需要专项场景估值。仅显示技术指标，不生成价值买入区。")
         else:
             st.info("有效估值模型不足，暂不生成买入区。")
 
@@ -1331,6 +1496,8 @@ elif page == "单股分析":
 
         st.line_chart(r["history"].tail(260)[["Close", "SMA30", "SMA50", "SMA200"]], use_container_width=True)
         st.caption(r["note"])
+        render_cycle_panel(r)
+        render_model_explanations(r)
         render_valuation_diagnostics(r)
         if use_latest and st.button("保存当前估值快照"):
             try:
@@ -1360,6 +1527,9 @@ elif page == "历史快照":
         st.info("暂无历史快照。打开自选股页面并启用自动保存即可开始积累。")
     else:
         hdf = pd.DataFrame(data)
+        st.caption("以下数值来自当时保存的 snapshot，不会用今天的估值重新计算。")
+        if any(is_legacy_snapshot(row) or not row.get("model_version") or row.get("model_version") == "legacy" for row in data):
+            st.info("该历史快照创建于可靠性层之前，部分可靠性指标不可用。")
         st.dataframe(hdf, use_container_width=True, hide_index=True)
         chart = hdf.sort_values("snapshot_date").set_index("snapshot_date")[["price", "fair_value"]]
         chart.columns = ["股价", "公允价值"]
@@ -1382,8 +1552,8 @@ else:
             try:
                 db.auth.update_user({"password": p1})
                 st.success("密码已更新。")
-            except Exception:
-                logger.exception("password update failed")
+            except Exception as exc:
+                logger.warning("password update failed error_type=%s", type(exc).__name__)
                 st.error("修改失败，请重新登录后再试。")
 
 st.divider()

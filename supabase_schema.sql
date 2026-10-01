@@ -165,3 +165,9 @@ alter table public.valuation_snapshots add column if not exists valuation_class 
 alter table public.valuation_snapshots add column if not exists confidence text;
 alter table public.valuation_snapshots add column if not exists models_json jsonb;
 alter table public.valuation_snapshots add column if not exists model_version text;
+alter table public.valuation_snapshots add column if not exists reliability_score numeric;
+alter table public.valuation_snapshots add column if not exists dispersion_pct numeric;
+alter table public.valuation_snapshots add column if not exists blended_low numeric;
+alter table public.valuation_snapshots add column if not exists blended_high numeric;
+alter table public.valuation_snapshots add column if not exists volatility_1y numeric;
+alter table public.valuation_snapshots add column if not exists reliability_json jsonb;

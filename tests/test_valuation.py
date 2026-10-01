@@ -350,5 +350,169 @@ class V4SectorAwareTests(unittest.TestCase):
         self.assertIsNone(buy_zones(None, technical_mid=180, sma200=170))
 
 
+class V41ReliabilityTests(unittest.TestCase):
+    def test_low_confidence_uses_indicative_range(self):
+        from valuation_engine import primary_valuation_view, valuate
+        financials = {
+            "forward_eps": 0.55,
+            "trailing_eps": 0.20,
+            "earnings_growth": 0.40,
+            "revenue": 3_000_000_000,
+            "fcf": 1_200_000_000,
+            "shares": 2_300_000_000,
+            "cash": 4_000_000_000,
+            "debt": 200_000_000,
+        }
+        blend = valuate("PLTR", financials)
+        self.assertEqual(blend["confidence"], "LOW")
+        view = primary_valuation_view(blend)
+        self.assertEqual(view["mode"], "indicative_range")
+        self.assertEqual(view["primary"], "range")
+        self.assertIsNotNone(view["low"])
+        self.assertIsNotNone(view["high"])
+
+    def test_specialized_no_fair_or_zones(self):
+        from valuation_engine import valuate, can_emit_buy_zones
+        for ticker in ("TSLA", "SPCX", "BMNR", "TEM"):
+            fin = {"forward_eps": -1, "fcf": -1, "shares": 1e9}
+            if ticker != "TEM":
+                fin = {"forward_eps": 3, "fcf": 1e9, "shares": 1e9, "cash": 1e9, "debt": 1e9}
+            blend = valuate(ticker, fin)
+            self.assertIsNone(blend["fair"])
+            self.assertIsNone(blend.get("zones"))
+            self.assertFalse(can_emit_buy_zones(blend))
+            self.assertEqual(blend["confidence"], "SPECIALIZED")
+
+    def test_blended_range_ordered(self):
+        from valuation_engine import valuate
+        financials = {
+            "forward_eps": 10.0,
+            "trailing_eps": 8.0,
+            "earnings_growth": 0.12,
+            "fcf": 30_000_000_000,
+            "shares": 10_000_000_000,
+            "cash": 80_000_000_000,
+            "debt": 40_000_000_000,
+            "annual_cashflows": [
+                {"free_cash_flow": 32_000_000_000},
+                {"free_cash_flow": 30_000_000_000},
+                {"free_cash_flow": 28_000_000_000},
+            ],
+            "fcf_method": "median_3y_annual",
+        }
+        blend = valuate("AMZN", financials)
+        if blend["fair"] is not None:
+            self.assertLessEqual(blend["fair_low"], blend["fair"])
+            self.assertLessEqual(blend["fair"], blend["fair_high"])
+
+    def test_dispersion_formula(self):
+        from valuation_engine import dispersion_pct, dispersion_band
+        models = [{"mid": 300}, {"mid": 330}, {"mid": 360}]
+        disp = dispersion_pct(models)
+        self.assertAlmostEqual(disp, 60 / 330, places=6)
+        self.assertEqual(dispersion_band(disp), "MODERATE")
+        self.assertIsNone(dispersion_pct([{"mid": 100}]))
+
+    def test_one_valid_model_no_official_fair(self):
+        from valuation_engine import valuate, can_emit_buy_zones, primary_valuation_view
+        financials = {
+            "forward_eps": 20.0,
+            "trailing_eps": 18.0,
+        }
+        blend = valuate("JPM", financials)
+        self.assertTrue(blend["insufficient_models"])
+        self.assertIsNone(blend["fair"])
+        self.assertFalse(can_emit_buy_zones(blend))
+        self.assertEqual(primary_valuation_view(blend)["mode"], "unavailable")
+
+    def test_outlier_weights_renormalized(self):
+        from valuation_engine import valuate
+        financials = {
+            "forward_eps": 10.47571,
+            "trailing_eps": 8.0,
+            "earnings_growth": 0.14,
+            "fcf": 3_000_000_000,
+            "shares": 10_786_313_572,
+            "cash": 123_000_000_000,
+            "debt": 150_000_000_000,
+            "annual_cashflows": [
+                {"free_cash_flow": 3_000_000_000},
+                {"free_cash_flow": 4_000_000_000},
+                {"free_cash_flow": 3_500_000_000},
+            ],
+            "fcf_method": "median_3y_annual",
+        }
+        blend = valuate("AMZN", financials)
+        if "normalized_fcf_dcf" in (blend.get("models") or {}) and blend["models"]["normalized_fcf_dcf"].get("outlier"):
+            self.assertNotIn("normalized_fcf_dcf", blend["included"])
+            self.assertAlmostEqual(sum(blend["weights_used"].values()), 1.0, places=6)
+
+    def test_non_applicable_dcf_not_executed(self):
+        from unittest.mock import patch
+        from valuation_engine import valuate
+        financials = {
+            "book_value_per_share": 120,
+            "roe": 0.16,
+            "forward_eps": 20,
+            "trailing_eps": 18,
+            "fcf": 50_000_000_000,
+            "shares": 2_800_000_000,
+            "cash": 1_000_000_000_000,
+            "debt": 800_000_000_000,
+        }
+        with patch("valuation_engine.dcf_model") as mocked:
+            blend = valuate("JPM", financials)
+            mocked.assert_not_called()
+        dcf = blend["models"].get("normalized_fcf_dcf") or {}
+        self.assertFalse(dcf.get("executed"))
+        self.assertFalse(dcf.get("applicable"))
+
+    def test_cyclical_mos_wider_than_mega_cap(self):
+        from valuation_engine import margin_of_safety_profile
+        mu = margin_of_safety_profile("MEDIUM", 0.18, 0.30, "high", "cyclical_semiconductor")
+        msft = margin_of_safety_profile("MEDIUM", 0.18, 0.30, "low", "mega_cap_tech")
+        self.assertGreater(mu["first_entry_discount"], msft["first_entry_discount"])
+        self.assertGreater(mu["core_discount"], msft["core_discount"])
+        self.assertGreater(mu["deep_discount"], msft["deep_discount"])
+
+    def test_higher_volatility_widens_mos(self):
+        from valuation_engine import margin_of_safety_profile
+        low = margin_of_safety_profile("MEDIUM", 0.10, 0.20, "low", "mega_cap_tech")
+        high = margin_of_safety_profile("MEDIUM", 0.10, 0.55, "low", "mega_cap_tech")
+        self.assertGreater(high["first_entry_discount"], low["first_entry_discount"])
+
+    def test_high_dispersion_lowers_score(self):
+        from valuation_engine import build_profile, compute_reliability
+        profile = build_profile("AMZN")
+        models = {
+            "forward_pe": {"valid": True, "applicable": True, "mid": 100, "low": 90, "high": 110},
+            "normalized_fcf_dcf": {"valid": True, "applicable": True, "mid": 180, "low": 160, "high": 200},
+            "growth_adjusted_pe": {"valid": True, "applicable": True, "mid": 110, "low": 100, "high": 120},
+        }
+        tight = compute_reliability(profile, {"forward_eps": 10, "shares": 1e9, "fcf": 1e9}, models, list(models), [], 0.10, False)
+        wide = compute_reliability(profile, {"forward_eps": 10, "shares": 1e9, "fcf": 1e9}, models, list(models), [], 0.62, False)
+        self.assertLess(wide.reliability_score, tight.reliability_score)
+
+    def test_historical_snapshot_uses_saved_reliability(self):
+        from valuation_engine import reliability_from_snapshot
+        snap = {
+            "fair_value": 200,
+            "confidence": "MEDIUM",
+            "reliability_score": 71,
+            "reliability_json": {"reliability_score": 71, "overall_confidence": "MEDIUM"},
+            "raw": {"reliability_json": {"reliability_score": 10, "overall_confidence": "LOW"}},
+        }
+        saved = reliability_from_snapshot(snap)
+        self.assertEqual(saved["reliability_score"], 71)
+        self.assertEqual(saved["overall_confidence"], "MEDIUM")
+
+    def test_no_ticker_specific_target_price(self):
+        from valuation_engine import TICKER_SPEC_OVERLAYS
+        for overlay in TICKER_SPEC_OVERLAYS.values():
+            self.assertNotIn("fair", overlay)
+            self.assertNotIn("target", overlay)
+            self.assertNotIn("fair_value", overlay)
+
+
 if __name__ == "__main__":
     unittest.main()
