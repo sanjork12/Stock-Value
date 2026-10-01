@@ -740,19 +740,24 @@ with st.sidebar:
 if page == "自选股":
     st.subheader("我的自选股")
     with st.expander("➕ 添加股票", expanded=False):
-        c1, c2, c3 = st.columns([1, 1.4, 0.7])
-        new_ticker = c1.text_input("股票代码", placeholder="例如 AMZN / AMD / PLTR").upper().strip()
-        nickname = c2.text_input("备注（可选）", placeholder="例如：长期观察")
-        add_btn = c3.button("添加", type="primary", use_container_width=True)
-        if add_btn and new_ticker:
-            try:
-                add_watchlist(db, user_id, new_ticker, nickname)
-                st.success(f"已添加 {new_ticker}")
-                st.rerun()
-            except ValueError as e:
-                st.error(str(e))
-            except Exception as e:
-                st.error(public_db_error("insert", "watchlist", e, client=db))
+        with st.form("add_watchlist_form", clear_on_submit=False):
+            c1, c2, c3 = st.columns([1, 1.4, 0.7])
+            new_ticker = c1.text_input("股票代码", placeholder="例如 AMZN / AMD / PLTR").upper().strip()
+            nickname = c2.text_input("备注（可选）", placeholder="例如：长期观察")
+            c3.markdown("<div style='height:1.7rem'></div>", unsafe_allow_html=True)
+            add_btn = c3.form_submit_button("添加", type="primary", use_container_width=True)
+        if add_btn:
+            if not new_ticker:
+                st.error("请输入股票代码。")
+            else:
+                try:
+                    add_watchlist(db, user_id, new_ticker, nickname)
+                    st.success(f"已添加 {new_ticker}")
+                    st.rerun()
+                except ValueError as e:
+                    st.error(str(e))
+                except Exception as e:
+                    st.error(public_db_error("insert", "watchlist", e, client=db))
 
     try:
         watch = get_watchlist(db, user_id)
