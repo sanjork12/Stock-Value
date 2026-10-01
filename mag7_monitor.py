@@ -11,7 +11,6 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-import yfinance as yf
 
 APP_DIR = Path(__file__).resolve().parent
 SNAPSHOT_FILE = APP_DIR / "valuation_snapshots.json"
@@ -65,6 +64,18 @@ def fnum(x):
         return None
 
 
+def _yfinance():
+    """Import yfinance on first use so a Cloud wheel mismatch does not crash app boot."""
+    try:
+        import yfinance as yf
+    except ImportError as exc:
+        raise ImportError(
+            "yfinance failed to import. Use Python 3.12 on Streamlit Cloud and install "
+            "yfinance, curl_cffi, websockets, and lxml."
+        ) from exc
+    return yf
+
+
 def get_history(ticker: str, as_of: Optional[str]) -> pd.DataFrame:
     # Need enough history for 200d SMA + volume profile.
     if as_of:
@@ -72,7 +83,7 @@ def get_history(ticker: str, as_of: Optional[str]) -> pd.DataFrame:
     else:
         end_dt = pd.Timestamp.today(tz=None) + pd.Timedelta(days=1)
     start_dt = end_dt - pd.Timedelta(days=800)
-    df = yf.download(
+    df = _yfinance().download(
         ticker,
         start=start_dt.strftime("%Y-%m-%d"),
         end=end_dt.strftime("%Y-%m-%d"),
@@ -313,7 +324,7 @@ def _normalize_fcf(annual_rows: list[dict], ttm_fcf=None) -> dict:
 
 
 def get_live_fundamentals(ticker: str):
-    t = yf.Ticker(ticker)
+    t = _yfinance().Ticker(ticker)
     info = {}
     try:
         info = t.info or {}
