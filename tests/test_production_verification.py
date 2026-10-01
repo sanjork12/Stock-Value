@@ -185,10 +185,12 @@ class PresentationStaticTests(unittest.TestCase):
 
     def test_dashboard_and_single_share_analyze_one(self):
         src = _read("streamlit_app.py")
+        service = _read("analysis_service.py")
         self.assertGreaterEqual(src.count("analyze_one("), 2)
+        self.assertIn("return analyze_ticker(", src)
         self.assertIn("r = analyze_one(t, None, db, user_id)", src)
         self.assertIn("r = analyze_one(current, as_of, db, user_id)", src)
-        self.assertEqual(src.count("blend = valuate("), 1)
+        self.assertEqual(service.count("blend = valuate("), 1)
 
     def test_model_version_constant(self):
         self.assertEqual(MODEL_VERSION, "v4.1-reliability")

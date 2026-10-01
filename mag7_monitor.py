@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import math
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -11,6 +12,8 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger("stock_fair_value_monitor")
 
 APP_DIR = Path(__file__).resolve().parent
 SNAPSHOT_FILE = APP_DIR / "valuation_snapshots.json"
@@ -76,6 +79,39 @@ def _yfinance():
     return yf
 
 
+OHLCV_NAMES = {"open", "high", "low", "close", "adj close", "adj_close", "volume"}
+
+
+def flatten_yahoo_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize yfinance single-ticker frames so Close/High/Low/Volume always exist."""
+    if df is None or df.empty:
+        return df
+    out = df.copy()
+    if isinstance(out.columns, pd.MultiIndex):
+        chosen = None
+        for level in range(out.columns.nlevels):
+            labels = {str(v).strip().lower() for v in out.columns.get_level_values(level)}
+            if labels & OHLCV_NAMES:
+                out.columns = out.columns.get_level_values(level)
+                chosen = level
+                break
+        if chosen is None:
+            out.columns = [c[-1] if isinstance(c, tuple) else c for c in out.columns]
+    out.columns = [str(c).strip() for c in out.columns]
+    rename = {}
+    for col in out.columns:
+        key = col.lower().replace("_", " ")
+        if key == "adj close":
+            rename[col] = "Adj Close"
+        elif key in {"open", "high", "low", "close", "volume"}:
+            rename[col] = key.title()
+    if rename:
+        out = out.rename(columns=rename)
+    if "Close" not in out.columns:
+        raise RuntimeError(f"No Close column after flattening Yahoo bars: {list(out.columns)}")
+    return out
+
+
 def get_history(ticker: str, as_of: Optional[str]) -> pd.DataFrame:
     # Need enough history for 200d SMA + volume profile.
     if as_of:
@@ -83,19 +119,48 @@ def get_history(ticker: str, as_of: Optional[str]) -> pd.DataFrame:
     else:
         end_dt = pd.Timestamp.today(tz=None) + pd.Timedelta(days=1)
     start_dt = end_dt - pd.Timedelta(days=800)
-    df = _yfinance().download(
-        ticker,
-        start=start_dt.strftime("%Y-%m-%d"),
-        end=end_dt.strftime("%Y-%m-%d"),
-        auto_adjust=False,
-        progress=False,
-        actions=False,
-        threads=False,
-    )
-    if df.empty:
-        raise RuntimeError(f"No price data returned for {ticker}.")
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = [c[0] for c in df.columns]
+    start_s = start_dt.strftime("%Y-%m-%d")
+    end_s = end_dt.strftime("%Y-%m-%d")
+    last_error = None
+    df = None
+    try:
+        df = _yfinance().download(
+            ticker,
+            start=start_s,
+            end=end_s,
+            auto_adjust=False,
+            progress=False,
+            actions=False,
+            threads=False,
+            group_by="column",
+        )
+    except TypeError:
+        try:
+            df = _yfinance().download(
+                ticker,
+                start=start_s,
+                end=end_s,
+                auto_adjust=False,
+                progress=False,
+                actions=False,
+                threads=False,
+            )
+        except Exception as exc:
+            last_error = exc
+            logger.warning("history stage=download ticker=%s error_type=%s", ticker, type(exc).__name__)
+    except Exception as exc:
+        last_error = exc
+        logger.warning("history stage=download ticker=%s error_type=%s", ticker, type(exc).__name__)
+    if df is None or df.empty:
+        try:
+            df = _yfinance().Ticker(ticker).history(start=start_s, end=end_s, auto_adjust=False)
+        except Exception as exc:
+            last_error = exc
+            logger.warning("history stage=ticker.history ticker=%s error_type=%s", ticker, type(exc).__name__)
+    if df is None or df.empty:
+        detail = type(last_error).__name__ if last_error else "empty"
+        raise RuntimeError(f"No price data returned for {ticker} ({detail}).")
+    df = flatten_yahoo_ohlcv(df)
     return df.dropna(subset=["Close"])
 
 
@@ -323,13 +388,99 @@ def _normalize_fcf(annual_rows: list[dict], ttm_fcf=None) -> dict:
     }
 
 
-def get_live_fundamentals(ticker: str):
-    t = _yfinance().Ticker(ticker)
+def _fast_info_get(fast, *names):
+    for name in names:
+        try:
+            if isinstance(fast, dict):
+                value = fast.get(name)
+            else:
+                value = getattr(fast, name, None)
+        except Exception:
+            value = None
+        number = fnum(value)
+        if number is not None:
+            return number
+    return None
+
+
+def _merge_ticker_info(ticker: str, t) -> dict:
     info = {}
     try:
-        info = t.info or {}
-    except Exception:
-        info = {}
+        raw = t.get_info() if hasattr(t, "get_info") else None
+        if isinstance(raw, dict) and raw:
+            info.update(raw)
+    except Exception as exc:
+        logger.warning("fundamentals stage=get_info ticker=%s error_type=%s", ticker, type(exc).__name__)
+    if not info:
+        try:
+            raw = t.info or {}
+            if isinstance(raw, dict) and raw:
+                info.update(raw)
+        except Exception as exc:
+            logger.warning("fundamentals stage=info ticker=%s error_type=%s", ticker, type(exc).__name__)
+    try:
+        fast = t.fast_info if hasattr(t, "fast_info") else None
+        if fast is not None:
+            shares = _fast_info_get(fast, "shares", "sharesOutstanding")
+            if shares is not None and fnum(info.get("sharesOutstanding")) is None:
+                info["sharesOutstanding"] = shares
+            market_cap = _fast_info_get(fast, "market_cap", "marketCap")
+            if market_cap is not None and fnum(info.get("marketCap")) is None:
+                info["marketCap"] = market_cap
+            last = _fast_info_get(fast, "last_price", "lastPrice", "regularMarketPrice")
+            if last is not None and fnum(info.get("currentPrice")) is None:
+                info["currentPrice"] = last
+    except Exception as exc:
+        logger.warning("fundamentals stage=fast_info ticker=%s error_type=%s", ticker, type(exc).__name__)
+    return info
+
+
+def _forward_eps_from_estimates(ticker: str, t):
+    try:
+        getter = getattr(t, "get_earnings_estimate", None)
+        df = getter() if callable(getter) else None
+        if df is None or getattr(df, "empty", True):
+            return None
+        for idx in ("0y", "+1y", "0q", "+1q"):
+            if idx in df.index and "avg" in df.columns:
+                value = fnum(df.loc[idx, "avg"])
+                if value is not None and value > 0:
+                    return value
+        if "avg" in df.columns:
+            series = df["avg"].dropna()
+            if len(series):
+                value = fnum(series.iloc[0])
+                if value is not None and value > 0:
+                    return value
+    except Exception as exc:
+        logger.warning("fundamentals stage=earnings_estimate ticker=%s error_type=%s", ticker, type(exc).__name__)
+    return None
+
+
+def _load_statement(ticker: str, t, stage: str, attrs: tuple[str, ...], methods: tuple[str, ...]):
+    for attr in attrs:
+        try:
+            df = getattr(t, attr, None)
+            if df is not None and hasattr(df, "empty") and not df.empty:
+                return df
+        except Exception as exc:
+            logger.warning("fundamentals stage=%s ticker=%s error_type=%s", stage, ticker, type(exc).__name__)
+    for name in methods:
+        fn = getattr(t, name, None)
+        if not callable(fn):
+            continue
+        try:
+            df = fn()
+            if df is not None and hasattr(df, "empty") and not df.empty:
+                return df
+        except Exception as exc:
+            logger.warning("fundamentals stage=%s ticker=%s error_type=%s", stage, ticker, type(exc).__name__)
+    return None
+
+
+def get_live_fundamentals(ticker: str):
+    t = _yfinance().Ticker(ticker)
+    info = _merge_ticker_info(ticker, t)
 
     current = fnum(info.get("currentPrice") or info.get("regularMarketPrice"))
     forward_eps = fnum(info.get("forwardEps"))
@@ -358,15 +509,26 @@ def get_live_fundamentals(ticker: str):
     long_name = info.get("shortName") or info.get("longName")
 
     annual_rows = []
+    cashflow_df = _load_statement(
+        ticker, t, "cashflow",
+        ("cashflow", "cash_flow"),
+        ("get_cashflow", "get_cash_flow"),
+    )
     try:
-        annual_rows = _yearly_cashflows(t.cashflow)
-    except Exception:
+        if cashflow_df is not None:
+            annual_rows = _yearly_cashflows(cashflow_df)
+    except Exception as exc:
+        logger.warning("fundamentals stage=cashflow_parse ticker=%s error_type=%s", ticker, type(exc).__name__)
         annual_rows = []
 
     historical_eps = []
     historical_margins = []
+    inc = _load_statement(
+        ticker, t, "income_stmt",
+        ("income_stmt", "financials"),
+        ("get_income_stmt", "get_financials"),
+    )
     try:
-        inc = t.income_stmt
         if inc is not None and not inc.empty:
             for col in list(inc.columns)[:5]:
                 net_income = _cashflow_row(inc, ("Net Income", "Net Income Common Stockholders"), col)
@@ -390,9 +552,23 @@ def get_live_fundamentals(ticker: str):
                         "operating_income": operating_income,
                         "operating_margin": operating_income / revenue_row,
                     })
-    except Exception:
+    except Exception as exc:
+        logger.warning("fundamentals stage=income_parse ticker=%s error_type=%s", ticker, type(exc).__name__)
         historical_eps = []
         historical_margins = []
+
+    if shares is None and historical_eps:
+        shares = fnum(historical_eps[0].get("shares"))
+    if trailing_eps is None and historical_eps:
+        trailing_eps = fnum(historical_eps[0].get("eps"))
+    if forward_eps is None or forward_eps <= 0:
+        estimated = _forward_eps_from_estimates(ticker, t)
+        if estimated:
+            forward_eps = estimated
+    if tangible_bvps is None and nta and shares and shares > 0:
+        tangible_bvps = nta / shares
+    if not long_name:
+        long_name = ticker
 
     latest_annual = annual_rows[0] if annual_rows else {}
     normalized = _normalize_fcf(annual_rows, ttm_fcf=ttm_fcf)
@@ -402,6 +578,11 @@ def get_live_fundamentals(ticker: str):
         cash = 0.0
     if debt < 0:
         debt = 0.0
+    if fnum(normalized.get("value")) is None and fnum(forward_eps) is None and fnum(trailing_eps) is None:
+        logger.warning(
+            "fundamentals stage=empty ticker=%s error_type=EmptyFundamentals message=no eps/fcf after fallbacks",
+            ticker,
+        )
 
     return {
         "current_price": current,

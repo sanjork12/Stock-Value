@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import re
 from dataclasses import dataclass, field
@@ -19,6 +20,7 @@ from mag7_monitor import (
 MODEL_VERSION = "v4.1-reliability"
 TICKER_RE = re.compile(r"^[A-Z][A-Z0-9.\-]{0,9}$")
 COST_OF_EQUITY_DEFAULT = 0.10
+logger = logging.getLogger("stock_fair_value_monitor")
 
 CLASS_LABELS = {
     "mega_cap_tech": "Mega-Cap Tech",
@@ -1244,6 +1246,49 @@ def _usable(model: dict | None) -> bool:
     return bool(model) and model.get("applicable") is not False and structural_valid(model)
 
 
+def _canonical_blend(payload: dict) -> dict:
+    mid = payload.get("fair")
+    low = payload.get("fair_low")
+    high = payload.get("fair_high")
+    payload["blended_mid"] = mid
+    payload["blended_low"] = low
+    payload["blended_high"] = high
+    payload["fair_value"] = mid
+    payload["overall_confidence"] = payload.get("confidence")
+    payload["included_models"] = list(payload.get("included") or [])
+    payload["excluded_models"] = list(payload.get("excluded") or [])
+    check_valuation_invariants(payload, strict=False)
+    return payload
+
+
+def check_valuation_invariants(blend: dict | None, *, strict: bool = False) -> list[str]:
+    problems = []
+    blend = blend or {}
+    conf = str(blend.get("confidence") or blend.get("overall_confidence") or "").upper()
+    included = list(blend.get("included") or blend.get("included_models") or [])
+    mid = fnum(blend.get("blended_mid") if blend.get("blended_mid") is not None else blend.get("fair"))
+    score = (blend.get("reliability") or {}).get("reliability_score")
+    if score is None:
+        score = blend.get("reliability_score")
+    if score is not None and float(score) >= 40 and len(included) >= MIN_MODELS_FOR_BLEND and conf == "UNAVAILABLE":
+        problems.append("reliability_with_two_models_marked_unavailable")
+    if mid is not None and conf in {"UNAVAILABLE", "SPECIALIZED"}:
+        problems.append("blended_mid_incompatible_with_confidence")
+    if conf == "SPECIALIZED" and mid is not None:
+        problems.append("specialized_has_blended_mid")
+    if len(included) >= MIN_MODELS_FOR_BLEND and mid is None and conf not in {"SPECIALIZED"} and not blend.get("reason"):
+        problems.append("two_models_missing_blend_without_reason")
+    if fnum(blend.get("fair")) != fnum(blend.get("fair_value")) and not (
+        blend.get("fair") is None and blend.get("fair_value") is None
+    ):
+        problems.append("fair_alias_mismatch")
+    for item in problems:
+        logger.warning("valuation invariant ticker=%s issue=%s confidence=%s included=%s", blend.get("profile", {}).get("ticker") if isinstance(blend.get("profile"), dict) else None, item, conf, included)
+        if strict:
+            raise AssertionError(item)
+    return problems
+
+
 def valuate(ticker: str, financials: dict, volatility: float | None = None) -> dict:
     profile = build_profile(ticker, financials)
     spec = profile.spec
@@ -1256,7 +1301,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
         overall = "SPECIALIZED"
         unsupported = _not_applicable("unsupported", "specialized_valuation_required", "传统估值模型不适用，需要专项场景估值。")
         reliability = compute_reliability(profile, financials, {"unsupported": unsupported}, [], [{"name": "unsupported", "reason": "specialized_model_required"}], None, True)
-        return {
+        return _canonical_blend({
             "fair": None,
             "fair_low": None,
             "fair_high": None,
@@ -1278,7 +1323,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             "cycle": cycle,
             "volatility_1y": volatility,
             "view": primary_valuation_view({"confidence": overall}),
-        }
+        })
 
     for model_id in profile.preferred_models:
         models[model_id] = run_model(model_id, profile, financials)
@@ -1323,7 +1368,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
     confidence = reliability.overall_confidence
 
     if len(included) < MIN_MODELS_FOR_BLEND or weight_total <= 0:
-        return {
+        return _canonical_blend({
             "fair": None,
             "fair_low": None,
             "fair_high": None,
@@ -1346,12 +1391,12 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             "cycle": cycle,
             "volatility_1y": volatility,
             "view": primary_valuation_view({"confidence": "UNAVAILABLE"}),
-        }
+        })
 
     weights_used = {name: (weights.get(name) or 1.0) / weight_total for name in included}
     low, mid, high = _blend_range(usable_pairs, weights_used)
     if low is None or mid is None or high is None or not (low <= mid <= high):
-        return {
+        return _canonical_blend({
             "fair": None,
             "fair_low": None,
             "fair_high": None,
@@ -1374,7 +1419,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             "cycle": cycle,
             "volatility_1y": volatility,
             "view": primary_valuation_view({"confidence": "UNAVAILABLE"}),
-        }
+        })
 
     mos = margin_of_safety_profile(confidence, disp, volatility, profile.cyclicality, profile.valuation_class)
     zones = dynamic_buy_zones(mid, mos, low_confidence=(confidence == "LOW"))
@@ -1382,7 +1427,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
     if disp is not None and disp > 0.50:
         warnings.append("high_valuation_uncertainty")
     view = primary_valuation_view({"confidence": confidence, "fair": mid, "fair_low": low, "fair_high": high})
-    return {
+    return _canonical_blend({
         "fair": mid,
         "fair_low": low,
         "fair_high": high,
@@ -1405,7 +1450,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
         "cycle": cycle,
         "volatility_1y": volatility,
         "view": view,
-    }
+    })
 
 
 def reliability_from_snapshot(snap: dict | None) -> dict | None:
@@ -1500,6 +1545,13 @@ def reconstruct_blend_from_snapshot(snap: dict | None) -> dict | None:
     if not view_source.get("confidence") and fair is not None:
         view_source["confidence"] = "MEDIUM"
     blend["view"] = primary_valuation_view(view_source)
+    blend["blended_mid"] = fair
+    blend["blended_low"] = fair_low
+    blend["blended_high"] = fair_high
+    blend["fair_value"] = fair
+    blend["overall_confidence"] = conf
+    blend["included_models"] = included
+    blend["excluded_models"] = []
     return blend
 
 

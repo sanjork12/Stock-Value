@@ -10,23 +10,17 @@ from supabase import create_client, Client
 
 from mag7_monitor import (
     add_indicators,
-    annualized_volatility,
     get_history,
-    volume_profile_zone,
     get_live_fundamentals,
-    classify_price,
     fnum,
 )
+from analysis_service import analyze_ticker, format_fair_value
 from valuation_engine import (
     MODEL_DISPLAY_NAMES,
     MODEL_VERSION,
-    can_emit_buy_zones,
-    dynamic_buy_zones,
     is_legacy_snapshot,
     normalize_ticker,
     primary_valuation_view,
-    reconstruct_blend_from_snapshot,
-    valuate,
 )
 
 st.set_page_config(
@@ -133,15 +127,7 @@ def money_conf(x, confidence: str | None = None):
 
 
 def dashboard_fair_text(r: dict) -> str:
-    conf = str(r.get("confidence") or "").upper()
-    if conf in {"SPECIALIZED", "UNAVAILABLE"} or r.get("fair") is None:
-        return "—"
-    if conf == "LOW":
-        lo, hi = r.get("fair_low"), r.get("fair_high")
-        if lo is not None and hi is not None:
-            return f"{money_conf(lo, 'LOW')} – {money_conf(hi, 'LOW')}"
-        return money_conf(r.get("fair"), "LOW")
-    return money_conf(r.get("fair"), conf)
+    return format_fair_value(r)
 
 
 def pct(v):
@@ -664,126 +650,18 @@ def get_cloud_snapshot(sb: Client, user_id: str, ticker: str, as_of: str):
 
 
 def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_id: str | None = None):
-    ticker = normalize_ticker(ticker) or str(ticker).upper().strip()
-    df = history_cached(ticker, as_of)
-    row = df.iloc[-1]
-    price = float(row["Close"])
-    trade_date = pd.Timestamp(df.index[-1]).date().isoformat()
-    sma30 = fnum(row.get("SMA30"))
-    sma50 = fnum(row.get("SMA50"))
-    sma200 = fnum(row.get("SMA200"))
-    vp = volume_profile_zone(df)
+    def snapshot_loader(t: str, d: str):
+        if not sb or not user_id:
+            return None
+        return get_cloud_snapshot(sb, user_id, t, d)
 
-    historical = bool(as_of and pd.Timestamp(as_of).date() < date.today())
-    pe = dcf = growth = None
-    fair = None
-    note = ""
-    blend = None
-    financials = None
-    snap = None
-    snap_zones = None
-    snapshot_date = None
-    valuation_run_at = None if historical else datetime.now(timezone.utc).isoformat()
-
-    if historical:
-        snap = get_cloud_snapshot(sb, user_id, ticker, as_of) if sb and user_id else None
-        if snap:
-            blend = reconstruct_blend_from_snapshot(snap)
-            pe = snap.get("pe_model")
-            dcf = snap.get("dcf_model")
-            growth = snap.get("growth_model")
-            fair = snap.get("fair_value")
-            conf = str((blend or {}).get("confidence") or "").upper()
-            snapshot_date = snap.get("snapshot_date")
-            valuation_run_at = snap.get("created_at") or snap.get("updated_at")
-            if snap.get("first_low") is not None:
-                snap_zones = {
-                    "first": (snap.get("first_low"), snap.get("first_high")),
-                    "core": (snap.get("core_low"), snap.get("core_high")),
-                    "deep": (snap.get("deep_low"), snap.get("deep_high")),
-                    "low_confidence": conf == "LOW",
-                }
-            note = f"历史估值使用 {snap['snapshot_date']} 保存的云端估值快照，可靠性数据取当时结果。"
-            if is_legacy_snapshot(snap):
-                note += " 该历史快照创建于可靠性层之前，部分可靠性指标不可用。"
-        else:
-            note = "该日期没有历史估值快照，仅显示技术数据。"
-    else:
-        financials = fundamentals_cached(ticker)
-        vol = annualized_volatility(df)
-        blend = valuate(ticker, financials, volatility=vol)
-        models = blend.get("models") or {}
-        pe = models.get("forward_pe") or models.get("normalized_pe") or models.get("price_to_book_roe")
-        dcf = models.get("normalized_fcf_dcf") or models.get("residual_income")
-        growth = models.get("growth_adjusted_pe") or models.get("revenue_multiple")
-        fair = blend.get("fair")
-        class_label = (blend.get("profile") or {}).get("valuation_class_label") or "Generic"
-        if blend.get("specialized") or blend.get("confidence") in {"SPECIALIZED", "UNAVAILABLE"}:
-            note = f"估值类型：{class_label}。传统估值模型不适用，需要专项场景估值。"
-        else:
-            note = f"估值类型：{class_label}。使用 V4.1 reliability layer。"
-        if blend.get("excluded"):
-            note += " 部分模型已排除。"
-        if "high_valuation_uncertainty" in (blend.get("warnings") or []):
-            note += " High valuation uncertainty。"
-
-    if historical:
-        conf = str((blend or {}).get("confidence") or "").upper()
-        if snap_zones and snap_zones["first"][0] is not None and conf not in {"SPECIALIZED", "UNAVAILABLE"}:
-            zones = snap_zones
-        else:
-            zones = None
-    elif can_emit_buy_zones(blend) and blend.get("mos"):
-        zones = dynamic_buy_zones(
-            blend.get("fair"),
-            blend["mos"],
-            vp["mid"] if vp else None,
-            sma200,
-            low_confidence=str(blend.get("confidence")) == "LOW",
-        )
-        blend["zones"] = zones
-    else:
-        zones = None
-    display_name = (financials or {}).get("long_name") or NAMES.get(ticker, ticker)
-    reliability = (blend or {}).get("reliability") or {}
-
-    r = {
-        "ticker": ticker,
-        "name": display_name,
-        "date": trade_date,
-        "price": price,
-        "sma30": sma30,
-        "sma50": sma50,
-        "sma200": sma200,
-        "vp": vp,
-        "pe": pe,
-        "dcf": dcf,
-        "growth": growth,
-        "fair": fair,
-        "fair_low": (blend or {}).get("fair_low"),
-        "fair_high": (blend or {}).get("fair_high"),
-        "zones": zones,
-        "note": note,
-        "state": classify_price(price, fair) if fair else "技术面模式",
-        "history": df,
-        "blend": blend,
-        "financials": financials,
-        "financials_period": (financials or {}).get("fcf_period"),
-        "price_timestamp": trade_date,
-        "snapshot_date": snapshot_date,
-        "valuation_run_at": valuation_run_at,
-        "data_source": (financials or {}).get("data_source") or "Yahoo Finance / yfinance",
-        "valuation_class": (blend or {}).get("profile", {}).get("valuation_class") if blend else None,
-        "valuation_class_label": (blend or {}).get("profile", {}).get("valuation_class_label") if blend else None,
-        "confidence": (blend or {}).get("confidence"),
-        "model_version": (blend or {}).get("model_version") if historical else ((blend or {}).get("model_version") or MODEL_VERSION),
-        "reliability_score": reliability.get("reliability_score"),
-        "dispersion_pct": reliability.get("dispersion_pct") if reliability.get("dispersion_pct") is not None else (blend or {}).get("dispersion"),
-        "volatility_1y": (blend or {}).get("volatility_1y"),
-        "cycle": (blend or {}).get("cycle"),
-    }
-    r["recommendation"] = recommendation_label(r)
-    return r
+    return analyze_ticker(
+        ticker,
+        as_of,
+        history_loader=history_cached,
+        fundamentals_loader=fundamentals_cached,
+        snapshot_loader=snapshot_loader,
+    )
 
 
 def save_snapshot(sb: Client, user_id: str, r: dict):
@@ -1191,7 +1069,16 @@ if page == "自选股":
         t = item["ticker"]
         try:
             r = analyze_one(t, None, db, user_id)
-            if auto_save:
+            if r.get("price") is None:
+                rows.append({
+                    "股票": t,
+                    "备注": item.get("nickname") or "",
+                    "状态": "数据不足",
+                    "错误": r.get("analysis_error") or "行情数据暂时获取失败",
+                    "_core_gap": float("inf"),
+                })
+                continue
+            if auto_save and r.get("fair") is not None:
                 save_snapshot(db, user_id, r)
             rows.append({
                 "股票": t,
@@ -1395,7 +1282,11 @@ elif page == "单股分析":
     r = st.session_state.get("last_analysis")
 
     if r:
-        st.markdown(f"### {r['ticker']} · {r['name']} — {r['date']}")
+        if r.get("analysis_error") and r.get("price") is None:
+            st.error(r["analysis_error"])
+        elif r.get("errors"):
+            st.warning("部分数据源失败，已保留可用的价格/估值结果。")
+        st.markdown(f"### {r['ticker']} · {r['name']} — {r.get('date') or '—'}")
         if (r.get("blend") or {}).get("legacy"):
             st.info("该历史快照创建于可靠性层之前，部分可靠性指标不可用。")
         meta1, meta2, meta3 = st.columns(3)
