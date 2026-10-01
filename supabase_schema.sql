@@ -159,3 +159,9 @@ using (auth.uid() = user_id);
 
 create index if not exists idx_watchlist_user on public.watchlist(user_id);
 create index if not exists idx_snapshot_user_ticker_date on public.valuation_snapshots(user_id, ticker, snapshot_date desc);
+
+-- V4 sector-aware snapshot fields. Safe to re-run. Legacy rows keep NULL model_version.
+alter table public.valuation_snapshots add column if not exists valuation_class text;
+alter table public.valuation_snapshots add column if not exists confidence text;
+alter table public.valuation_snapshots add column if not exists models_json jsonb;
+alter table public.valuation_snapshots add column if not exists model_version text;

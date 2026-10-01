@@ -9,18 +9,20 @@ import extra_streamlit_components as stx
 from supabase import create_client, Client
 
 from mag7_monitor import (
-    MAG7,
     add_indicators,
     get_history,
     volume_profile_zone,
     get_live_fundamentals,
-    pe_model,
-    dcf_model,
-    growth_model,
-    blend_models,
     buy_zones,
     classify_price,
     fnum,
+)
+from valuation_engine import (
+    CLASS_LABELS,
+    MODEL_VERSION,
+    can_emit_buy_zones,
+    normalize_ticker,
+    valuate,
 )
 
 st.set_page_config(
@@ -70,10 +72,23 @@ NAMES = {
     "AAPL": "Apple",
     "MSFT": "Microsoft",
     "GOOGL": "Alphabet",
+    "GOOG": "Alphabet",
     "AMZN": "Amazon",
     "NVDA": "Nvidia",
     "META": "Meta",
     "TSLA": "Tesla",
+    "AVGO": "Broadcom",
+    "MU": "Micron",
+    "JPM": "JPMorgan",
+    "PLTR": "Palantir",
+    "COIN": "Coinbase",
+    "BMNR": "BitMine",
+    "TEM": "Tempus AI",
+    "SPCX": "SPCX",
+    "UBER": "Uber",
+    "NFLX": "Netflix",
+    "BABA": "Alibaba",
+    "ORCL": "Oracle",
 }
 
 STATUS_META = {
@@ -83,6 +98,7 @@ STATUS_META = {
     "接近第一批区": ("#E0F2FE", "#075985", "🔵"),
     "观察 / 等回调": ("#F3F4F6", "#4B5563", "⚪"),
     "仅技术观察": ("#F3F4F6", "#4B5563", "⚪"),
+    "低于深度价值区": ("#BBF7D0", "#14532D", "🟢"),
     "数据不足": ("#FEE2E2", "#991B1B", "🔴"),
 }
 
@@ -361,12 +377,52 @@ def zone_text(zone):
     return f"{money(zone[0])} – {money(zone[1])}"
 
 
-MODEL_LABELS = {"pe": "P/E", "dcf": "DCF", "growth": "Growth / PEG"}
+def core_zone_gap(price, zones):
+    if not zones or price is None:
+        return float("inf")
+    core = zones.get("core") or (None, None)
+    lo, hi = core
+    if lo is None or hi is None:
+        return float("inf")
+    if lo <= price <= hi:
+        return 0.0
+    if price < lo:
+        return lo - price
+    return price - hi
+
+
+def query_ticker_param():
+    try:
+        raw = st.query_params.get("ticker")
+    except Exception:
+        return None
+    if isinstance(raw, (list, tuple)):
+        raw = raw[0] if raw else None
+    return normalize_ticker(raw)
+
+
+MODEL_LABELS = {
+    "pe": "P/E",
+    "dcf": "DCF",
+    "growth": "Growth / PEG",
+    "forward_pe": "Forward P/E",
+    "normalized_pe": "Normalized P/E",
+    "growth_adjusted_pe": "Growth-adjusted P/E",
+    "normalized_fcf_dcf": "Normalized FCF DCF",
+    "price_to_book_roe": "P/B × ROE",
+    "residual_income": "Residual Income",
+    "ev_ebitda": "EV/EBITDA",
+    "revenue_multiple": "Revenue Multiple",
+    "normalized_cycle_earnings": "Cycle-normalized Earnings",
+    "unsupported": "Unsupported / specialized",
+}
 
 
 def model_status_text(obj) -> str:
     if not obj:
         return "无数据"
+    if obj.get("applicable") is False:
+        return "不适用"
     if obj.get("outlier"):
         return "⚠ 偏离过大，已排除"
     if obj.get("valid") is False:
@@ -376,63 +432,39 @@ def model_status_text(obj) -> str:
     return "无数据"
 
 
-def money_full(x):
-    if x is None:
-        return "—"
-    try:
-        v = float(x)
-        if abs(v) >= 1e9:
-            return f"${v/1e9:,.2f}B"
-        if abs(v) >= 1e6:
-            return f"${v/1e6:,.2f}M"
-        return f"${v:,.2f}"
-    except Exception:
-        return "—"
-
-
 def render_valuation_diagnostics(r: dict):
     f = r.get("financials") or {}
-    pe = r.get("pe") or {}
-    dcf = r.get("dcf") or {}
-    growth = r.get("growth") or {}
-    dcf_in = dcf.get("inputs") or {}
-    pe_in = pe.get("inputs") or {}
-    gr_in = growth.get("inputs") or {}
+    blend = r.get("blend") or {}
+    profile = blend.get("profile") or {}
     st.caption(
         f"数据来源：{r.get('data_source') or 'Yahoo Finance / yfinance'}　"
         f"财务数据期间：{f.get('fcf_period') or '—'}　"
         f"价格日期：{r.get('date') or '—'}　"
-        f"估值计算时间：{r.get('valuation_run_at') or '—'}"
+        f"估值计算时间：{r.get('valuation_run_at') or '—'}　"
+        f"模型版本：{r.get('model_version') or '—'}"
     )
     with st.expander("估值诊断"):
-        st.markdown(
-            f"""
-**P/E**
-- Forward EPS: {money(pe_in.get('forward_eps') or f.get('forward_eps'))}
-- PE range: {pe_in.get('pe_low')} – {pe_in.get('pe_high')}
-- Result: {model_status_text(pe)} {money(pe.get('mid'))}
-
-**DCF**
-- OCF: {money_full(dcf_in.get('operating_cash_flow') or f.get('operating_cash_flow'))}
-- Raw CapEx: {money_full(dcf_in.get('capital_expenditure_raw') or f.get('capital_expenditure_raw'))}
-- Normalized CapEx: {money_full(dcf_in.get('capital_expenditure') or f.get('capital_expenditure'))}
-- Normalized FCF: {money_full(dcf_in.get('normalized_fcf') or f.get('fcf'))} ({f.get('fcf_method') or '—'})
-- Yahoo TTM FCF: {money_full(f.get('fcf_ttm_info'))}
-- Cash: {money_full(dcf_in.get('cash') or f.get('cash'))}
-- Debt: {money_full(dcf_in.get('debt') or f.get('debt'))}
-- Shares: {f.get('shares')}
-- Discount rate: {dcf_in.get('discount_rate')}
-- Terminal growth: {dcf_in.get('terminal_growth')}
-- DCF status: {model_status_text(dcf)} ({dcf.get('reason') or 'ok'}) {money(dcf.get('mid'))}
-
-**Growth**
-- Forward EPS: {money(gr_in.get('forward_eps') or f.get('forward_eps'))}
-- Growth assumption: {gr_in.get('growth_used')}
-- PEG target: {gr_in.get('peg_target')}
-- Fair PE: {gr_in.get('fair_pe')}
-- Result: {model_status_text(growth)} {money(growth.get('mid'))}
-            """.strip()
-        )
+        lines = [
+            f"**估值类型**: {profile.get('valuation_class_label') or r.get('valuation_class_label') or '—'}",
+            f"**置信度**: {r.get('confidence') or '—'}",
+            f"**行业**: {f.get('sector') or '—'} / {f.get('industry') or '—'}",
+        ]
+        if blend.get("warnings"):
+            if "high_valuation_uncertainty" in blend["warnings"]:
+                lines.append("**High valuation uncertainty**: 模型分歧超过 60%。")
+            lines.append("警告：" + ", ".join(blend["warnings"]))
+        model_list = blend.get("model_list") or list((blend.get("models") or {}).values())
+        if not model_list:
+            model_list = [obj for obj in (r.get("pe"), r.get("dcf"), r.get("growth")) if obj]
+        for obj in model_list:
+            inputs = obj.get("inputs") or {}
+            lines.append(f"**{obj.get('name') or obj.get('model_id')}**")
+            lines.append(f"- 状态: {model_status_text(obj)} {money(obj.get('mid'))}")
+            if obj.get("reason"):
+                lines.append(f"- reason: {obj.get('reason')}")
+            for key, value in list(inputs.items())[:8]:
+                lines.append(f"- {key}: {value}")
+        st.markdown("\n".join(lines))
 
 
 def blend_caption(blend) -> str:
@@ -445,29 +477,44 @@ def blend_caption(blend) -> str:
         parts.append("综合基于：" + " + ".join(included))
     if excluded:
         parts.append("排除：" + "、".join(excluded))
-    if blend.get("insufficient_models"):
+    if blend.get("specialized"):
+        parts.append("需要专项估值模型")
+    elif blend.get("insufficient_models"):
         parts.append("有效估值模型不足")
+    if "high_valuation_uncertainty" in (blend.get("warnings") or []):
+        parts.append("High valuation uncertainty")
     return "　".join(parts)
 
 
 def recommendation_label(r):
-    z = r.get("zones")
-    p = r.get("price")
-    if not z or p is None:
+    conf = str((r.get("blend") or {}).get("confidence") or r.get("confidence") or "").upper()
+    if conf in {"SPECIALIZED", "UNAVAILABLE"} or not r.get("zones") or r.get("price") is None:
         return "仅技术观察"
-    if p <= z["deep"][1]:
-        return "深度价值区"
-    if p <= z["core"][1]:
-        return "核心买入区"
-    if p <= z["first"][1]:
-        return "第一批区"
-    if p <= z["first"][1] * 1.05:
-        return "接近第一批区"
-    return "观察 / 等回调"
+    z = r["zones"]
+    p = r["price"]
+    deep = z.get("deep") or (None, None)
+    core = z.get("core") or (None, None)
+    first = z.get("first") or (None, None)
+    if deep[0] is not None and p < deep[0]:
+        label = "低于深度价值区"
+    elif deep[0] is not None and deep[1] is not None and deep[0] <= p <= deep[1]:
+        label = "深度价值区"
+    elif core[0] is not None and core[1] is not None and core[0] <= p <= core[1]:
+        label = "核心买入区"
+    elif first[0] is not None and first[1] is not None and first[0] <= p <= first[1]:
+        label = "第一批区"
+    elif first[1] is not None and p <= first[1] * 1.05:
+        label = "接近第一批区"
+    else:
+        label = "观察 / 等回调"
+    if conf == "LOW":
+        return f"{label}（低置信度）"
+    return label
 
 
 def status_badge(label: str):
-    bg, fg, icon = STATUS_META.get(label, ("#F3F4F6", "#4B5563", "⚪"))
+    base = str(label).replace("（低置信度）", "")
+    bg, fg, icon = STATUS_META.get(base, ("#F3F4F6", "#4B5563", "⚪"))
     st.markdown(
         f'<span style="background:{bg};color:{fg};padding:0.35rem 0.7rem;border-radius:999px;font-weight:700">{icon} {label}</span>',
         unsafe_allow_html=True,
@@ -475,7 +522,8 @@ def status_badge(label: str):
 
 
 def style_status(v):
-    bg, fg, _ = STATUS_META.get(str(v), ("#FFFFFF", "#111827", ""))
+    base = str(v).replace("（低置信度）", "")
+    bg, fg, _ = STATUS_META.get(base, ("#FFFFFF", "#111827", ""))
     return f"background-color:{bg}; color:{fg}; font-weight:700"
 
 
@@ -501,7 +549,7 @@ def get_cloud_snapshot(sb: Client, user_id: str, ticker: str, as_of: str):
 
 
 def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_id: str | None = None):
-    ticker = ticker.upper().strip()
+    ticker = normalize_ticker(ticker) or str(ticker).upper().strip()
     df = history_cached(ticker, as_of)
     row = df.iloc[-1]
     price = float(row["Close"])
@@ -517,53 +565,88 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
     note = ""
     blend = None
     financials = None
+    snap = None
+    snap_zones = None
     valuation_run_at = datetime.now(timezone.utc).isoformat()
 
     if historical:
         snap = get_cloud_snapshot(sb, user_id, ticker, as_of) if sb and user_id else None
         if snap:
+            raw = snap.get("raw") if isinstance(snap.get("raw"), dict) else {}
             pe = snap.get("pe_model")
             dcf = snap.get("dcf_model")
             growth = snap.get("growth_model")
             fair = snap.get("fair_value")
+            vclass = snap.get("valuation_class") or raw.get("valuation_class")
+            models_json = snap.get("models_json") or raw.get("models_json") or {}
+            if isinstance(models_json, dict):
+                model_list = list(models_json.values())
+                included = list(models_json.keys())
+            elif isinstance(models_json, list):
+                model_list = models_json
+                included = [obj.get("model_id") or obj.get("name") for obj in model_list if obj]
+            else:
+                model_list = [obj for obj in (pe, dcf, growth) if obj]
+                included = []
+            conf = (snap.get("confidence") or raw.get("confidence") or "MEDIUM")
+            if isinstance(conf, str):
+                conf = conf.upper()
+            blend = {
+                "fair": fair,
+                "confidence": conf,
+                "profile": {
+                    "valuation_class": vclass,
+                    "valuation_class_label": CLASS_LABELS.get(vclass, vclass),
+                },
+                "models": models_json if isinstance(models_json, dict) else {},
+                "model_list": model_list,
+                "model_version": snap.get("model_version") or raw.get("model_version") or "legacy",
+                "insufficient_models": fair is None,
+                "specialized": conf == "SPECIALIZED",
+                "included": included,
+            }
+            if snap.get("first_low") is not None:
+                snap_zones = {
+                    "first": (snap.get("first_low"), snap.get("first_high")),
+                    "core": (snap.get("core_low"), snap.get("core_high")),
+                    "deep": (snap.get("deep_low"), snap.get("deep_high")),
+                }
             note = f"历史估值使用 {snap['snapshot_date']} 保存的云端估值快照。"
         else:
-            note = "该日期之前没有云端估值快照，因此只显示当时技术面，避免用今天的盈利预期倒推过去。"
+            note = "该日期没有历史估值快照，仅显示技术数据。"
     else:
         financials = fundamentals_cached(ticker)
-        pe = pe_model(ticker, financials.get("forward_eps"))
-        dcf = dcf_model(
-            ticker,
-            financials.get("fcf"),
-            financials.get("shares"),
-            financials.get("cash"),
-            financials.get("debt"),
-            extras={
-                "market_cap": financials.get("market_cap"),
-                "warnings": financials.get("warnings") or [],
-                "fcf_method": financials.get("fcf_method"),
-                "fcf_period": financials.get("fcf_period"),
-                "operating_cash_flow": financials.get("operating_cash_flow"),
-                "capital_expenditure_raw": financials.get("capital_expenditure_raw"),
-                "capital_expenditure": financials.get("capital_expenditure"),
-            },
-        )
-        growth = growth_model(ticker, financials.get("forward_eps"), financials.get("earnings_growth"))
-        blend = blend_models(pe, dcf, growth)
-        pe, dcf, growth = blend["models"]["pe"], blend["models"]["dcf"], blend["models"]["growth"]
+        blend = valuate(ticker, financials)
+        models = blend.get("models") or {}
+        pe = models.get("forward_pe") or models.get("normalized_pe") or models.get("price_to_book_roe")
+        dcf = models.get("normalized_fcf_dcf") or models.get("residual_income")
+        growth = models.get("growth_adjusted_pe") or models.get("revenue_multiple")
         fair = blend.get("fair")
-        if ticker in MAG7:
-            note = "最新估值使用七巨头专用假设 + 当前公开基本面数据。"
+        class_label = (blend.get("profile") or {}).get("valuation_class_label") or "Generic"
+        if blend.get("specialized") or blend.get("confidence") in {"SPECIALIZED", "UNAVAILABLE"}:
+            note = f"估值类型：{class_label}。需要专项估值模型，暂不给出综合公允价值。"
         else:
-            note = "自定义股票使用通用估值假设；建议后续为重要持仓配置专属估值参数。"
+            note = f"估值类型：{class_label}。使用 V4 sector-aware 模型组合。"
         if blend.get("excluded"):
-            note += " 部分模型因数据异常或偏离过大未参与综合估值。"
+            note += " 部分模型已排除。"
+        if "high_valuation_uncertainty" in (blend.get("warnings") or []):
+            note += " High valuation uncertainty。"
 
-    zones = buy_zones(fair, vp["mid"] if vp else None, sma200) if fair and not (blend or {}).get("insufficient_models") else None
+    if historical:
+        conf = str((blend or {}).get("confidence") or "").upper()
+        if snap_zones and snap_zones["first"][0] is not None and conf not in {"SPECIALIZED", "UNAVAILABLE"}:
+            zones = snap_zones
+        elif fair and conf not in {"SPECIALIZED", "UNAVAILABLE"}:
+            zones = buy_zones(fair, vp["mid"] if vp else None, sma200)
+        else:
+            zones = None
+    else:
+        zones = buy_zones(fair, vp["mid"] if vp else None, sma200) if can_emit_buy_zones(blend) else None
+    display_name = (financials or {}).get("long_name") or NAMES.get(ticker, ticker)
 
     r = {
         "ticker": ticker,
-        "name": NAMES.get(ticker, ticker),
+        "name": display_name,
         "date": trade_date,
         "price": price,
         "sma30": sma30,
@@ -582,6 +665,10 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
         "financials": financials,
         "valuation_run_at": valuation_run_at,
         "data_source": (financials or {}).get("data_source") or "Yahoo Finance / yfinance",
+        "valuation_class": (blend or {}).get("profile", {}).get("valuation_class") if blend else None,
+        "valuation_class_label": (blend or {}).get("profile", {}).get("valuation_class_label") if blend else None,
+        "confidence": (blend or {}).get("confidence"),
+        "model_version": (blend or {}).get("model_version") or MODEL_VERSION,
     }
     r["recommendation"] = recommendation_label(r)
     return r
@@ -612,25 +699,53 @@ def save_snapshot(sb: Client, user_id: str, r: dict):
         "deep_low": z.get("deep", [None, None])[0] if z else None,
         "deep_high": z.get("deep", [None, None])[1] if z else None,
         "status": r.get("recommendation"),
-        "raw": {"note": r.get("note")},
+        "raw": {
+            "note": r.get("note"),
+            "valuation_class": r.get("valuation_class"),
+            "confidence": r.get("confidence"),
+            "models_json": (r.get("blend") or {}).get("models"),
+            "model_version": r.get("model_version") or MODEL_VERSION,
+            "weights_used": (r.get("blend") or {}).get("weights_used"),
+        },
     }
-    sb.table("valuation_snapshots").upsert(
-        payload, on_conflict="user_id,ticker,snapshot_date"
-    ).execute()
+    extra = {
+        "valuation_class": r.get("valuation_class"),
+        "confidence": r.get("confidence"),
+        "models_json": (r.get("blend") or {}).get("models"),
+        "model_version": r.get("model_version") or MODEL_VERSION,
+    }
+    try:
+        sb.table("valuation_snapshots").upsert(
+            {**payload, **extra}, on_conflict="user_id,ticker,snapshot_date"
+        ).execute()
+    except Exception:
+        sb.table("valuation_snapshots").upsert(
+            payload, on_conflict="user_id,ticker,snapshot_date"
+        ).execute()
 
 
 def list_snapshots(sb: Client, user_id: str, ticker: str):
     current_user_id = assert_live_session(sb, user_id)
-    res = (
-        sb.table("valuation_snapshots")
-        .select(
-            "snapshot_date,price,fair_value,sma30,sma50,sma200,first_low,first_high,core_low,core_high,deep_low,deep_high,status"
+    columns = "snapshot_date,price,fair_value,sma30,sma50,sma200,first_low,first_high,core_low,core_high,deep_low,deep_high,status,valuation_class,confidence,model_version"
+    legacy = "snapshot_date,price,fair_value,sma30,sma50,sma200,first_low,first_high,core_low,core_high,deep_low,deep_high,status"
+    try:
+        res = (
+            sb.table("valuation_snapshots")
+            .select(columns)
+            .eq("user_id", current_user_id)
+            .eq("ticker", ticker)
+            .order("snapshot_date", desc=True)
+            .execute()
         )
-        .eq("user_id", current_user_id)
-        .eq("ticker", ticker)
-        .order("snapshot_date", desc=True)
-        .execute()
-    )
+    except Exception:
+        res = (
+            sb.table("valuation_snapshots")
+            .select(legacy)
+            .eq("user_id", current_user_id)
+            .eq("ticker", ticker)
+            .order("snapshot_date", desc=True)
+            .execute()
+        )
     return res.data or []
 
 
@@ -648,7 +763,9 @@ def get_watchlist(sb: Client, user_id: str):
 
 def add_watchlist(sb: Client, user_id: str, ticker: str, nickname: str = ""):
     current_user_id = assert_live_session(sb, user_id)
-    ticker = ticker.upper().strip()
+    ticker = normalize_ticker(ticker)
+    if not ticker:
+        raise ValueError("股票代码格式不正确")
     try:
         history_cached(ticker, None)
     except Exception as exc:
@@ -874,7 +991,7 @@ if not st.session_state.get("_profile_ensured"):
 header_left, header_right = st.columns([12, 1], vertical_alignment="center")
 with header_left:
     st.title("📈 Stock Fair Value Monitor")
-    st.caption("自选股数据库 + 三模型公允价值 + SMA30/50/200 + 成交密集区 + 分层买入区")
+    st.caption("自选股数据库 + Sector-aware 公允价值 + SMA30/50/200 + 成交密集区 + 分层买入区")
 with header_right:
     avatar = (user_email[:1] if user_email else "U").upper()
     with st.popover(avatar, help=user_email or "账户"):
@@ -888,6 +1005,15 @@ with header_right:
             _delete_remember_cookie(cookie_manager, "logout_delete_cookie")
             clear_auth_session()
             st.rerun()
+
+if "nav_initialized" not in st.session_state:
+    qp_boot = query_ticker_param()
+    if qp_boot:
+        st.session_state.nav_page = "单股分析"
+        st.session_state.selected_ticker = qp_boot
+        st.session_state.watch_select = qp_boot
+        st.session_state._last_watch_select = qp_boot
+    st.session_state.nav_initialized = True
 
 if hasattr(st, "segmented_control"):
     page = st.segmented_control(
@@ -906,17 +1032,18 @@ if page == "自选股":
     with st.expander("➕ 添加股票", expanded=False):
         with st.form("add_watchlist_form", clear_on_submit=False):
             c1, c2, c3 = st.columns([1, 1.4, 0.7])
-            new_ticker = c1.text_input("股票代码", placeholder="例如 AMZN / AMD / PLTR").upper().strip()
+            new_ticker = c1.text_input("股票代码", placeholder="例如 AMZN / AMD / PLTR")
             nickname = c2.text_input("备注（可选）", placeholder="例如：长期观察")
             c3.markdown("<div style='height:1.7rem'></div>", unsafe_allow_html=True)
             add_btn = c3.form_submit_button("添加", type="primary", use_container_width=True)
         if add_btn:
-            if not new_ticker:
-                st.error("请输入股票代码。")
+            parsed = normalize_ticker(new_ticker)
+            if not parsed:
+                st.error("股票代码格式不正确。仅允许字母、数字、. 和 -。")
             else:
                 try:
-                    add_watchlist(db, user_id, new_ticker, nickname)
-                    st.success(f"已添加 {new_ticker}")
+                    add_watchlist(db, user_id, parsed, nickname)
+                    st.success(f"已添加 {parsed}")
                     st.rerun()
                 except ValueError as e:
                     st.error(str(e))
@@ -948,12 +1075,15 @@ if page == "自选股":
                 "SMA30": r["sma30"],
                 "SMA50": r["sma50"],
                 "SMA200": r["sma200"],
+                "估值类型": r.get("valuation_class_label") or "—",
                 "公允价值": r["fair"],
+                "置信度": r.get("confidence") or "—",
                 "距公允价值%": delta_pct(r["price"], r["fair"]),
                 "第一批区": zone_text(r["zones"]["first"]) if r["zones"] else "—",
                 "核心买入区": zone_text(r["zones"]["core"]) if r["zones"] else "—",
                 "深度价值区": zone_text(r["zones"]["deep"]) if r["zones"] else "—",
                 "状态": r["recommendation"],
+                "_core_gap": core_zone_gap(r["price"], r.get("zones")),
             })
         except Exception as e:
             err_text = (
@@ -961,11 +1091,20 @@ if page == "自选股":
                 if is_rls_or_auth_error(e)
                 else "数据不足"
             )
-            rows.append({"股票": t, "备注": item.get("nickname") or "", "状态": "数据不足", "错误": err_text})
+            rows.append({"股票": t, "备注": item.get("nickname") or "", "状态": "数据不足", "错误": err_text, "_core_gap": float("inf")})
         progress.progress(i / len(watch), text=f"正在更新 {i}/{len(watch)}")
     progress.empty()
 
     df = pd.DataFrame(rows)
+    sort_opt = st.selectbox("排序", ["ticker", "状态", "距离核心买入区"], key="dash_sort")
+    if "_core_gap" in df.columns:
+        if sort_opt == "ticker":
+            df = df.sort_values("股票", kind="stable")
+        elif sort_opt == "状态":
+            df = df.sort_values("状态", kind="stable")
+        else:
+            df = df.sort_values("_core_gap", kind="stable")
+        df = df.drop(columns=["_core_gap"])
     styled = df.style.map(style_status, subset=["状态"])
     st.dataframe(
         styled,
@@ -982,10 +1121,22 @@ if page == "自选股":
     )
 
     st.markdown("#### 颜色说明")
-    cols = st.columns(5)
-    for col, label in zip(cols, ["深度价值区", "核心买入区", "第一批区", "接近第一批区", "观察 / 等回调"]):
+    cols = st.columns(6)
+    for col, label in zip(cols, ["低于深度价值区", "深度价值区", "核心买入区", "第一批区", "观察 / 等回调", "仅技术观察"]):
         with col:
             status_badge(label)
+
+    jump = st.selectbox("在单股分析中打开", [x["ticker"] for x in watch], key="dashboard_jump_ticker")
+    if st.button("打开单股分析", type="primary"):
+        st.session_state.selected_ticker = jump
+        st.session_state.watch_select = jump
+        st.session_state._last_watch_select = jump
+        st.session_state.nav_page = "单股分析"
+        try:
+            st.query_params["ticker"] = jump
+        except Exception:
+            pass
+        st.rerun()
 
     with st.expander("管理自选股"):
         to_remove = st.selectbox("选择要删除的股票", [x["ticker"] for x in watch])
@@ -1014,20 +1165,111 @@ elif page == "单股分析":
     except Exception as e:
         st.error(public_db_error("select", "watchlist", e, client=db))
         st.stop()
-    default_options = [x["ticker"] for x in watch] or sorted(MAG7)
-    c1, c2 = st.columns([1, 1])
-    ticker = c1.text_input("股票代码", value=default_options[0] if default_options else "AMZN").upper().strip()
-    use_latest = c2.checkbox("使用最新交易日", value=True)
-    chosen_date = st.date_input("历史日期", value=date.today(), disabled=use_latest)
-    if st.button("开始分析", type="primary"):
-        as_of = None if use_latest else chosen_date.isoformat()
-        with st.spinner(f"正在分析 {ticker}…"):
-            r = analyze_one(ticker, as_of, db, user_id)
-        st.session_state.last_analysis = r
+    watch_tickers = [x["ticker"] for x in watch]
 
+    qp_ticker = query_ticker_param()
+    if qp_ticker and st.session_state.get("selected_ticker") != qp_ticker:
+        st.session_state.selected_ticker = qp_ticker
+        if qp_ticker in watch_tickers:
+            st.session_state.watch_select = qp_ticker
+            st.session_state._last_watch_select = qp_ticker
+
+    if not st.session_state.get("selected_ticker"):
+        st.session_state.selected_ticker = watch_tickers[0] if watch_tickers else None
+
+    current = normalize_ticker(st.session_state.get("selected_ticker"))
+    in_watch = bool(current and current in watch_tickers)
+    idx = watch_tickers.index(current) if in_watch else None
+
+    def _select_ticker(ticker: str):
+        st.session_state.selected_ticker = ticker
+        if ticker in watch_tickers:
+            st.session_state.watch_select = ticker
+            st.session_state._last_watch_select = ticker
+        try:
+            st.query_params["ticker"] = ticker
+        except Exception:
+            pass
+
+    nav_l, nav_m, nav_r = st.columns([1, 2.4, 1])
+    with nav_l:
+        prev_disabled = (not in_watch) or idx == 0
+        if st.button("← 上一只", disabled=prev_disabled, use_container_width=True):
+            _select_ticker(watch_tickers[idx - 1])
+            st.rerun()
+    with nav_m:
+        title = current or "未选择股票"
+        name = NAMES.get(current or "", current or "")
+        st.markdown(f"<div style='text-align:center;font-size:1.4rem;font-weight:800'>{title} · {name}</div>", unsafe_allow_html=True)
+        if not in_watch and current:
+            st.caption("当前股票不在自选股序列，左右切换已停用。")
+    with nav_r:
+        next_disabled = (not in_watch) or idx == len(watch_tickers) - 1
+        if st.button("下一只 →", disabled=next_disabled, use_container_width=True):
+            _select_ticker(watch_tickers[idx + 1])
+            st.rerun()
+
+    pick_c, other_c, add_c = st.columns([1.1, 1.4, 1])
+    with pick_c:
+        if watch_tickers:
+            last = st.session_state.get("_last_watch_select")
+            if "watch_select" not in st.session_state:
+                st.session_state.watch_select = current if in_watch else watch_tickers[0]
+            chosen = st.selectbox("自选股", watch_tickers, key="watch_select")
+            if last is None:
+                st.session_state._last_watch_select = chosen
+            elif chosen != last:
+                st.session_state._last_watch_select = chosen
+                _select_ticker(chosen)
+                st.rerun()
+        else:
+            st.info("自选股为空，请在下方输入代码分析。")
+    with other_c:
+        with st.form("manual_ticker_form", clear_on_submit=False):
+            typed = st.text_input("分析其他股票", placeholder="例如 AMD")
+            analyze_btn = st.form_submit_button("分析", type="primary")
+        if analyze_btn:
+            parsed = normalize_ticker(typed)
+            if not parsed:
+                st.error("股票代码格式不正确。仅允许字母、数字、. 和 -。")
+            else:
+                _select_ticker(parsed)
+                st.rerun()
+    with add_c:
+        if current and not in_watch:
+            st.caption(f"{current} 不在你的自选股中")
+            if st.button("+ 加入自选股", use_container_width=True):
+                try:
+                    add_watchlist(db, user_id, current)
+                    st.success(f"已添加 {current}")
+                    st.rerun()
+                except ValueError as e:
+                    st.error(str(e))
+                except Exception as e:
+                    st.error(public_db_error("insert", "watchlist", e, client=db))
+
+    use_latest = st.checkbox("使用最新交易日", value=True)
+    chosen_date = st.date_input("历史日期", value=date.today(), disabled=use_latest)
+    as_of = None if use_latest else chosen_date.isoformat()
+
+    if not current:
+        st.info("请选择或输入一只股票。")
+        st.stop()
+
+    cache_key = (current, as_of)
+    if st.session_state.get("analysis_cache_key") != cache_key:
+        with st.spinner(f"正在分析 {current}…"):
+            r = analyze_one(current, as_of, db, user_id)
+        st.session_state.last_analysis = r
+        st.session_state.analysis_cache_key = cache_key
     r = st.session_state.get("last_analysis")
+
     if r:
         st.markdown(f"### {r['ticker']} · {r['name']} — {r['date']}")
+        meta1, meta2, meta3 = st.columns(3)
+        meta1.metric("估值类型", r.get("valuation_class_label") or "—")
+        meta2.metric("置信度", r.get("confidence") or "—")
+        meta3.write("")
         status_badge(r["recommendation"])
         st.write("")
         c1, c2, c3, c4 = st.columns(4)
@@ -1044,7 +1286,9 @@ elif page == "单股分析":
             z1.info(f"**第一批区**\n\n{zone_text(r['zones']['first'])}")
             z2.success(f"**核心买入区**\n\n{zone_text(r['zones']['core'])}")
             z3.success(f"**深度价值区**\n\n{zone_text(r['zones']['deep'])}")
-        elif (r.get("blend") or {}).get("insufficient_models") or not r.get("fair"):
+        elif (r.get("blend") or {}).get("specialized") or r.get("confidence") == "SPECIALIZED":
+            st.info("需要专项估值模型。仅显示技术指标，不生成价值买入区。")
+        else:
             st.info("有效估值模型不足，暂不生成买入区。")
 
         left, right = st.columns([1.2, 1])
@@ -1060,28 +1304,30 @@ elif page == "单股分析":
                 st.info(f"近一年成交密集区（估算）：**{money(r['vp']['low'])} – {money(r['vp']['high'])}**")
         with right:
             model_rows = []
-            for label, obj in [("P/E", r["pe"]), ("DCF", r["dcf"]), ("Growth / PEG", r["growth"])]:
-                usable = bool(obj) and obj.get("valid") and not obj.get("outlier")
+            model_list = (r.get("blend") or {}).get("model_list") or []
+            if not model_list:
+                model_list = [obj for obj in (r.get("pe"), r.get("dcf"), r.get("growth")) if obj]
+            for obj in model_list:
+                usable = bool(obj) and obj.get("valid") and not obj.get("outlier") and obj.get("applicable") is not False
                 model_rows.append({
-                    "模型": label,
+                    "模型": obj.get("name") or obj.get("model_id"),
                     "低值": obj.get("low") if usable else None,
                     "中枢": obj.get("mid") if usable else None,
                     "高值": obj.get("high") if usable else None,
                     "状态": model_status_text(obj),
+                    "置信度": obj.get("confidence") or "—",
                 })
-            st.dataframe(
-                pd.DataFrame(model_rows),
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "低值": st.column_config.NumberColumn(format="$%.2f"),
-                    "中枢": st.column_config.NumberColumn(format="$%.2f"),
-                    "高值": st.column_config.NumberColumn(format="$%.2f"),
-                },
-            )
-            dcf_obj = r.get("dcf") or {}
-            if dcf_obj.get("valid") is False or dcf_obj.get("outlier"):
-                st.caption("DCF 暂不参与估值：当前自由现金流数据异常或模型可靠性不足。")
+            if model_rows:
+                st.dataframe(
+                    pd.DataFrame(model_rows),
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "低值": st.column_config.NumberColumn(format="$%.2f"),
+                        "中枢": st.column_config.NumberColumn(format="$%.2f"),
+                        "高值": st.column_config.NumberColumn(format="$%.2f"),
+                    },
+                )
 
         st.line_chart(r["history"].tail(260)[["Close", "SMA30", "SMA50", "SMA200"]], use_container_width=True)
         st.caption(r["note"])

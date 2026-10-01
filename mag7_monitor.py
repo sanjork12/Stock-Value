@@ -315,12 +315,46 @@ def get_live_fundamentals(ticker: str):
     earnings_growth = fnum(info.get("earningsGrowth"))
     ttm_fcf = fnum(info.get("freeCashflow"))
     ttm_ocf = fnum(info.get("operatingCashflow"))
+    book_value = fnum(info.get("bookValue"))
+    roe = fnum(info.get("returnOnEquity"))
+    ebitda = fnum(info.get("ebitda"))
+    revenue = fnum(info.get("totalRevenue"))
+    enterprise_value = fnum(info.get("enterpriseValue"))
+    nta = fnum(info.get("netTangibleAssets"))
+    tangible_bvps = nta / shares if nta and shares and shares > 0 else None
+    dividend_rate = fnum(info.get("dividendRate"))
+    beta = fnum(info.get("beta"))
+    sector = info.get("sector")
+    industry = info.get("industry")
+    quote_type = info.get("quoteType")
+    long_name = info.get("shortName") or info.get("longName")
 
     annual_rows = []
     try:
         annual_rows = _yearly_cashflows(t.cashflow)
     except Exception:
         annual_rows = []
+
+    historical_eps = []
+    try:
+        inc = t.income_stmt
+        if inc is not None and not inc.empty:
+            for col in list(inc.columns)[:5]:
+                net_income = _cashflow_row(inc, ("Net Income", "Net Income Common Stockholders"), col)
+                share_count = _cashflow_row(inc, ("Diluted Average Shares", "Basic Average Shares"), col) or shares
+                eps = None
+                if net_income is not None and share_count:
+                    eps = net_income / share_count
+                if eps is None and net_income is None:
+                    continue
+                historical_eps.append({
+                    "period": _period_label(col),
+                    "net_income": net_income,
+                    "shares": share_count,
+                    "eps": fnum(eps),
+                })
+    except Exception:
+        historical_eps = []
 
     latest_annual = annual_rows[0] if annual_rows else {}
     normalized = _normalize_fcf(annual_rows, ttm_fcf=ttm_fcf)
@@ -349,6 +383,19 @@ def get_live_fundamentals(ticker: str):
         "capital_expenditure_raw": latest_annual.get("capital_expenditure_raw"),
         "capital_expenditure": latest_annual.get("capital_expenditure"),
         "annual_cashflows": annual_rows,
+        "book_value_per_share": book_value,
+        "tangible_book_value_per_share": tangible_bvps,
+        "roe": roe,
+        "ebitda": ebitda,
+        "revenue": revenue,
+        "enterprise_value": enterprise_value,
+        "dividend_rate": dividend_rate,
+        "beta": beta,
+        "sector": sector,
+        "industry": industry,
+        "quote_type": quote_type,
+        "long_name": long_name,
+        "historical_eps": historical_eps,
         "normalized": {
             "forward_eps": metric_field(forward_eps, "ticker.info.forwardEps", unit="USD/share"),
             "trailing_eps": metric_field(trailing_eps, "ticker.info.trailingEps", unit="USD/share"),
@@ -492,7 +539,9 @@ def dcf_model(ticker, fcf, shares, cash, debt, extras=None):
             warnings=warnings + errors,
         )
 
-    g = get_assumption(ticker)["dcf_growth"]
+    g = extras.get("dcf_growth_override")
+    if g is None:
+        g = get_assumption(ticker)["dcf_growth"]
     mature = max(0.06, min(0.10, g * 0.45))
     flows = []
     cur = float(fcf)
@@ -682,26 +731,14 @@ def buy_zones(fair, technical_mid=None, sma200=None):
 
 
 def value_from_financials(ticker: str, financials: dict):
-    pe = pe_model(ticker, financials.get("forward_eps"))
-    growth = growth_model(ticker, financials.get("forward_eps"), financials.get("earnings_growth"))
-    dcf = dcf_model(
-        ticker,
-        financials.get("fcf"),
-        financials.get("shares"),
-        financials.get("cash"),
-        financials.get("debt"),
-        extras={
-            "market_cap": financials.get("market_cap"),
-            "warnings": financials.get("warnings") or [],
-            "fcf_method": financials.get("fcf_method"),
-            "fcf_period": financials.get("fcf_period"),
-            "operating_cash_flow": financials.get("operating_cash_flow"),
-            "capital_expenditure_raw": financials.get("capital_expenditure_raw"),
-            "capital_expenditure": financials.get("capital_expenditure"),
-        },
-    )
-    blend = blend_models(pe, dcf, growth)
-    return blend["models"]["pe"], blend["models"]["dcf"], blend["models"]["growth"], blend
+    from valuation_engine import valuate
+
+    blend = valuate(ticker, financials)
+    models = blend.get("models") or {}
+    pe = models.get("forward_pe") or models.get("normalized_pe")
+    dcf = models.get("normalized_fcf_dcf")
+    growth = models.get("growth_adjusted_pe")
+    return pe, dcf, growth, blend
 
 
 def sanity_snapshot(ticker: str) -> dict:
@@ -710,9 +747,11 @@ def sanity_snapshot(ticker: str) -> dict:
     row = df.iloc[-1]
     price = float(row["Close"])
     f = get_live_fundamentals(ticker)
+    from valuation_engine import can_emit_buy_zones
+
     pe, dcf, growth, blend = value_from_financials(ticker, f)
     fair = blend.get("fair")
-    zones = buy_zones(fair, None, fnum(row.get("SMA200"))) if fair and not blend.get("insufficient_models") else None
+    zones = buy_zones(fair, None, fnum(row.get("SMA200"))) if can_emit_buy_zones(blend) else None
     return {
         "ticker": ticker,
         "price": price,
@@ -729,8 +768,9 @@ def sanity_snapshot(ticker: str) -> dict:
         "dcf": dcf,
         "growth": growth,
         "blend": blend,
+        "valuation_class": (blend.get("profile") or {}).get("valuation_class"),
+        "confidence": blend.get("confidence"),
     }
-    return "N/A" if x is None or not math.isfinite(float(x)) else f"${x:,.2f}"
 
 
 def money(x):
@@ -759,6 +799,7 @@ def run(ticker, as_of=None):
     pe = dcf = growth = None
     fair = None
     valuation_note = ""
+    blend = None
 
     if historical:
         snap = nearest_snapshot(ticker, as_of)
@@ -775,34 +816,22 @@ def run(ticker, as_of=None):
                 "to avoid look-ahead bias."
             )
     else:
+        from valuation_engine import can_emit_buy_zones
         f = get_live_fundamentals(ticker)
-        pe = pe_model(ticker, f["forward_eps"])
-        growth = growth_model(ticker, f["forward_eps"], f["earnings_growth"])
-        dcf = dcf_model(
-            ticker,
-            f["fcf"],
-            f["shares"],
-            f["cash"],
-            f["debt"],
-            extras={
-                "market_cap": f.get("market_cap"),
-                "warnings": f.get("warnings") or [],
-                "fcf_method": f.get("fcf_method"),
-                "fcf_period": f.get("fcf_period"),
-                "operating_cash_flow": f.get("operating_cash_flow"),
-                "capital_expenditure_raw": f.get("capital_expenditure_raw"),
-                "capital_expenditure": f.get("capital_expenditure"),
-            },
-        )
-        blend = blend_models(pe, dcf, growth)
-        pe, dcf, growth = blend["models"]["pe"], blend["models"]["dcf"], blend["models"]["growth"]
+        pe, dcf, growth, blend = value_from_financials(ticker, f)
         fair = blend.get("fair")
-        valuation_note = "Live valuation uses current Yahoo Finance fundamentals and editable model assumptions."
+        valuation_note = f"V4 {blend.get('profile', {}).get('valuation_class_label') or ''} | confidence={blend.get('confidence')}"
         if blend.get("excluded"):
             reasons = ", ".join(f"{item['name']}={item['reason']}" for item in blend["excluded"])
             valuation_note += f" Excluded models: {reasons}."
+        if blend.get("warnings"):
+            valuation_note += " " + ", ".join(blend["warnings"])
 
-    zones = buy_zones(fair, vp["mid"] if vp else None, sma200) if fair else None
+    if historical:
+        zones = buy_zones(fair, vp["mid"] if vp else None, sma200) if fair else None
+    else:
+        from valuation_engine import can_emit_buy_zones
+        zones = buy_zones(fair, vp["mid"] if vp else None, sma200) if can_emit_buy_zones(blend) else None
 
     print("\n" + "="*72)
     print(f"{ticker}  |  price date: {trade_date}")
@@ -826,7 +855,12 @@ def run(ticker, as_of=None):
     _print_model("P/E model:", pe)
     _print_model("DCF model:", dcf)
     _print_model("Growth model:", growth)
+    if blend and blend.get("model_list"):
+        for obj in blend["model_list"]:
+            _print_model(f"{obj.get('name')}:", obj)
     print(f"Blended fair:   {money(fair)}")
+    if blend:
+        print(f"Class/confidence: {blend.get('profile', {}).get('valuation_class')} / {blend.get('confidence')}")
     if fair:
         print(f"Price vs fair:  {pct(price,fair):+.2f}%")
         print(f"Valuation state: {classify_price(price,fair)}")
@@ -854,13 +888,12 @@ def main():
     args = p.parse_args()
 
     if args.sanity:
-        print(f"{'ticker':<7} {'price':>10} {'PE':>10} {'DCF':>12} {'Growth':>10} {'fair':>10} included")
+        print(f"{'ticker':<7} {'price':>10} {'class':<24} {'conf':<12} {'fair':>10} included")
         for ticker in ("AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"):
             snap = sanity_snapshot(ticker)
-            dcf_txt = money(snap["dcf_mid"]) if snap["dcf_mid"] is not None else snap["dcf_status"]
             print(
-                f"{snap['ticker']:<7} {money(snap['price']):>10} {money(snap['pe_mid']):>10} "
-                f"{str(dcf_txt):>12} {money(snap['growth_mid']):>10} {money(snap['blended_fair']):>10} "
+                f"{snap['ticker']:<7} {money(snap['price']):>10} {str(snap.get('valuation_class') or '-'):<24} "
+                f"{str(snap.get('confidence') or '-'):<12} {money(snap['blended_fair']):>10} "
                 f"{','.join(snap['models_included'] or [])}"
             )
         return
