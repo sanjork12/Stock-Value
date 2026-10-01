@@ -1,5 +1,6 @@
--- Run this once in Supabase SQL Editor.
+-- Run this in the Supabase SQL Editor. Safe to re-run (idempotent).
 -- Authentication itself is handled by Supabase Auth; do NOT create a plaintext password table.
+-- Do NOT disable RLS. Do NOT use service_role in the Streamlit app.
 
 create extension if not exists pgcrypto;
 
@@ -51,31 +52,110 @@ alter table public.profiles enable row level security;
 alter table public.watchlist enable row level security;
 alter table public.valuation_snapshots enable row level security;
 
--- Re-create policies safely.
+-- Drop historical / duplicate policy names, then recreate a single set
+-- for the authenticated role. Policies remain owner-scoped via auth.uid().
+
 drop policy if exists "profiles_select_own" on public.profiles;
 drop policy if exists "profiles_insert_own" on public.profiles;
 drop policy if exists "profiles_update_own" on public.profiles;
-create policy "profiles_select_own" on public.profiles for select using (auth.uid() = user_id);
-create policy "profiles_insert_own" on public.profiles for insert with check (auth.uid() = user_id);
-create policy "profiles_update_own" on public.profiles for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "profiles_delete_own" on public.profiles;
+drop policy if exists "Users can view own profiles" on public.profiles;
+drop policy if exists "Users can insert own profiles" on public.profiles;
+drop policy if exists "Users can update own profiles" on public.profiles;
+drop policy if exists "Users can delete own profiles" on public.profiles;
+
+create policy "profiles_select_own"
+on public.profiles
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "profiles_insert_own"
+on public.profiles
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "profiles_update_own"
+on public.profiles
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "profiles_delete_own"
+on public.profiles
+for delete
+to authenticated
+using (auth.uid() = user_id);
 
 drop policy if exists "watchlist_select_own" on public.watchlist;
 drop policy if exists "watchlist_insert_own" on public.watchlist;
 drop policy if exists "watchlist_update_own" on public.watchlist;
 drop policy if exists "watchlist_delete_own" on public.watchlist;
-create policy "watchlist_select_own" on public.watchlist for select using (auth.uid() = user_id);
-create policy "watchlist_insert_own" on public.watchlist for insert with check (auth.uid() = user_id);
-create policy "watchlist_update_own" on public.watchlist for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "watchlist_delete_own" on public.watchlist for delete using (auth.uid() = user_id);
+drop policy if exists "Users can view own watchlist" on public.watchlist;
+drop policy if exists "Users can insert own watchlist" on public.watchlist;
+drop policy if exists "Users can update own watchlist" on public.watchlist;
+drop policy if exists "Users can delete own watchlist" on public.watchlist;
+
+create policy "watchlist_select_own"
+on public.watchlist
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "watchlist_insert_own"
+on public.watchlist
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "watchlist_update_own"
+on public.watchlist
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "watchlist_delete_own"
+on public.watchlist
+for delete
+to authenticated
+using (auth.uid() = user_id);
 
 drop policy if exists "snapshots_select_own" on public.valuation_snapshots;
 drop policy if exists "snapshots_insert_own" on public.valuation_snapshots;
 drop policy if exists "snapshots_update_own" on public.valuation_snapshots;
 drop policy if exists "snapshots_delete_own" on public.valuation_snapshots;
-create policy "snapshots_select_own" on public.valuation_snapshots for select using (auth.uid() = user_id);
-create policy "snapshots_insert_own" on public.valuation_snapshots for insert with check (auth.uid() = user_id);
-create policy "snapshots_update_own" on public.valuation_snapshots for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "snapshots_delete_own" on public.valuation_snapshots for delete using (auth.uid() = user_id);
+drop policy if exists "Users can view own valuation_snapshots" on public.valuation_snapshots;
+drop policy if exists "Users can insert own valuation_snapshots" on public.valuation_snapshots;
+drop policy if exists "Users can update own valuation_snapshots" on public.valuation_snapshots;
+drop policy if exists "Users can delete own valuation_snapshots" on public.valuation_snapshots;
+
+create policy "snapshots_select_own"
+on public.valuation_snapshots
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "snapshots_insert_own"
+on public.valuation_snapshots
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "snapshots_update_own"
+on public.valuation_snapshots
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "snapshots_delete_own"
+on public.valuation_snapshots
+for delete
+to authenticated
+using (auth.uid() = user_id);
 
 create index if not exists idx_watchlist_user on public.watchlist(user_id);
 create index if not exists idx_snapshot_user_ticker_date on public.valuation_snapshots(user_id, ticker, snapshot_date desc);
