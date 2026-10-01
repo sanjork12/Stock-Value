@@ -9,6 +9,7 @@ from mag7_monitor import (
     add_indicators,
     annualized_volatility,
     classify_price,
+    fill_fundamental_fallbacks,
     fnum,
     get_history,
     get_live_fundamentals,
@@ -187,7 +188,8 @@ def analyze_ticker(
             financials = {}
         try:
             vol = annualized_volatility(df)
-            blend = valuate(ticker, financials or {}, volatility=vol)
+            financials = fill_fundamental_fallbacks(financials or {})
+            blend = valuate(ticker, financials, volatility=vol)
         except Exception as exc:
             logger.warning(
                 "analysis failed ticker=%s stage=valuation error_type=%s message=%s",

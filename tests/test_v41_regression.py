@@ -9,7 +9,7 @@ import pandas as pd
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from analysis_service import analyze_ticker, format_fair_value
-from mag7_monitor import flatten_yahoo_ohlcv
+from mag7_monitor import fill_fundamental_fallbacks, flatten_yahoo_ohlcv
 from valuation_engine import check_valuation_invariants, valuate
 
 
@@ -160,6 +160,27 @@ class V41RegressionTests(unittest.TestCase):
         self.assertEqual(blend["confidence"], "UNAVAILABLE")
         self.assertEqual(blend["reliability"]["reliability_score"], 82)
         self.assertIsNone(blend["fair"])
+
+    def test_trailing_eps_fallback_emits_fair(self):
+        fin = dict(AAPL_FIN)
+        fin.pop("forward_eps", None)
+        filled = fill_fundamental_fallbacks(fin)
+        self.assertEqual(filled["forward_eps"], filled["trailing_eps"])
+        blend = valuate("AAPL", filled)
+        self.assertIsNotNone(blend["blended_mid"])
+        self.assertNotEqual(blend["confidence"], "UNAVAILABLE")
+        self.assertGreaterEqual(len(blend["included"]), 2)
+
+    def test_jpm_roe_from_book_and_trailing(self):
+        fin = dict(JPM_FIN)
+        fin.pop("roe", None)
+        fin.pop("forward_eps", None)
+        filled = fill_fundamental_fallbacks(fin)
+        self.assertIsNotNone(filled.get("roe"))
+        self.assertEqual(filled["forward_eps"], filled["trailing_eps"])
+        blend = valuate("JPM", filled)
+        self.assertIsNotNone(blend["blended_mid"])
+        self.assertNotEqual(blend["confidence"], "UNAVAILABLE")
 
     def test_flatten_ticker_first_multiindex(self):
         idx = pd.date_range("2025-01-02", periods=3, freq="B")

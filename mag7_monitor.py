@@ -565,6 +565,74 @@ def get_live_fundamentals(ticker: str):
         estimated = _forward_eps_from_estimates(ticker, t)
         if estimated:
             forward_eps = estimated
+    if (forward_eps is None or forward_eps <= 0) and fnum(info.get("epsForward")):
+        forward_eps = fnum(info.get("epsForward"))
+    if (forward_eps is None or forward_eps <= 0) and current and fnum(info.get("forwardPE")):
+        pe = fnum(info.get("forwardPE"))
+        if pe and pe > 0:
+            forward_eps = current / pe
+    extra_warnings = []
+    if (forward_eps is None or forward_eps <= 0) and trailing_eps and trailing_eps > 0:
+        forward_eps = trailing_eps
+        extra_warnings.append("forward_eps_fallback_trailing")
+
+    bs = _load_statement(
+        ticker, t, "balance_sheet",
+        ("balance_sheet", "balancesheet", "quarterly_balance_sheet", "quarterly_balancesheet"),
+        ("get_balance_sheet", "get_balancesheet"),
+    )
+    equity = None
+    try:
+        if bs is not None and not bs.empty:
+            col0 = list(bs.columns)[0]
+            equity = _cashflow_row(
+                bs,
+                (
+                    "Stockholders Equity",
+                    "Stockholder Equity",
+                    "Total Stockholder Equity",
+                    "Total Stockholders Equity",
+                    "Common Stock Equity",
+                    "Total Equity Gross Minority Interest",
+                    "Equity Attributable to Owners of Parent",
+                    "Tangible Book Value",
+                    "Net Tangible Assets",
+                ),
+                col0,
+            )
+            if shares is None:
+                shares = _cashflow_row(
+                    bs,
+                    ("Ordinary Shares Number", "Share Issued", "Common Stock Shares Outstanding", "Common Shares"),
+                    col0,
+                )
+            if book_value is None and equity and shares and shares > 0:
+                book_value = equity / shares
+            if tangible_bvps is None:
+                tba = _cashflow_row(bs, ("Tangible Book Value", "Net Tangible Assets"), col0)
+                if tba and shares and shares > 0:
+                    tangible_bvps = tba / shares
+            if total_cash is None:
+                total_cash = _cashflow_row(
+                    bs,
+                    ("Cash And Cash Equivalents", "Cash Cash Equivalents And Short Term Investments", "Cash Financial"),
+                    col0,
+                )
+            if total_debt is None:
+                total_debt = _cashflow_row(
+                    bs,
+                    ("Total Debt", "Long Term Debt And Capital Lease Obligation", "Net Debt"),
+                    col0,
+                )
+    except Exception as exc:
+        logger.warning("fundamentals stage=balance_parse ticker=%s error_type=%s", ticker, type(exc).__name__)
+        equity = None
+    latest_ni = historical_eps[0].get("net_income") if historical_eps else None
+    if roe is None and equity and latest_ni is not None and equity != 0:
+        roe = latest_ni / equity
+    if roe is None and book_value and book_value > 0 and trailing_eps:
+        roe = trailing_eps / book_value
+
     if tangible_bvps is None and nta and shares and shares > 0:
         tangible_bvps = nta / shares
     if not long_name:
@@ -584,7 +652,7 @@ def get_live_fundamentals(ticker: str):
             ticker,
         )
 
-    return {
+    payload = {
         "current_price": current,
         "forward_eps": forward_eps,
         "trailing_eps": trailing_eps,
@@ -643,9 +711,36 @@ def get_live_fundamentals(ticker: str):
             "market_cap": metric_field(market_cap, "ticker.info.marketCap"),
             "earnings_growth": metric_field(earnings_growth, "ticker.info.earningsGrowth", unit="ratio"),
         },
-        "warnings": list(normalized.get("warnings") or []),
+        "warnings": list(normalized.get("warnings") or []) + extra_warnings,
         "data_source": "Yahoo Finance / yfinance",
     }
+    return fill_fundamental_fallbacks(payload)
+
+
+def fill_fundamental_fallbacks(financials: dict | None) -> dict:
+    """Fill Cloud-missing quoteSummary fields from statements already in the payload."""
+    data = dict(financials or {})
+    trailing = fnum(data.get("trailing_eps"))
+    if trailing is None:
+        hist = data.get("historical_eps") or []
+        if hist:
+            trailing = fnum(hist[0].get("eps"))
+            if trailing:
+                data["trailing_eps"] = trailing
+    forward = fnum(data.get("forward_eps"))
+    if (forward is None or forward <= 0) and trailing and trailing > 0:
+        data["forward_eps"] = trailing
+        data["warnings"] = list(data.get("warnings") or []) + ["forward_eps_fallback_trailing"]
+    if fnum(data.get("shares")) is None:
+        hist = data.get("historical_eps") or []
+        if hist and fnum(hist[0].get("shares")):
+            data["shares"] = fnum(hist[0].get("shares"))
+    bv = fnum(data.get("tangible_book_value_per_share")) or fnum(data.get("book_value_per_share"))
+    trailing = fnum(data.get("trailing_eps")) or trailing
+    if fnum(data.get("roe")) is None and bv and bv > 0 and trailing:
+        data["roe"] = trailing / bv
+        data["warnings"] = list(data.get("warnings") or []) + ["roe_fallback_eps_over_bvps"]
+    return data
 
 
 def get_assumption(ticker):

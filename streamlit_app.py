@@ -1072,7 +1072,7 @@ if page == "自选股":
             if r.get("price") is None:
                 rows.append({
                     "股票": t,
-                    "备注": item.get("nickname") or "",
+                    "估值类型": "—",
                     "状态": "数据不足",
                     "错误": r.get("analysis_error") or "行情数据暂时获取失败",
                     "_core_gap": float("inf"),
@@ -1082,12 +1082,11 @@ if page == "自选股":
                 save_snapshot(db, user_id, r)
             rows.append({
                 "股票": t,
-                "备注": item.get("nickname") or "",
+                "估值类型": r.get("valuation_class_label") or "—",
                 "价格": r["price"],
                 "SMA30": r["sma30"],
                 "SMA50": r["sma50"],
                 "SMA200": r["sma200"],
-                "估值类型": r.get("valuation_class_label") or "—",
                 "公允价值": dashboard_fair_text(r),
                 "置信度": r.get("confidence") or "—",
                 "可靠性": r.get("reliability_score") if r.get("reliability_score") is not None else "—",
@@ -1104,7 +1103,7 @@ if page == "自选股":
                 err_text = public_db_error("upsert", "valuation_snapshots", e, client=db)
             else:
                 err_text = public_analysis_error(t, e)
-            rows.append({"股票": t, "备注": item.get("nickname") or "", "状态": "数据不足", "错误": err_text, "_core_gap": float("inf")})
+            rows.append({"股票": t, "估值类型": "—", "状态": "数据不足", "错误": err_text, "_core_gap": float("inf")})
         progress.progress(i / len(watch), text=f"正在更新 {i}/{len(watch)}")
     progress.empty()
 
