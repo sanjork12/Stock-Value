@@ -1,0 +1,156 @@
+[
+  {
+    "date": "2026-09-30",
+    "ticker": "AAPL",
+    "blended_fair_value": 280.0,
+    "models": {
+      "pe": {
+        "low": 258,
+        "mid": 288,
+        "high": 307
+      },
+      "dcf": {
+        "low": 255,
+        "mid": 285,
+        "high": 315
+      },
+      "growth": {
+        "low": 235,
+        "mid": 255,
+        "high": 275
+      }
+    }
+  },
+  {
+    "date": "2026-09-30",
+    "ticker": "MSFT",
+    "blended_fair_value": 650.0,
+    "models": {
+      "pe": {
+        "low": 640,
+        "mid": 710,
+        "high": 760
+      },
+      "dcf": {
+        "low": 550,
+        "mid": 610,
+        "high": 670
+      },
+      "growth": {
+        "low": 575,
+        "mid": 630,
+        "high": 685
+      }
+    }
+  },
+  {
+    "date": "2026-09-30",
+    "ticker": "GOOGL",
+    "blended_fair_value": 395.0,
+    "models": {
+      "pe": {
+        "low": 340,
+        "mid": 377,
+        "high": 410
+      },
+      "dcf": {
+        "low": 350,
+        "mid": 395,
+        "high": 440
+      },
+      "growth": {
+        "low": 375,
+        "mid": 415,
+        "high": 455
+      }
+    }
+  },
+  {
+    "date": "2026-09-30",
+    "ticker": "AMZN",
+    "blended_fair_value": 305.0,
+    "models": {
+      "pe": {
+        "low": 283,
+        "mid": 314,
+        "high": 335
+      },
+      "dcf": {
+        "low": 250,
+        "mid": 285,
+        "high": 320
+      },
+      "growth": {
+        "low": 285,
+        "mid": 320,
+        "high": 350
+      }
+    }
+  },
+  {
+    "date": "2026-09-30",
+    "ticker": "NVDA",
+    "blended_fair_value": 335.0,
+    "models": {
+      "pe": {
+        "low": 300,
+        "mid": 350,
+        "high": 390
+      },
+      "dcf": {
+        "low": 260,
+        "mid": 300,
+        "high": 340
+      },
+      "growth": {
+        "low": 310,
+        "mid": 350,
+        "high": 390
+      }
+    }
+  },
+  {
+    "date": "2026-09-30",
+    "ticker": "META",
+    "blended_fair_value": 790.0,
+    "models": {
+      "pe": {
+        "low": 770,
+        "mid": 836,
+        "high": 900
+      },
+      "dcf": {
+        "low": 720,
+        "mid": 790,
+        "high": 860
+      },
+      "growth": {
+        "low": 690,
+        "mid": 750,
+        "high": 810
+      }
+    }
+  },
+  {
+    "date": "2026-09-30",
+    "ticker": "TSLA",
+    "blended_fair_value": 215.0,
+    "models": {
+      "pe": {
+        "low": 113,
+        "mid": 200,
+        "high": 250
+      },
+      "dcf": {
+        "low": 135,
+        "mid": 170,
+        "high": 210
+      },
+      "growth": {
+        "low": 220,
+        "mid": 270,
+        "high": 320
+      }
+    }
+  }
+]
