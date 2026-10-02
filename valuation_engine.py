@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 
 from financial_normalization import (
     CURRENCY_MISMATCH_REASON,
+    FORWARD_AND_TRAILING_UNAVAILABLE,
     has_statement_only_eps,
     is_statement_eps_source,
     normalize_financials,
@@ -512,6 +513,19 @@ def _has_quote_currency_eps(financials: dict) -> bool:
     return _quote_trailing_eps(financials) is not None
 
 
+def _statement_derived_proxy_in_use(financials: dict) -> bool:
+    if _has_quote_currency_eps(financials):
+        return False
+    source = financials.get("eps_proxy_source") or financials.get("trailing_eps_source")
+    return is_statement_eps_source(source)
+
+
+def _blocks_official_statement_proxy(profile: ValuationProfile, financials: dict) -> bool:
+    if _has_quote_currency_eps(financials):
+        return False
+    return profile.valuation_class in STATEMENT_PROXY_BLOCKS_OFFICIAL
+
+
 def model_forward_pe(profile: ValuationProfile, financials: dict) -> dict:
     spec = profile.spec
     eps, source, is_proxy = _multiple_eps(financials)
@@ -794,6 +808,19 @@ MODEL_DISPLAY_NAMES = {
 }
 
 PEG_DISABLED_CLASSES = {"cyclical_semiconductor", "fintech_exchange"}
+STATEMENT_PROXY_BLOCKS_OFFICIAL = {
+    "semiconductor_growth",
+    "high_growth_software",
+    "cyclical_semiconductor",
+    "fintech_exchange",
+}
+STATEMENT_PROXY_ALLOWED_LOW = {
+    "mega_cap_tech",
+    "mature_growth",
+    "consumer_platform",
+    "generic_profitable",
+    "bank",
+}
 
 
 @dataclass
@@ -884,6 +911,8 @@ def check_forward_pe_applicable(profile: ValuationProfile, financials: dict) -> 
     if eps < 0.05:
         return False, "forward_eps_near_zero", "EPS 接近 0，倍数估值不稳定。", diag
     if is_proxy:
+        if is_statement_eps_source(source) and profile.valuation_class in STATEMENT_PROXY_BLOCKS_OFFICIAL:
+            return False, FORWARD_AND_TRAILING_UNAVAILABLE, "Forward 与 Yahoo trailing EPS 均缺失，statement-derived EPS 不能用于该估值类型的正式估值。", diag
         why = "Forward EPS unavailable. Using trailing EPS proxy."
         if is_statement_eps_source(source):
             why = "Forward EPS unavailable. Using statement-derived trailing EPS proxy."
@@ -922,6 +951,13 @@ def check_growth_applicable(profile: ValuationProfile, financials: dict) -> tupl
         if financials.get("statement_eps") and not statement_inputs_currency_safe(financials):
             return False, CURRENCY_MISMATCH_REASON, "报表 EPS 与报价货币不一致，Growth 模型不适用。", {"eps_source": source, "is_proxy": is_proxy}
         return False, "missing_or_nonpositive_forward_eps", "缺少正的 Forward EPS 或 currency-safe trailing EPS proxy，Growth 模型不适用。", {"eps_source": source, "is_proxy": is_proxy}
+    if is_proxy and is_statement_eps_source(source) and profile.valuation_class in STATEMENT_PROXY_BLOCKS_OFFICIAL:
+        return (
+            False,
+            FORWARD_AND_TRAILING_UNAVAILABLE,
+            "Forward 与 Yahoo trailing EPS 均缺失，statement-derived EPS 不能用于该估值类型的正式估值。",
+            {"eps_source": source, "is_proxy": is_proxy, "valuation_class": profile.valuation_class},
+        )
     live = fnum(financials.get("earnings_growth"))
     why = "使用规范化远期增长率，而非单年爆发增长。"
     if is_proxy:
@@ -1298,12 +1334,17 @@ def compute_reliability(
         missing += 15
         penalties.append({"code": "missing_bank_inputs", "delta": -15})
     _, _, is_proxy = _multiple_eps(financials)
+    statement_proxy = _statement_derived_proxy_in_use(financials)
     if is_proxy:
         missing += 12
         penalties.append({"code": "eps_proxy_trailing", "delta": -12})
         warnings.append("forward_eps_unavailable")
         warnings.append("using_trailing_eps_proxy")
-    missing = min(missing, 25)
+        if statement_proxy:
+            missing += 8
+            penalties.append({"code": "statement_derived_eps_proxy", "delta": -8})
+            warnings.append("using_statement_derived_trailing_eps_proxy")
+    missing = min(missing, 30)
     score -= missing
     data_quality_score = max(0, min(100, 100 - missing))
     if len(included) == 2:
@@ -1366,6 +1407,9 @@ def compute_reliability(
         reliability_score = score
     if profile.confidence_policy == "low" and confidence in {"HIGH", "MEDIUM"}:
         confidence = "LOW"
+    if statement_proxy and profile.valuation_class in STATEMENT_PROXY_ALLOWED_LOW and confidence in {"HIGH", "MEDIUM"}:
+        confidence = "LOW"
+        warnings.append("statement_proxy_confidence_capped_low")
     if missing >= 20:
         data_quality = "poor"
     elif missing > 0 or is_proxy:
@@ -1568,6 +1612,51 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
     disp = dispersion_pct([obj for _, obj in usable_pairs])
     reliability = compute_reliability(profile, financials, models, included, excluded, disp, False)
     confidence = reliability.overall_confidence
+
+    # Class-level guard: statement-derived EPS alone cannot emit an official fair value
+    # for growth/cyclical/fintech classes, even if non-EPS models (EV/revenue) look valid.
+    if _blocks_official_statement_proxy(profile, financials):
+        warnings = list(reliability.applicability_warnings)
+        if FORWARD_AND_TRAILING_UNAVAILABLE not in warnings:
+            warnings.append(FORWARD_AND_TRAILING_UNAVAILABLE)
+        return _canonical_blend({
+            "fair": None,
+            "fair_low": None,
+            "fair_high": None,
+            "included": [],
+            "excluded": excluded + [
+                {
+                    "name": model_id,
+                    "reason": FORWARD_AND_TRAILING_UNAVAILABLE,
+                    "outlier": bool((models.get(model_id) or {}).get("outlier")),
+                    "executed": bool((models.get(model_id) or {}).get("executed")),
+                    "why": "Forward 与 Yahoo trailing EPS 均缺失，statement-derived EPS 不能用于正式估值。",
+                }
+                for model_id in included
+            ],
+            "weights_used": {},
+            "insufficient_models": True,
+            "specialized": False,
+            "confidence": "UNAVAILABLE",
+            "models": models,
+            "model_list": list(models.values()),
+            "profile": profile.to_dict(),
+            "model_version": MODEL_VERSION,
+            "dispersion": disp,
+            "reason": FORWARD_AND_TRAILING_UNAVAILABLE,
+            "warnings": warnings,
+            "reliability": {
+                **reliability.to_dict(),
+                "overall_confidence": "UNAVAILABLE",
+                "reliability_score": None,
+                "applicability_warnings": warnings,
+            },
+            "mos": None,
+            "zones": None,
+            "cycle": cycle,
+            "volatility_1y": volatility,
+            "view": primary_valuation_view({"confidence": "UNAVAILABLE"}),
+        })
 
     if len(included) < MIN_MODELS_FOR_BLEND or weight_total <= 0:
         return _canonical_blend({

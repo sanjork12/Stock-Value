@@ -31,6 +31,7 @@ FORWARD_EPS_SOURCES = {
 }
 CURRENCY_MISMATCH_REASON = "currency_mismatch_without_fx_conversion"
 CLASS_SPECIFIC_SHARES = "class_specific_shares_detected"
+FORWARD_AND_TRAILING_UNAVAILABLE = "forward_and_trailing_eps_unavailable"
 
 
 def _ccy(value) -> str | None:
