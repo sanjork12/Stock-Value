@@ -1250,8 +1250,8 @@ if page == "自选股":
     jump = st.selectbox("在单股分析中打开", [x["ticker"] for x in watch], key="dashboard_jump_ticker")
     if st.button("打开单股分析", type="primary"):
         st.session_state.selected_ticker = jump
-        st.session_state.watch_select = jump
         st.session_state._last_watch_select = jump
+        st.session_state._pending_watch_select = jump
         st.session_state._pending_nav_page = "单股分析"
         try:
             st.query_params["ticker"] = jump
@@ -1292,11 +1292,17 @@ elif page == "单股分析":
     if qp_ticker and st.session_state.get("selected_ticker") != qp_ticker:
         st.session_state.selected_ticker = qp_ticker
         if qp_ticker in watch_tickers:
-            st.session_state.watch_select = qp_ticker
+            st.session_state._pending_watch_select = qp_ticker
             st.session_state._last_watch_select = qp_ticker
 
     if not st.session_state.get("selected_ticker"):
         st.session_state.selected_ticker = watch_tickers[0] if watch_tickers else None
+
+    # Sync selectbox key before the widget exists (cannot mutate after instantiation).
+    _pending_watch = st.session_state.pop("_pending_watch_select", None)
+    if _pending_watch and _pending_watch in watch_tickers:
+        st.session_state.watch_select = _pending_watch
+        st.session_state._last_watch_select = _pending_watch
 
     current = normalize_ticker(st.session_state.get("selected_ticker"))
     in_watch = bool(current and current in watch_tickers)
@@ -1305,8 +1311,8 @@ elif page == "单股分析":
     def _select_ticker(ticker: str):
         st.session_state.selected_ticker = ticker
         if ticker in watch_tickers:
-            st.session_state.watch_select = ticker
             st.session_state._last_watch_select = ticker
+            st.session_state._pending_watch_select = ticker
         try:
             st.query_params["ticker"] = ticker
         except Exception:
