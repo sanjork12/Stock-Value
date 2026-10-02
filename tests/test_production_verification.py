@@ -204,7 +204,7 @@ class PresentationStaticTests(unittest.TestCase):
         self.assertEqual(service.count("blend = valuate("), 1)
 
     def test_model_version_constant(self):
-        self.assertEqual(MODEL_VERSION, "v4.1-reliability")
+        self.assertEqual(MODEL_VERSION, "v4.1-normalization")
 
     def test_upsert_conflict_targets(self):
         src = _read("streamlit_app.py")

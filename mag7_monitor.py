@@ -456,10 +456,14 @@ def get_live_fundamentals(ticker: str):
     current = fnum(info.get("currentPrice") or info.get("regularMarketPrice"))
     forward_eps = fnum(info.get("forwardEps"))
     trailing_eps = fnum(info.get("trailingEps"))
-    shares = fnum(info.get("sharesOutstanding"))
+    shares_outstanding = fnum(info.get("sharesOutstanding"))
+    implied_shares = fnum(info.get("impliedSharesOutstanding"))
+    shares = shares_outstanding
     total_cash = fnum(info.get("totalCash"))
     total_debt = fnum(info.get("totalDebt"))
     market_cap = fnum(info.get("marketCap"))
+    quote_currency = info.get("currency")
+    financial_currency = info.get("financialCurrency") or info.get("financialCurrencyCode")
     earnings_growth = fnum(info.get("earningsGrowth"))
     ttm_fcf = fnum(info.get("freeCashflow"))
     ttm_ocf = fnum(info.get("operatingCashflow"))
@@ -503,11 +507,12 @@ def get_live_fundamentals(ticker: str):
         if inc is not None and not inc.empty:
             for col in list(inc.columns)[:5]:
                 net_income = _cashflow_row(inc, ("Net Income", "Net Income Common Stockholders"), col)
-                share_count = _cashflow_row(inc, ("Diluted Average Shares", "Basic Average Shares"), col) or shares
+                share_count = _cashflow_row(inc, ("Diluted Average Shares", "Basic Average Shares"), col)
                 revenue_row = _cashflow_row(inc, ("Total Revenue", "Operating Revenue"), col)
                 operating_income = _cashflow_row(inc, ("Operating Income", "EBIT"), col)
-                eps = None
-                if net_income is not None and share_count:
+                diluted_eps = _cashflow_row(inc, ("Diluted EPS", "Basic EPS"), col)
+                eps = fnum(diluted_eps)
+                if eps is None and net_income is not None and share_count:
                     eps = net_income / share_count
                 if eps is not None or net_income is not None:
                     historical_eps.append({
@@ -515,6 +520,7 @@ def get_live_fundamentals(ticker: str):
                         "net_income": net_income,
                         "shares": share_count,
                         "eps": fnum(eps),
+                        "diluted_eps": fnum(diluted_eps),
                     })
                 if revenue_row and revenue_row > 0 and operating_income is not None:
                     historical_margins.append({
@@ -528,28 +534,34 @@ def get_live_fundamentals(ticker: str):
         historical_eps = []
         historical_margins = []
 
-    if shares is None and historical_eps:
-        shares = fnum(historical_eps[0].get("shares"))
-    if trailing_eps is None and historical_eps:
-        trailing_eps = fnum(historical_eps[0].get("eps"))
+    diluted_average_shares = fnum(historical_eps[0].get("shares")) if historical_eps else None
+    statement_eps = None
+    statement_eps_source = None
+    if historical_eps:
+        statement_eps = fnum(historical_eps[0].get("diluted_eps")) or fnum(historical_eps[0].get("eps"))
+        if historical_eps[0].get("diluted_eps") is not None:
+            statement_eps_source = "income_statement_diluted_eps"
+        elif statement_eps is not None:
+            statement_eps_source = "ni_over_diluted_shares"
+    forward_eps_source = "ticker.info.forwardEps" if forward_eps and forward_eps > 0 else None
+    trailing_eps_source = "ticker.info.trailingEps" if trailing_eps and trailing_eps > 0 else None
     if forward_eps is None or forward_eps <= 0:
         estimated = _forward_eps_from_estimates(ticker, t)
         if estimated:
             forward_eps = estimated
+            forward_eps_source = "earnings_estimate"
     if (forward_eps is None or forward_eps <= 0) and fnum(info.get("epsForward")):
         forward_eps = fnum(info.get("epsForward"))
+        forward_eps_source = "epsForward"
     if (forward_eps is None or forward_eps <= 0) and current and fnum(info.get("forwardPE")):
         pe = fnum(info.get("forwardPE"))
         if pe and pe > 0:
             forward_eps = current / pe
+            forward_eps_source = "price/forwardPE"
     extra_warnings = []
-    eps_proxy = None
-    eps_proxy_source = None
-    if (forward_eps is None or forward_eps <= 0) and trailing_eps and trailing_eps > 0:
-        eps_proxy = trailing_eps
-        eps_proxy_source = "trailing_eps"
-        extra_warnings.append("forward_eps_unavailable")
-        extra_warnings.append("using_trailing_eps_proxy")
+    if forward_eps is not None and forward_eps <= 0:
+        forward_eps = None
+        forward_eps_source = None
 
     bs = _load_statement(
         ticker, t, "balance_sheet",
@@ -630,10 +642,20 @@ def get_live_fundamentals(ticker: str):
     payload = {
         "current_price": current,
         "forward_eps": forward_eps,
+        "forward_eps_source": forward_eps_source,
         "trailing_eps": trailing_eps,
-        "eps_proxy": eps_proxy,
-        "eps_proxy_source": eps_proxy_source,
+        "trailing_eps_source": trailing_eps_source,
+        "statement_eps": statement_eps,
+        "statement_eps_source": statement_eps_source,
+        "eps_proxy": None,
+        "eps_proxy_source": None,
+        "quote_currency": quote_currency,
+        "financial_currency": financial_currency,
+        "eps_currency": financial_currency,
         "shares": shares,
+        "shares_outstanding": shares_outstanding,
+        "implied_shares_outstanding": implied_shares,
+        "diluted_average_shares": diluted_average_shares,
         "cash": cash,
         "debt": debt,
         "market_cap": market_cap,
@@ -664,8 +686,8 @@ def get_live_fundamentals(ticker: str):
         "operating_margin": operating_margin,
         "profit_margin": profit_margin,
         "normalized": {
-            "forward_eps": metric_field(forward_eps, "ticker.info.forwardEps", unit="USD/share"),
-            "trailing_eps": metric_field(trailing_eps, "ticker.info.trailingEps", unit="USD/share"),
+            "forward_eps": metric_field(forward_eps, forward_eps_source or "ticker.info.forwardEps", unit="USD/share"),
+            "trailing_eps": metric_field(trailing_eps, trailing_eps_source or "ticker.info.trailingEps", unit="USD/share"),
             "operating_cash_flow": metric_field(
                 latest_annual.get("operating_cash_flow") or ttm_ocf,
                 "ticker.cashflow" if latest_annual else "ticker.info.operatingCashflow",
@@ -695,37 +717,14 @@ def get_live_fundamentals(ticker: str):
 
 
 def fill_fundamental_fallbacks(financials: dict | None) -> dict:
-    """Fill Cloud-missing quoteSummary fields from statements already in the payload."""
-    data = dict(financials or {})
-    trailing = fnum(data.get("trailing_eps"))
-    if trailing is None:
-        hist = data.get("historical_eps") or []
-        if hist:
-            trailing = fnum(hist[0].get("eps"))
-            if trailing:
-                data["trailing_eps"] = trailing
-    forward = fnum(data.get("forward_eps"))
-    if forward is not None and forward <= 0:
-        data["forward_eps"] = None
-        forward = None
-    if (forward is None) and trailing and trailing > 0:
-        data["eps_proxy"] = trailing
-        data["eps_proxy_source"] = data.get("eps_proxy_source") or "trailing_eps"
-        warnings = list(data.get("warnings") or [])
-        for code in ("forward_eps_unavailable", "using_trailing_eps_proxy"):
-            if code not in warnings:
-                warnings.append(code)
-        data["warnings"] = warnings
-    if fnum(data.get("shares")) is None:
-        hist = data.get("historical_eps") or []
-        if hist and fnum(hist[0].get("shares")):
-            data["shares"] = fnum(hist[0].get("shares"))
-    bv = fnum(data.get("tangible_book_value_per_share")) or fnum(data.get("book_value_per_share"))
-    trailing = fnum(data.get("trailing_eps")) or trailing
-    if fnum(data.get("roe")) is None and bv and bv > 0 and trailing:
-        data["roe"] = trailing / bv
-        data["warnings"] = list(data.get("warnings") or []) + ["roe_fallback_eps_over_bvps"]
-    return data
+    """Normalize EPS provenance, currency safety, and canonical shares.
+
+    Never fills forward_eps from statement EPS. Statement-derived trailing is
+    only allowed when financial_currency matches quote_currency.
+    """
+    from financial_normalization import normalize_financials
+
+    return normalize_financials(financials)
 
 
 def classify_price(price, fair):

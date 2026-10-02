@@ -231,7 +231,11 @@ def analyze_ticker(
         if errors:
             note += " 部分数据源失败，已保留可用的行情/估值结果。"
         if (financials or {}).get("eps_proxy") and fnum((financials or {}).get("forward_eps")) is None:
-            note += " Forward EPS unavailable. Using trailing EPS proxy."
+            source = (financials or {}).get("eps_proxy_source") or "trailing_eps"
+            if source in {"statement_trailing_eps", "statement_derived", "ni_over_diluted_shares", "income_statement_diluted_eps"}:
+                note += " Forward EPS unavailable. Using statement-derived trailing EPS proxy."
+            else:
+                note += " Forward EPS unavailable. Using trailing EPS proxy."
 
     if historical:
         conf = str((blend or {}).get("confidence") or "").upper()

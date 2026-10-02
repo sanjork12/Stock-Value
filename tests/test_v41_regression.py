@@ -174,7 +174,7 @@ class V41RegressionTests(unittest.TestCase):
         self.assertNotEqual(blend["confidence"], "UNAVAILABLE")
         self.assertGreaterEqual(len(blend["included"]), 2)
         pe = (blend.get("models") or {}).get("forward_pe") or {}
-        self.assertEqual(pe.get("name"), "Normalized / proxy P/E")
+        self.assertEqual(pe.get("name"), "Trailing EPS Proxy P/E")
         self.assertTrue(pe.get("eps_proxy"))
         full = valuate("AAPL", AAPL_FIN)
         self.assertLess(blend["reliability"]["reliability_score"], full["reliability"]["reliability_score"])

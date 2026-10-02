@@ -46,7 +46,7 @@ class ArchitectureCleanupTests(unittest.TestCase):
         proxy_blend = valuate("AAPL", filled)
         full_blend = valuate("AAPL", AAPL_FIN)
         pe = (proxy_blend.get("models") or {}).get("forward_pe") or {}
-        self.assertEqual(pe.get("name"), "Normalized / proxy P/E")
+        self.assertEqual(pe.get("name"), "Trailing EPS Proxy P/E")
         self.assertTrue(pe.get("eps_proxy"))
         self.assertIn("using_trailing_eps_proxy", pe.get("warnings") or [])
         self.assertNotEqual(proxy_blend["confidence"], "UNAVAILABLE")

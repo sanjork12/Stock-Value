@@ -5,6 +5,14 @@ import math
 import re
 from dataclasses import dataclass, field
 
+from financial_normalization import (
+    CURRENCY_MISMATCH_REASON,
+    has_statement_only_eps,
+    is_statement_eps_source,
+    normalize_financials,
+    quote_currency_eps_for_conversion,
+    statement_inputs_currency_safe,
+)
 from valuation_primitives import (
     DISCOUNT_RATE,
     MODEL_OUTLIER_THRESHOLD,
@@ -17,7 +25,7 @@ from valuation_primitives import (
     structural_valid,
 )
 
-MODEL_VERSION = "v4.1-reliability"
+MODEL_VERSION = "v4.1-normalization"
 TICKER_RE = re.compile(r"^[A-Z][A-Z0-9.\-]{0,9}$")
 COST_OF_EQUITY_DEFAULT = 0.10
 logger = logging.getLogger("stock_fair_value_monitor")
@@ -307,18 +315,47 @@ def normalize_ticker(raw: str | None) -> str | None:
     return ticker
 
 
-def _multiple_eps(financials: dict) -> tuple[float | None, str, bool]:
-    """Return (eps, source, is_proxy). Never mutates forward_eps."""
-    forward = fnum(financials.get("forward_eps"))
-    if forward is not None and forward > 0:
-        return forward, "forward_eps", False
-    proxy = fnum(financials.get("eps_proxy"))
-    if proxy is not None and proxy > 0:
-        return proxy, str(financials.get("eps_proxy_source") or "trailing_eps"), True
+def _quote_trailing_eps(financials: dict) -> float | None:
     trailing = fnum(financials.get("trailing_eps"))
+    if trailing is None or trailing <= 0:
+        return None
+    if is_statement_eps_source(financials.get("trailing_eps_source")):
+        return None
+    return trailing
+
+
+def _multiple_eps(financials: dict) -> tuple[float | None, str, bool]:
+    """Return (eps, source, is_proxy). Never mutates forward_eps. Never uses FX-unsafe statement EPS."""
+    forward = fnum(financials.get("forward_eps"))
+    if forward is not None and forward > 0 and not is_statement_eps_source(financials.get("forward_eps_source")):
+        return forward, str(financials.get("forward_eps_source") or "forward_eps"), False
+    safe = statement_inputs_currency_safe(financials)
+    proxy = fnum(financials.get("eps_proxy"))
+    proxy_source = str(financials.get("eps_proxy_source") or "")
+    if proxy is not None and proxy > 0:
+        if is_statement_eps_source(proxy_source) and not safe:
+            proxy = None
+        elif financials.get("eps_proxy_currency_safe") is False:
+            proxy = None
+        else:
+            return proxy, proxy_source or "trailing_eps", True
+    trailing = fnum(financials.get("trailing_eps"))
+    trailing_source = str(financials.get("trailing_eps_source") or "trailing_eps")
     if trailing is not None and trailing > 0:
-        return trailing, "trailing_eps", True
+        if is_statement_eps_source(trailing_source) and not safe:
+            return None, "", False
+        return trailing, trailing_source, True
     return None, "", False
+
+
+def _enterprise_shares(financials: dict) -> float | None:
+    return fnum(financials.get("canonical_shares")) or fnum(financials.get("shares"))
+
+
+def _currency_blocks_enterprise(financials: dict) -> tuple[bool, str, str]:
+    if not statement_inputs_currency_safe(financials):
+        return True, CURRENCY_MISMATCH_REASON, "报表货币与报价货币不一致，且没有 FX conversion，企业级模型不适用。"
+    return False, "", ""
 
 
 def _profitability_state(financials: dict) -> str:
@@ -411,12 +448,14 @@ def _cap_growth(raw, spec: dict, financials: dict | None = None) -> float:
 
 
 def _positive_history_eps(financials: dict) -> list[float]:
+    if not statement_inputs_currency_safe(financials):
+        return []
     history = [fnum(row.get("eps")) for row in (financials.get("historical_eps") or [])]
     values = [v for v in history if v is not None and v > 0]
     if not values:
         return []
     median_hist = float(sorted(values)[len(values) // 2])
-    ref = fnum(financials.get("trailing_eps")) or fnum(financials.get("forward_eps"))
+    ref = _quote_trailing_eps(financials) or fnum(financials.get("forward_eps"))
     if ref and median_hist > 0:
         ratio = ref / median_hist
         if ratio > 5 or ratio < 0.2:
@@ -426,7 +465,9 @@ def _positive_history_eps(financials: dict) -> list[float]:
 
 def _cycle_eps(financials: dict) -> tuple[float | None, str]:
     forward = fnum(financials.get("forward_eps"))
-    trailing = fnum(financials.get("trailing_eps"))
+    if forward is not None and (forward <= 0 or is_statement_eps_source(financials.get("forward_eps_source"))):
+        forward = None
+    trailing = _quote_trailing_eps(financials)
     history = _positive_history_eps(financials)
     growth = fnum(financials.get("earnings_growth"))
     rebound = growth is not None and growth > 1
@@ -436,6 +477,10 @@ def _cycle_eps(financials: dict) -> tuple[float | None, str]:
             if rebound:
                 return 0.35 * forward + 0.65 * median_hist, "rebound_capped_blend"
             return 0.40 * forward + 0.60 * median_hist, "forward_history_blend"
+        if trailing:
+            if rebound:
+                return 0.35 * trailing + 0.65 * median_hist, "rebound_capped_ttm"
+            return trailing, "trailing_eps"
         return median_hist, "history_median"
     if forward and trailing and trailing > 0:
         if rebound:
@@ -454,10 +499,17 @@ def _cycle_median_eps(financials: dict) -> tuple[float | None, str]:
     history = _positive_history_eps(financials)
     if history:
         return float(sorted(history)[len(history) // 2]), "history_median"
-    trailing = fnum(financials.get("trailing_eps"))
+    trailing = _quote_trailing_eps(financials)
     if trailing and trailing > 0:
         return trailing, "trailing_eps"
     return _cycle_eps(financials)
+
+
+def _has_quote_currency_eps(financials: dict) -> bool:
+    forward = fnum(financials.get("forward_eps"))
+    if forward and forward > 0 and not is_statement_eps_source(financials.get("forward_eps_source")):
+        return True
+    return _quote_trailing_eps(financials) is not None
 
 
 def model_forward_pe(profile: ValuationProfile, financials: dict) -> dict:
@@ -466,25 +518,37 @@ def model_forward_pe(profile: ValuationProfile, financials: dict) -> dict:
     if eps is None or eps <= 0:
         return model_result("Forward P/E", valid=False, reason="missing_or_nonpositive_forward_eps", extra={"model_id": "forward_pe", "applicable": True})
     lo, hi = spec.get("pe_range") or (16, 22)
-    name = "Normalized / proxy P/E" if is_proxy else "Forward P/E"
+    name = "Trailing EPS Proxy P/E" if is_proxy else "Forward P/E"
     warnings = ["forward_eps_unavailable", "using_trailing_eps_proxy"] if is_proxy else []
+    if is_proxy and is_statement_eps_source(source):
+        warnings.append("using_statement_derived_trailing_eps_proxy")
     return model_result(
         name,
         valid=True,
         low=eps * lo,
         mid=eps * (lo + hi) / 2,
         high=eps * hi,
-        confidence="medium" if is_proxy else ("high" if profile.confidence_policy == "medium_high" else "medium"),
+        confidence="low" if is_proxy else ("high" if profile.confidence_policy == "medium_high" else "medium"),
         inputs={
             "forward_eps": fnum(financials.get("forward_eps")),
             "eps_used": eps,
             "eps_source": source,
             "eps_proxy": True if is_proxy else False,
+            "uses_proxy": bool(is_proxy),
+            "proxy_source": source if is_proxy else None,
             "pe_low": lo,
             "pe_high": hi,
+            "currency": financials.get("quote_currency"),
         },
         warnings=warnings,
-        extra={"model_id": "forward_pe", "applicable": True, "valuation_class": profile.valuation_class, "eps_proxy": is_proxy},
+        extra={
+            "model_id": "forward_pe",
+            "applicable": True,
+            "valuation_class": profile.valuation_class,
+            "eps_proxy": is_proxy,
+            "uses_proxy": bool(is_proxy),
+            "proxy_source": source if is_proxy else None,
+        },
     )
 
 
@@ -516,24 +580,38 @@ def model_growth_adjusted_pe(profile: ValuationProfile, financials: dict) -> dic
     fair_pe = max(floor, min(g * 100 * spec.get("peg_target", 1.5), spec.get("growth_pe_cap", 28)))
     name = "Growth-adjusted P/E (trailing proxy)" if is_proxy else "Growth-adjusted P/E"
     warnings = ["forward_eps_unavailable", "using_trailing_eps_proxy"] if is_proxy else []
+    if is_proxy and is_statement_eps_source(source):
+        warnings.append("using_statement_derived_trailing_eps_proxy")
     return model_result(
         name,
         valid=True,
         low=eps * fair_pe * 0.88,
         mid=eps * fair_pe,
         high=eps * fair_pe * 1.12,
-        confidence="medium",
+        confidence="low" if is_proxy else "medium",
         inputs={
             "forward_eps": fnum(financials.get("forward_eps")),
             "eps_used": eps,
             "eps_source": source,
             "eps_proxy": True if is_proxy else False,
+            "uses_proxy": bool(is_proxy),
+            "proxy_source": source if is_proxy else None,
             "growth_used": g,
             "fair_pe": fair_pe,
             "peg_target": spec.get("peg_target"),
+            "currency": financials.get("quote_currency"),
         },
         warnings=warnings,
-        extra={"model_id": "growth_adjusted_pe", "applicable": True, "fair_pe": fair_pe, "growth_used": g, "valuation_class": profile.valuation_class, "eps_proxy": is_proxy},
+        extra={
+            "model_id": "growth_adjusted_pe",
+            "applicable": True,
+            "fair_pe": fair_pe,
+            "growth_used": g,
+            "valuation_class": profile.valuation_class,
+            "eps_proxy": is_proxy,
+            "uses_proxy": bool(is_proxy),
+            "proxy_source": source if is_proxy else None,
+        },
     )
 
 
@@ -542,7 +620,7 @@ def model_normalized_fcf_dcf(profile: ValuationProfile, financials: dict) -> dic
     result = dcf_model(
         profile.ticker,
         financials.get("fcf"),
-        financials.get("shares"),
+        _enterprise_shares(financials),
         financials.get("cash"),
         financials.get("debt"),
         extras={
@@ -554,12 +632,19 @@ def model_normalized_fcf_dcf(profile: ValuationProfile, financials: dict) -> dic
             "capital_expenditure_raw": financials.get("capital_expenditure_raw"),
             "capital_expenditure": financials.get("capital_expenditure"),
             "dcf_growth_override": spec.get("dcf_growth"),
+            "canonical_shares_source": financials.get("canonical_shares_source"),
+            "quote_currency": financials.get("quote_currency"),
+            "financial_currency": financials.get("financial_currency"),
         },
     )
     result["name"] = "Normalized FCF DCF"
     result["model_id"] = "normalized_fcf_dcf"
     result["applicable"] = True
     result["valuation_class"] = profile.valuation_class
+    inputs = dict(result.get("inputs") or {})
+    inputs["canonical_shares_source"] = financials.get("canonical_shares_source")
+    inputs["currency"] = financials.get("quote_currency")
+    result["inputs"] = inputs
     return result
 
 
@@ -615,7 +700,7 @@ def model_residual_income(profile: ValuationProfile, financials: dict) -> dict:
 def model_ev_ebitda(profile: ValuationProfile, financials: dict) -> dict:
     spec = profile.spec
     ebitda = fnum(financials.get("ebitda"))
-    shares = fnum(financials.get("shares"))
+    shares = _enterprise_shares(financials)
     cash = fnum(financials.get("cash")) or 0.0
     debt = fnum(financials.get("debt")) or 0.0
     if ebitda is None or ebitda <= 0 or shares is None or shares <= 0:
@@ -634,7 +719,7 @@ def model_ev_ebitda(profile: ValuationProfile, financials: dict) -> dict:
         mid=mid,
         high=high,
         confidence="medium",
-        inputs={"ebitda": ebitda, "multiple_low": lo, "multiple_high": hi, "cash": cash, "debt": debt, "shares": shares},
+        inputs={"ebitda": ebitda, "multiple_low": lo, "multiple_high": hi, "cash": cash, "debt": debt, "shares": shares, "currency": financials.get("quote_currency"), "canonical_shares_source": financials.get("canonical_shares_source")},
         extra={"model_id": "ev_ebitda", "applicable": True, "valuation_class": profile.valuation_class},
     )
 
@@ -642,7 +727,7 @@ def model_ev_ebitda(profile: ValuationProfile, financials: dict) -> dict:
 def model_revenue_multiple(profile: ValuationProfile, financials: dict) -> dict:
     spec = profile.spec
     revenue = fnum(financials.get("revenue"))
-    shares = fnum(financials.get("shares"))
+    shares = _enterprise_shares(financials)
     cash = fnum(financials.get("cash")) or 0.0
     debt = fnum(financials.get("debt")) or 0.0
     if revenue is None or revenue <= 0 or shares is None or shares <= 0:
@@ -660,7 +745,7 @@ def model_revenue_multiple(profile: ValuationProfile, financials: dict) -> dict:
         mid=mid,
         high=high,
         confidence="low",
-        inputs={"revenue": revenue, "multiple_low": lo, "multiple_high": hi, "shares": shares},
+        inputs={"revenue": revenue, "multiple_low": lo, "multiple_high": hi, "shares": shares, "currency": financials.get("quote_currency"), "canonical_shares_source": financials.get("canonical_shares_source")},
         extra={"model_id": "revenue_multiple", "applicable": True, "valuation_class": profile.valuation_class},
     )
 
@@ -788,13 +873,21 @@ def check_forward_pe_applicable(profile: ValuationProfile, financials: dict) -> 
         "eps_proxy": fnum(financials.get("eps_proxy")),
         "eps_source": source,
         "is_proxy": is_proxy,
+        "proxy_source": source if is_proxy else None,
+        "currency": financials.get("quote_currency"),
+        "financial_currency": financials.get("financial_currency"),
     }
     if eps is None or eps <= 0:
-        return False, "missing_or_nonpositive_forward_eps", "Forward EPS 缺失或非正，且没有可用的 trailing EPS proxy。", diag
+        if financials.get("statement_eps") and not statement_inputs_currency_safe(financials):
+            return False, CURRENCY_MISMATCH_REASON, "报表 EPS 与报价货币不一致，且没有 FX conversion。", diag
+        return False, "missing_or_nonpositive_forward_eps", "Forward EPS 缺失或非正，且没有可用的 currency-safe trailing EPS proxy。", diag
     if eps < 0.05:
         return False, "forward_eps_near_zero", "EPS 接近 0，倍数估值不稳定。", diag
     if is_proxy:
-        return True, "applicable_proxy", "Forward EPS unavailable. Using trailing EPS proxy.", diag
+        why = "Forward EPS unavailable. Using trailing EPS proxy."
+        if is_statement_eps_source(source):
+            why = "Forward EPS unavailable. Using statement-derived trailing EPS proxy."
+        return True, "applicable_proxy", why, diag
     if trailing and trailing > 0 and eps / trailing > 5:
         return False, "eps_forecast_anomalous", "Forward EPS 相对 trailing 变化过大，预测可能异常。", diag
     why = "盈利为正，forward EPS 数据完整。"
@@ -804,6 +897,14 @@ def check_forward_pe_applicable(profile: ValuationProfile, financials: dict) -> 
 
 
 def check_normalized_pe_applicable(profile: ValuationProfile, financials: dict) -> tuple[bool, str, str, dict]:
+    if not _has_quote_currency_eps(financials):
+        reason = CURRENCY_MISMATCH_REASON if not statement_inputs_currency_safe(financials) else "missing_quote_currency_eps"
+        why = (
+            "报表货币与报价货币不一致，周期 EPS 不能直接用于估值。"
+            if reason == CURRENCY_MISMATCH_REASON
+            else "缺少 Yahoo trailing / forward EPS，不能把单年报表 FY EPS 当作周期 TTM。"
+        )
+        return False, reason, why, {"method": "missing_quote_currency_eps"}
     eps, method = _cycle_eps(financials)
     hist = _positive_history_eps(financials)
     diag = {"normalized_eps": eps, "method": method, "history_points": len(hist)}
@@ -818,17 +919,24 @@ def check_growth_applicable(profile: ValuationProfile, financials: dict) -> tupl
         return False, "peg_disabled_for_class", "周期或交易型业务默认禁用普通 PEG。", {"valuation_class": profile.valuation_class}
     eps, source, is_proxy = _multiple_eps(financials)
     if eps is None or eps <= 0:
-        return False, "missing_or_nonpositive_forward_eps", "缺少正的 Forward EPS 或 trailing EPS proxy，Growth 模型不适用。", {"eps_source": source, "is_proxy": is_proxy}
+        if financials.get("statement_eps") and not statement_inputs_currency_safe(financials):
+            return False, CURRENCY_MISMATCH_REASON, "报表 EPS 与报价货币不一致，Growth 模型不适用。", {"eps_source": source, "is_proxy": is_proxy}
+        return False, "missing_or_nonpositive_forward_eps", "缺少正的 Forward EPS 或 currency-safe trailing EPS proxy，Growth 模型不适用。", {"eps_source": source, "is_proxy": is_proxy}
     live = fnum(financials.get("earnings_growth"))
     why = "使用规范化远期增长率，而非单年爆发增长。"
     if is_proxy:
-        why = "Forward EPS unavailable. Using trailing EPS proxy."
+        why = "Forward EPS unavailable. Using trailing EPS proxy + normalized growth. This is not an analyst-forward model."
+        if is_statement_eps_source(source):
+            why = "Forward EPS unavailable. Using statement-derived trailing EPS proxy + normalized growth."
     elif live is not None and live > 1:
         why = "当前 EPS 增长属于 rebound/cycle effect，已忽略单年增速，改用 normalized growth。"
     return True, "applicable_proxy" if is_proxy else "applicable", why, {"earnings_growth": live, "eps_source": source, "is_proxy": is_proxy}
 
 
 def check_dcf_applicable(profile: ValuationProfile, financials: dict) -> tuple[bool, str, str, dict]:
+    blocked, reason, why = _currency_blocks_enterprise(financials)
+    if blocked:
+        return False, reason, why, {"financial_currency": financials.get("financial_currency"), "quote_currency": financials.get("quote_currency")}
     annual, observations = _fcf_observations(financials)
     norm = fnum(financials.get("fcf"))
     latest = annual[0] if annual else fnum(financials.get("fcf_ttm_info"))
@@ -837,6 +945,10 @@ def check_dcf_applicable(profile: ValuationProfile, financials: dict) -> tuple[b
         "annual_count": len(annual),
         "normalized_fcf": norm,
         "latest_fcf": latest,
+        "shares": _enterprise_shares(financials),
+        "canonical_shares_source": financials.get("canonical_shares_source"),
+        "quote_currency": financials.get("quote_currency"),
+        "financial_currency": financials.get("financial_currency"),
     }
     if len(observations) < 3:
         return False, "insufficient_fcf_history", "可用年度/TTM FCF 观测不足 3 个，DCF 不适用。", diag
@@ -851,6 +963,9 @@ def check_dcf_applicable(profile: ValuationProfile, financials: dict) -> tuple[b
         diag["fcf_cv"] = cv
         if cv > 1.2:
             return False, "normalized_fcf_not_stable_enough", "FCF 波动过大，DCF 不适用。", diag
+    revenue = fnum(financials.get("revenue"))
+    if revenue and revenue > 0 and norm:
+        diag["fcf_margin"] = norm / revenue
     if latest is not None and norm:
         gap = abs(latest - norm) / abs(norm)
         diag["latest_vs_normalized"] = gap
@@ -858,17 +973,24 @@ def check_dcf_applicable(profile: ValuationProfile, financials: dict) -> tuple[b
             return False, "fcf_latest_vs_normalized_extreme", "最新 FCF 与 normalized FCF 差异过大，可能存在 CapEx 扭曲。", diag
         if latest < 0.5 * abs(norm) and norm > 0:
             return False, "capex_or_fcf_distortion", "最新 FCF 显著低于 normalized FCF，CapEx/FCF 扭曲过高。", diag
-    shares = fnum(financials.get("shares"))
-    eps = fnum(financials.get("forward_eps")) or fnum(financials.get("trailing_eps"))
-    if shares and shares > 0 and eps and eps > 0 and norm:
-        conversion = (norm / shares) / eps
+    shares = _enterprise_shares(financials)
+    quote_eps, eps_src = quote_currency_eps_for_conversion(financials)
+    diag["eps_for_conversion"] = quote_eps
+    diag["eps_for_conversion_source"] = eps_src
+    if shares and shares > 0 and quote_eps and quote_eps > 0 and norm:
+        conversion = (norm / shares) / quote_eps
         diag["fcf_eps_conversion"] = conversion
         if conversion < 0.25:
             return False, "fcf_conversion_too_low", "Normalized FCF 相对 EPS 过低，DCF 不能可靠代表盈利能力。", diag
+    elif has_statement_only_eps(financials) and shares and shares > 0 and norm:
+        return False, "fcf_conversion_unverified", "缺少 quote-currency Forward/Yahoo trailing EPS，不能用报表 FY EPS 验证 FCF conversion。", diag
     return True, "applicable", "有足够年度 FCF 且波动可接受。", diag
 
 
 def check_pb_roe_applicable(profile: ValuationProfile, financials: dict) -> tuple[bool, str, str, dict]:
+    blocked, reason, why = _currency_blocks_enterprise(financials)
+    if blocked:
+        return False, reason, why, {"bvps": financials.get("book_value_per_share")}
     bvps = fnum(financials.get("tangible_book_value_per_share")) or fnum(financials.get("book_value_per_share"))
     roe = fnum(financials.get("roe"))
     if bvps is None or bvps <= 0 or roe is None or roe <= 0:
@@ -881,22 +1003,36 @@ def check_residual_income_applicable(profile: ValuationProfile, financials: dict
 
 
 def check_ev_ebitda_applicable(profile: ValuationProfile, financials: dict) -> tuple[bool, str, str, dict]:
+    blocked, reason, why = _currency_blocks_enterprise(financials)
+    if blocked:
+        return False, reason, why, {"ebitda": financials.get("ebitda")}
     ebitda = fnum(financials.get("ebitda"))
-    shares = fnum(financials.get("shares"))
+    shares = _enterprise_shares(financials)
     if ebitda is None or ebitda <= 0 or shares is None or shares <= 0:
         return False, "missing_ebitda_or_shares", "缺少正的 EBITDA 或股本。", {"ebitda": ebitda, "shares": shares}
     return True, "applicable", "EBITDA 与股本数据完整。", {"ebitda": ebitda, "shares": shares}
 
 
 def check_revenue_applicable(profile: ValuationProfile, financials: dict) -> tuple[bool, str, str, dict]:
+    blocked, reason, why = _currency_blocks_enterprise(financials)
+    if blocked:
+        return False, reason, why, {"revenue": financials.get("revenue")}
     revenue = fnum(financials.get("revenue"))
-    shares = fnum(financials.get("shares"))
+    shares = _enterprise_shares(financials)
     if revenue is None or revenue <= 0 or shares is None or shares <= 0:
         return False, "missing_revenue_or_shares", "缺少收入或股本。", {"revenue": revenue, "shares": shares}
     return True, "applicable", "收入与股本数据完整。", {"revenue": revenue, "shares": shares}
 
 
 def check_cycle_earnings_applicable(profile: ValuationProfile, financials: dict) -> tuple[bool, str, str, dict]:
+    if not _has_quote_currency_eps(financials):
+        reason = CURRENCY_MISMATCH_REASON if not statement_inputs_currency_safe(financials) else "missing_quote_currency_eps"
+        why = (
+            "报表货币与报价货币不一致，周期盈利模型不适用。"
+            if reason == CURRENCY_MISMATCH_REASON
+            else "缺少 Yahoo trailing / forward EPS，不能把单年报表 FY EPS 当作周期 TTM。"
+        )
+        return False, reason, why, {"method": "missing_quote_currency_eps"}
     eps, method = _cycle_median_eps(financials)
     if eps is None or eps <= 0:
         return False, "missing_cycle_eps", "缺少周期标准化 EPS。", {"method": method}
@@ -1149,7 +1285,7 @@ def compute_reliability(
     if fnum(financials.get("forward_eps")) is None and fnum(financials.get("trailing_eps")) is None and fnum(financials.get("eps_proxy")) is None:
         missing += 10
         penalties.append({"code": "missing_eps", "delta": -10})
-    if fnum(financials.get("shares")) is None:
+    if fnum(financials.get("canonical_shares")) is None and fnum(financials.get("shares")) is None:
         missing += 8
         penalties.append({"code": "missing_shares", "delta": -8})
     if profile.valuation_class != "bank" and fnum(financials.get("fcf")) is None:
@@ -1196,6 +1332,9 @@ def compute_reliability(
         "capex_or_fcf_distortion",
         "mostly_negative_fcf",
         "fcf_conversion_too_low",
+        "fcf_conversion_unverified",
+        "fcf_margin_not_stable",
+        CURRENCY_MISMATCH_REASON,
     }:
         score -= 15
         penalties.append({"code": "fcf_unstable", "delta": -15})
@@ -1352,6 +1491,7 @@ def check_valuation_invariants(blend: dict | None, *, strict: bool = False) -> l
 
 
 def valuate(ticker: str, financials: dict, volatility: float | None = None) -> dict:
+    financials = normalize_financials(financials)
     profile = build_profile(ticker, financials)
     spec = profile.spec
     specialized = spec.get("fair_policy") in {"specialized", "specialized_if_unprofitable"} and (

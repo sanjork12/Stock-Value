@@ -581,17 +581,56 @@ def render_valuation_diagnostics(r: dict):
         model_list = blend.get("model_list") or list((blend.get("models") or {}).values())
         if not model_list:
             model_list = [obj for obj in (r.get("pe"), r.get("dcf"), r.get("growth")) if obj]
+        if f.get("eps_proxy") and fnum(f.get("forward_eps")) is None:
+            lines.append("**Forward EPS unavailable**")
+            source = f.get("eps_proxy_source") or ""
+            if source in {"statement_trailing_eps", "statement_derived", "ni_over_diluted_shares", "income_statement_diluted_eps"}:
+                lines.append("**Using statement-derived trailing EPS proxy**")
+            else:
+                lines.append("**Using trailing EPS proxy**")
+        prov = f.get("provenance") or {}
+        shares_p = prov.get("shares") or {}
+        lines.append("**Quote currency**: " + str(prov.get("quote_currency") or f.get("quote_currency") or "—"))
+        lines.append("**Financial currency**: " + str(prov.get("financial_currency") or f.get("financial_currency") or "—"))
+        fwd = prov.get("forward_eps") or {}
+        lines.append(f"**Forward EPS**: {fwd.get('value')}  source={fwd.get('source') or f.get('forward_eps_source') or '—'}")
+        tr = prov.get("trailing_eps") or {}
+        lines.append(f"**Trailing EPS**: {tr.get('value')}  source={tr.get('source') or f.get('trailing_eps_source') or '—'}")
+        st_eps = prov.get("statement_eps") or {}
+        lines.append(f"**Statement EPS**: {st_eps.get('value')}  currency={st_eps.get('currency') or f.get('statement_eps_currency') or '—'}")
+        px = prov.get("eps_proxy") or {}
+        safe = px.get("currency_safe")
+        if safe is None:
+            safe = f.get("eps_proxy_currency_safe")
+        lines.append(
+            f"**EPS proxy**: {px.get('value') if px else f.get('eps_proxy')}  "
+            f"source={px.get('source') or f.get('eps_proxy_source') or '—'}  "
+            f"currency-safe: {'yes' if safe else 'no'}"
+        )
+        lines.append(f"**sharesOutstanding**: {shares_p.get('sharesOutstanding') if shares_p else f.get('shares_outstanding')}")
+        lines.append(f"**impliedSharesOutstanding**: {shares_p.get('impliedSharesOutstanding') if shares_p else f.get('implied_shares_outstanding')}")
+        lines.append(f"**marketCap/price**: {shares_p.get('marketCap/price') if shares_p else f.get('market_cap_over_price')}")
+        lines.append(f"**diluted average shares**: {shares_p.get('diluted_average_shares') if shares_p else f.get('diluted_average_shares')}")
+        lines.append(
+            f"**canonical shares**: {shares_p.get('canonical_shares') if shares_p else f.get('canonical_shares')}  "
+            f"source={shares_p.get('canonical_source') if shares_p else f.get('canonical_shares_source') or '—'}"
+        )
         for obj in model_list:
             inputs = obj.get("inputs") or {}
             lines.append(f"**{obj.get('name') or obj.get('model_id')}**")
             lines.append(f"- 状态: {model_status_text(obj)} {money(obj.get('mid'))}")
-            if obj.get("reason"):
+            lines.append(f"- applicable: {'yes' if obj.get('applicable') is not False else 'no'}")
+            lines.append(f"- reason: {obj.get('applicability_reason') or obj.get('reason') or '—'}")
+            if inputs.get("eps_used") is not None or inputs.get("cycle_eps") is not None or inputs.get("normalized_eps") is not None:
+                lines.append(f"- input EPS: {inputs.get('eps_used') or inputs.get('cycle_eps') or inputs.get('normalized_eps')} source={inputs.get('eps_source') or inputs.get('eps_method') or '—'}")
+            if inputs.get("shares") is not None:
+                lines.append(f"- input shares: {inputs.get('shares')} source={inputs.get('canonical_shares_source') or '—'}")
+            if inputs.get("currency") or f.get("quote_currency"):
+                lines.append(f"- currency: {inputs.get('currency') or f.get('quote_currency')}")
+            if obj.get("reason") and obj.get("reason") != (obj.get("applicability_reason") or obj.get("reason")):
                 lines.append(f"- reason: {obj.get('reason')}")
             for key, value in list(inputs.items())[:8]:
                 lines.append(f"- {key}: {value}")
-        if f.get("eps_proxy") and fnum(f.get("forward_eps")) is None:
-            lines.append("**Forward EPS unavailable**")
-            lines.append("**Using trailing EPS proxy**")
         st.markdown("\n".join(lines))
 
 
