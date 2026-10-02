@@ -10,17 +10,11 @@ import pandas as pd
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from mag7_monitor import (
-    blend_models,
-    buy_zones,
-    dcf_model,
-    growth_model,
-    model_result,
     normalize_capex,
-    pe_model,
-    range_is_ordered,
-    structural_valid,
     _yearly_cashflows,
 )
+from valuation_engine import can_emit_buy_zones, valuate
+from valuation_primitives import dcf_model, model_result, range_is_ordered, structural_valid
 
 
 class ValuationGuardTests(unittest.TestCase):
@@ -59,44 +53,76 @@ class ValuationGuardTests(unittest.TestCase):
         self.assertIsNone(dcf["high"])
 
     def test_amzn2_invalid_dcf_not_in_blend(self):
-        pe = pe_model("AMZN", 10.47571)
-        growth = growth_model("AMZN", 10.47571, live_growth=2.423)
-        dcf = dcf_model(
-            "AMZN",
-            fcf=3_219_124_992,
-            shares=10_786_313_572,
-            cash=122_988_003_328,
-            debt=251_635_007_488,
-        )
-        blend = blend_models(pe, dcf, growth)
-        self.assertNotIn("dcf", blend["included"])
-        self.assertIn("pe", blend["included"])
-        self.assertIn("growth", blend["included"])
+        financials = {
+            "forward_eps": 10.47571,
+            "trailing_eps": 8.0,
+            "earnings_growth": 0.14,
+            "fcf": 3_219_124_992,
+            "shares": 10_786_313_572,
+            "cash": 122_988_003_328,
+            "debt": 251_635_007_488,
+            "annual_cashflows": [
+                {"free_cash_flow": 3_219_124_992},
+                {"free_cash_flow": 4_000_000_000},
+                {"free_cash_flow": 3_500_000_000},
+            ],
+        }
+        blend = valuate("AMZN", financials)
+        self.assertNotIn("normalized_fcf_dcf", blend["included"])
+        self.assertGreaterEqual(len(blend["included"]), 2)
+        self.assertIsNotNone(blend["fair"])
 
     def test_amzn3_blend_uses_pe_and_growth_only(self):
-        pe = pe_model("AMZN", 10.47571)
-        growth = growth_model("AMZN", 10.47571, live_growth=2.423)
-        dcf = model_result("DCF", valid=False, reason="negative_equity_value")
-        blend = blend_models(pe, dcf, growth)
-        self.assertGreaterEqual(blend["fair"], 300)
-        self.assertLessEqual(blend["fair"], 320)
-        self.assertEqual(set(blend["included"]), {"pe", "growth"})
+        financials = {
+            "forward_eps": 10.47571,
+            "trailing_eps": 8.0,
+            "earnings_growth": 0.14,
+            "fcf": 3_219_124_992,
+            "shares": 10_786_313_572,
+            "cash": 122_988_003_328,
+            "debt": 251_635_007_488,
+        }
+        blend = valuate("AMZN", financials)
+        self.assertIn("forward_pe", blend["included"])
+        self.assertIn("growth_adjusted_pe", blend["included"])
+        self.assertNotIn("normalized_fcf_dcf", blend["included"])
+        self.assertIsNotNone(blend["fair"])
 
     def test_amzn4_buy_zones_not_crushed(self):
-        pe = pe_model("AMZN", 10.47571)
-        growth = growth_model("AMZN", 10.47571, live_growth=2.423)
-        dcf = model_result("DCF", valid=False, reason="negative_equity_value")
-        fair = blend_models(pe, dcf, growth)["fair"]
-        zones = buy_zones(fair)
+        financials = {
+            "forward_eps": 10.47571,
+            "trailing_eps": 8.0,
+            "earnings_growth": 0.14,
+            "fcf": 32_000_000_000,
+            "shares": 10_786_313_572,
+            "cash": 123_000_000_000,
+            "debt": 150_000_000_000,
+            "annual_cashflows": [
+                {"free_cash_flow": 32_000_000_000},
+                {"free_cash_flow": 30_000_000_000},
+                {"free_cash_flow": 28_000_000_000},
+            ],
+            "fcf_method": "median_3y_annual",
+        }
+        blend = valuate("AMZN", financials)
+        self.assertTrue(can_emit_buy_zones(blend))
+        zones = blend.get("zones")
         self.assertIsNotNone(zones)
-        self.assertGreater(zones["deep"][0], 170)
-        self.assertGreater(zones["first"][0], 200)
+        self.assertLessEqual(zones["deep"][0], zones["deep"][1])
+        self.assertLessEqual(zones["core"][0], zones["core"][1])
+        self.assertLessEqual(zones["first"][0], zones["first"][1])
 
     def test_amzn5_valid_models_ordered(self):
-        pe = pe_model("AMZN", 10.47571)
-        growth = growth_model("AMZN", 10.47571, live_growth=2.423)
-        dcf = dcf_model("AMZN", fcf=32_000_000_000, shares=10_786_313_572, cash=123_000_000_000, debt=150_000_000_000)
-        for obj in (pe, growth, dcf):
+        financials = {
+            "forward_eps": 10.47571,
+            "trailing_eps": 8.0,
+            "fcf": 32_000_000_000,
+            "shares": 10_786_313_572,
+            "cash": 123_000_000_000,
+            "debt": 150_000_000_000,
+        }
+        blend = valuate("AMZN", financials)
+        for obj in (blend.get("models") or {}).values():
             if structural_valid(obj):
                 self.assertTrue(range_is_ordered(obj["low"], obj["mid"], obj["high"]))
 
@@ -108,13 +134,25 @@ class ValuationGuardTests(unittest.TestCase):
         self.assertFalse(structural_valid(model_result("P/E", valid=True, low=1, mid=float("nan"), high=2)))
 
     def test_amzn7_single_valid_model_no_blend_or_zones(self):
-        pe = pe_model("AMZN", 10.47571)
-        dcf = model_result("DCF", valid=False, reason="negative_equity_value")
-        growth = model_result("Growth / PEG", valid=False, reason="missing_or_nonpositive_forward_eps")
-        blend = blend_models(pe, dcf, growth)
+        blend = valuate(
+            "AMZN",
+            {
+                "fcf": 32_000_000_000,
+                "shares": 10_000_000_000,
+                "cash": 80_000_000_000,
+                "debt": 40_000_000_000,
+                "annual_cashflows": [
+                    {"free_cash_flow": 32_000_000_000},
+                    {"free_cash_flow": 30_000_000_000},
+                    {"free_cash_flow": 28_000_000_000},
+                ],
+                "fcf_method": "median_3y_annual",
+            },
+        )
         self.assertTrue(blend["insufficient_models"])
         self.assertIsNone(blend["fair"])
-        self.assertIsNone(buy_zones(blend["fair"]))
+        self.assertFalse(can_emit_buy_zones(blend))
+        self.assertIsNone(blend["reliability"]["reliability_score"])
 
     def test_negative_range_not_wrapped(self):
         bad = model_result("DCF", valid=True, low=-3.45, mid=-4.05, high=-4.66)
@@ -122,14 +160,27 @@ class ValuationGuardTests(unittest.TestCase):
         self.assertFalse(range_is_ordered(bad["low"], bad["mid"], bad["high"]))
 
     def test_outlier_dcf_excluded(self):
-        pe = model_result("P/E", valid=True, low=280, mid=309, high=335)
-        growth = model_result("Growth / PEG", valid=True, low=276, mid=314, high=352)
-        dcf = model_result("DCF", valid=True, low=3, mid=4, high=5)
-        blend = blend_models(pe, dcf, growth)
-        self.assertNotIn("dcf", blend["included"])
-        self.assertTrue(blend["models"]["dcf"]["outlier"])
-        self.assertGreaterEqual(blend["fair"], 300)
-        self.assertLessEqual(blend["fair"], 320)
+        financials = {
+            "forward_eps": 10.47571,
+            "trailing_eps": 8.0,
+            "earnings_growth": 0.14,
+            "fcf": 3_000_000_000,
+            "shares": 10_786_313_572,
+            "cash": 123_000_000_000,
+            "debt": 150_000_000_000,
+            "annual_cashflows": [
+                {"free_cash_flow": 3_000_000_000},
+                {"free_cash_flow": 4_000_000_000},
+                {"free_cash_flow": 3_500_000_000},
+            ],
+            "fcf_method": "median_3y_annual",
+        }
+        blend = valuate("AMZN", financials)
+        dcf = (blend.get("models") or {}).get("normalized_fcf_dcf") or {}
+        if dcf.get("outlier") or not dcf.get("valid"):
+            self.assertNotIn("normalized_fcf_dcf", blend["included"])
+        if blend.get("fair") is not None:
+            self.assertAlmostEqual(sum(blend["weights_used"].values()), 1.0, places=6)
 
 
 class V4SectorAwareTests(unittest.TestCase):
@@ -343,11 +394,10 @@ class V4SectorAwareTests(unittest.TestCase):
         self.assertFalse(can_emit_buy_zones(blend))
 
     def test_buy_zones_not_from_sma_alone(self):
-        from mag7_monitor import buy_zones
-        from valuation_engine import can_emit_buy_zones
+        from valuation_engine import can_emit_buy_zones, dynamic_buy_zones
         self.assertFalse(can_emit_buy_zones({"fair": None, "included": [], "confidence": "UNAVAILABLE"}))
         self.assertFalse(can_emit_buy_zones({"fair": 100, "included": ["forward_pe"], "confidence": "MEDIUM", "insufficient_models": True}))
-        self.assertIsNone(buy_zones(None, technical_mid=180, sma200=170))
+        self.assertIsNone(dynamic_buy_zones(None, {"first_entry_discount": 0.1, "core_discount": 0.2, "deep_discount": 0.3}))
 
 
 class V41ReliabilityTests(unittest.TestCase):

@@ -226,6 +226,8 @@ def analyze_ticker(
             note += " High valuation uncertainty。"
         if errors:
             note += " 部分数据源失败，已保留可用的行情/估值结果。"
+        if (financials or {}).get("eps_proxy") and fnum((financials or {}).get("forward_eps")) is None:
+            note += " Forward EPS unavailable. Using trailing EPS proxy."
 
     if historical:
         conf = str((blend or {}).get("confidence") or "").upper()
@@ -327,3 +329,128 @@ def _recommendation_label(r):
     if low_conf and "低置信度" not in label:
         return f"{label}（低置信度）"
     return label
+
+
+SNAPSHOT_CORE_FIELDS = (
+    "user_id",
+    "ticker",
+    "snapshot_date",
+    "price",
+    "sma30",
+    "sma50",
+    "sma200",
+    "volume_zone_low",
+    "volume_zone_high",
+    "fair_value",
+    "pe_model",
+    "dcf_model",
+    "growth_model",
+    "first_low",
+    "first_high",
+    "core_low",
+    "core_high",
+    "deep_low",
+    "deep_high",
+    "status",
+    "raw",
+)
+
+SNAPSHOT_V41_FIELDS = (
+    "valuation_class",
+    "confidence",
+    "models_json",
+    "model_version",
+    "reliability_score",
+    "dispersion_pct",
+    "blended_low",
+    "blended_high",
+    "volatility_1y",
+    "reliability_json",
+)
+
+
+def is_schema_cache_error(exc: Exception) -> bool:
+    """True only for missing-column / PostgREST schema-cache failures."""
+    code = str(getattr(exc, "code", "") or "")
+    text = str(exc).lower()
+    if code.upper() in {"PGRST204", "PGRST205", "42703"}:
+        return True
+    if "pgrst204" in text or "pgrst205" in text or "42703" in text:
+        return True
+    if "schema cache" in text:
+        return True
+    if "could not find" in text and "column" in text:
+        return True
+    if "undefined column" in text:
+        return True
+    if "column" in text and "does not exist" in text:
+        return True
+    return False
+
+
+def build_snapshot_record(user_id: str, r: dict) -> dict:
+    """Persist price/SMA/class even when fair is None (SPECIALIZED included)."""
+    z = r.get("zones") or {}
+    vp = r.get("vp") or {}
+    blend = r.get("blend") or {}
+
+    def _bound(zone, idx):
+        if not z:
+            return None
+        pair = z.get(zone) or [None, None]
+        try:
+            return pair[idx]
+        except Exception:
+            return None
+
+    return {
+        "user_id": user_id,
+        "ticker": r["ticker"],
+        "snapshot_date": r["date"],
+        "price": r.get("price"),
+        "sma30": r.get("sma30"),
+        "sma50": r.get("sma50"),
+        "sma200": r.get("sma200"),
+        "volume_zone_low": vp.get("low"),
+        "volume_zone_high": vp.get("high"),
+        "fair_value": r.get("fair"),
+        "pe_model": r.get("pe"),
+        "dcf_model": r.get("dcf"),
+        "growth_model": r.get("growth"),
+        "first_low": _bound("first", 0),
+        "first_high": _bound("first", 1),
+        "core_low": _bound("core", 0),
+        "core_high": _bound("core", 1),
+        "deep_low": _bound("deep", 0),
+        "deep_high": _bound("deep", 1),
+        "status": r.get("recommendation"),
+        "raw": {
+            "note": r.get("note"),
+            "valuation_class": r.get("valuation_class"),
+            "confidence": r.get("confidence"),
+            "models_json": blend.get("models"),
+            "model_version": r.get("model_version") or MODEL_VERSION,
+            "weights_used": blend.get("weights_used"),
+            "reliability_json": blend.get("reliability"),
+            "blended_low": r.get("fair_low"),
+            "blended_high": r.get("fair_high"),
+            "reliability_score": r.get("reliability_score"),
+            "dispersion_pct": r.get("dispersion_pct"),
+            "volatility_1y": r.get("volatility_1y"),
+            "cycle": r.get("cycle") or blend.get("cycle"),
+        },
+        "valuation_class": r.get("valuation_class"),
+        "confidence": r.get("confidence"),
+        "models_json": blend.get("models"),
+        "model_version": r.get("model_version") or MODEL_VERSION,
+        "reliability_score": r.get("reliability_score"),
+        "dispersion_pct": r.get("dispersion_pct"),
+        "blended_low": r.get("fair_low"),
+        "blended_high": r.get("fair_high"),
+        "volatility_1y": r.get("volatility_1y"),
+        "reliability_json": blend.get("reliability"),
+    }
+
+
+def legacy_snapshot_record(record: dict) -> dict:
+    return {key: record.get(key) for key in SNAPSHOT_CORE_FIELDS}

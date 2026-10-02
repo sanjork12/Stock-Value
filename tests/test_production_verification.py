@@ -72,6 +72,13 @@ class SessionAndSecretStaticTests(unittest.TestCase):
         example = _read(os.path.join(".streamlit", "secrets.toml.example"))
         self.assertNotIn("service_role", example.lower())
         self.assertIn("YOUR_SUPABASE_ANON_KEY", example)
+        self.assertIn("SESSION_COOKIE_SECRET", example)
+
+    def test_remember_cookie_is_sealed(self):
+        src = _read("streamlit_app.py")
+        self.assertIn("_seal_remember_payload", src)
+        self.assertIn("SESSION_COOKIE_SECRET", src)
+        self.assertNotIn("cookie_manager.set(\n            REMEMBER_COOKIE,\n            refresh_token", src)
 
     def test_logs_do_not_print_token_values(self):
         src = _read("streamlit_app.py")

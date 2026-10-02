@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+import base64
+import hashlib
+import hmac
+import json
 import logging
 import os
 import pandas as pd
@@ -14,7 +18,13 @@ from mag7_monitor import (
     get_live_fundamentals,
     fnum,
 )
-from analysis_service import analyze_ticker, format_fair_value
+from analysis_service import (
+    analyze_ticker,
+    build_snapshot_record,
+    format_fair_value,
+    is_schema_cache_error,
+    legacy_snapshot_record,
+)
 from valuation_engine import (
     MODEL_DISPLAY_NAMES,
     MODEL_VERSION,
@@ -217,6 +227,68 @@ def clear_auth_session() -> None:
     st.session_state.pop("last_analysis", None)
 
 
+def _remember_secret() -> str | None:
+    secret = get_secret("SESSION_COOKIE_SECRET")
+    if not secret:
+        return None
+    text = str(secret).strip()
+    if not text or text.upper() in {"YOUR_SESSION_COOKIE_SECRET", "CHANGE_ME"}:
+        return None
+    return text
+
+
+def _seal_remember_payload(refresh_token: str) -> str | None:
+    secret = _remember_secret()
+    if not secret or not refresh_token:
+        return None
+    key = hashlib.sha256(secret.encode("utf-8")).digest()
+    nonce = os.urandom(16)
+    raw = json.dumps(
+        {
+            "rt": refresh_token,
+            "exp": int((datetime.now(timezone.utc) + timedelta(days=REMEMBER_DAYS)).timestamp()),
+        },
+        separators=(",", ":"),
+    ).encode("utf-8")
+    stream = b""
+    counter = 0
+    while len(stream) < len(raw):
+        stream += hashlib.sha256(key + nonce + counter.to_bytes(4, "big")).digest()
+        counter += 1
+    cipher = bytes(a ^ b for a, b in zip(raw, stream))
+    mac = hmac.new(key, nonce + cipher, hashlib.sha256).digest()
+    packed = base64.urlsafe_b64encode(nonce + mac + cipher).decode("ascii").rstrip("=")
+    return f"v1.{packed}"
+
+
+def _unseal_remember_payload(value: str | None) -> str | None:
+    secret = _remember_secret()
+    if not secret or not value or not str(value).startswith("v1."):
+        return None
+    try:
+        packed = str(value)[3:]
+        pad = "=" * ((4 - len(packed) % 4) % 4)
+        blob = base64.urlsafe_b64decode(packed + pad)
+        nonce, mac, cipher = blob[:16], blob[16:48], blob[48:]
+        key = hashlib.sha256(secret.encode("utf-8")).digest()
+        expected = hmac.new(key, nonce + cipher, hashlib.sha256).digest()
+        if not hmac.compare_digest(mac, expected):
+            return None
+        stream = b""
+        counter = 0
+        while len(stream) < len(cipher):
+            stream += hashlib.sha256(key + nonce + counter.to_bytes(4, "big")).digest()
+            counter += 1
+        raw = bytes(a ^ b for a, b in zip(cipher, stream))
+        payload = json.loads(raw.decode("utf-8"))
+        if int(payload.get("exp") or 0) < int(datetime.now(timezone.utc).timestamp()):
+            return None
+        token = payload.get("rt")
+        return token if isinstance(token, str) and token else None
+    except Exception:
+        return None
+
+
 def _apply_access_token(client: Client, access_token: str) -> None:
     """A newly created client is anonymous until the user JWT is attached to PostgREST."""
     try:
@@ -228,10 +300,13 @@ def _apply_access_token(client: Client, access_token: str) -> None:
 def _save_remember_cookie(cookie_manager, refresh_token: str, widget_key: str) -> None:
     if not cookie_manager or not refresh_token:
         return
+    sealed = _seal_remember_payload(refresh_token)
+    if not sealed:
+        return
     try:
         cookie_manager.set(
             REMEMBER_COOKIE,
-            refresh_token,
+            sealed,
             expires_at=datetime.now(timezone.utc) + timedelta(days=REMEMBER_DAYS),
             key=widget_key,
         )
@@ -560,6 +635,9 @@ def render_valuation_diagnostics(r: dict):
                 lines.append(f"- reason: {obj.get('reason')}")
             for key, value in list(inputs.items())[:8]:
                 lines.append(f"- {key}: {value}")
+        if f.get("eps_proxy") and fnum(f.get("forward_eps")) is None:
+            lines.append("**Forward EPS unavailable**")
+            lines.append("**Using trailing EPS proxy**")
         st.markdown("\n".join(lines))
 
 
@@ -645,8 +723,10 @@ def get_cloud_snapshot(sb: Client, user_id: str, ticker: str, as_of: str):
     except Exception as exc:
         if is_rls_or_auth_error(exc):
             raise
-        logger.exception("snapshot select failed ticker=%s", ticker)
-        return None
+        if is_schema_cache_error(exc):
+            logger.exception("snapshot select schema cache ticker=%s", ticker)
+            return None
+        raise
 
 
 def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_id: str | None = None):
@@ -666,65 +746,20 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
 
 def save_snapshot(sb: Client, user_id: str, r: dict):
     current_user_id = assert_live_session(sb, user_id)
-    z = r.get("zones") or {}
-    vp = r.get("vp") or {}
-    payload = {
-        "user_id": current_user_id,
-        "ticker": r["ticker"],
-        "snapshot_date": r["date"],
-        "price": r.get("price"),
-        "sma30": r.get("sma30"),
-        "sma50": r.get("sma50"),
-        "sma200": r.get("sma200"),
-        "volume_zone_low": vp.get("low"),
-        "volume_zone_high": vp.get("high"),
-        "fair_value": r.get("fair"),
-        "pe_model": r.get("pe"),
-        "dcf_model": r.get("dcf"),
-        "growth_model": r.get("growth"),
-        "first_low": z.get("first", [None, None])[0] if z else None,
-        "first_high": z.get("first", [None, None])[1] if z else None,
-        "core_low": z.get("core", [None, None])[0] if z else None,
-        "core_high": z.get("core", [None, None])[1] if z else None,
-        "deep_low": z.get("deep", [None, None])[0] if z else None,
-        "deep_high": z.get("deep", [None, None])[1] if z else None,
-        "status": r.get("recommendation"),
-        "raw": {
-            "note": r.get("note"),
-            "valuation_class": r.get("valuation_class"),
-            "confidence": r.get("confidence"),
-            "models_json": (r.get("blend") or {}).get("models"),
-            "model_version": r.get("model_version") or MODEL_VERSION,
-            "weights_used": (r.get("blend") or {}).get("weights_used"),
-            "reliability_json": (r.get("blend") or {}).get("reliability"),
-            "blended_low": r.get("fair_low"),
-            "blended_high": r.get("fair_high"),
-            "reliability_score": r.get("reliability_score"),
-            "dispersion_pct": r.get("dispersion_pct"),
-            "volatility_1y": r.get("volatility_1y"),
-            "cycle": r.get("cycle") or (r.get("blend") or {}).get("cycle"),
-        },
-    }
-    extra = {
-        "valuation_class": r.get("valuation_class"),
-        "confidence": r.get("confidence"),
-        "models_json": (r.get("blend") or {}).get("models"),
-        "model_version": r.get("model_version") or MODEL_VERSION,
-        "reliability_score": r.get("reliability_score"),
-        "dispersion_pct": r.get("dispersion_pct"),
-        "blended_low": r.get("fair_low"),
-        "blended_high": r.get("fair_high"),
-        "volatility_1y": r.get("volatility_1y"),
-        "reliability_json": (r.get("blend") or {}).get("reliability"),
-    }
+    payload = build_snapshot_record(current_user_id, r)
     try:
-        sb.table("valuation_snapshots").upsert(
-            {**payload, **extra}, on_conflict="user_id,ticker,snapshot_date"
-        ).execute()
-    except Exception:
         sb.table("valuation_snapshots").upsert(
             payload, on_conflict="user_id,ticker,snapshot_date"
         ).execute()
+    except Exception as exc:
+        if is_rls_or_auth_error(exc):
+            raise
+        if is_schema_cache_error(exc):
+            sb.table("valuation_snapshots").upsert(
+                legacy_snapshot_record(payload), on_conflict="user_id,ticker,snapshot_date"
+            ).execute()
+            return
+        raise
 
 
 def list_snapshots(sb: Client, user_id: str, ticker: str):
@@ -740,15 +775,20 @@ def list_snapshots(sb: Client, user_id: str, ticker: str):
             .order("snapshot_date", desc=True)
             .execute()
         )
-    except Exception:
-        res = (
-            sb.table("valuation_snapshots")
-            .select(legacy)
-            .eq("user_id", current_user_id)
-            .eq("ticker", ticker)
-            .order("snapshot_date", desc=True)
-            .execute()
-        )
+    except Exception as exc:
+        if is_rls_or_auth_error(exc):
+            raise
+        if is_schema_cache_error(exc):
+            res = (
+                sb.table("valuation_snapshots")
+                .select(legacy)
+                .eq("user_id", current_user_id)
+                .eq("ticker", ticker)
+                .order("snapshot_date", desc=True)
+                .execute()
+            )
+        else:
+            raise
     return res.data or []
 
 
@@ -858,18 +898,24 @@ cookie_manager = stx.CookieManager(key="auth_cookie_manager")
 
 
 def restore_remembered_session() -> None:
-    """Restore tokens from the remember-me cookie into this Streamlit session.
+    """Restore tokens from the signed remember-me cookie into this Streamlit session.
 
-    The cookie stores a refresh token only. Passwords are never stored.
+    The cookie stores an encrypted refresh-token payload only. Passwords are never stored.
+    Persistent remember-me requires SESSION_COOKIE_SECRET; otherwise only this browser session is kept.
     """
     if st.session_state.get("authenticated") and st.session_state.get("access_token"):
         return
+    if not _remember_secret():
+        return
 
     try:
-        saved_refresh = cookie_manager.get(REMEMBER_COOKIE)
+        saved = cookie_manager.get(REMEMBER_COOKIE)
     except Exception:
-        saved_refresh = None
+        saved = None
+    saved_refresh = _unseal_remember_payload(saved)
     if not saved_refresh:
+        if saved:
+            _delete_remember_cookie(cookie_manager, "delete_bad_refresh_cookie")
         return
 
     anon = make_anon_client()
@@ -900,7 +946,13 @@ def login_page():
             with st.form("login_form"):
                 email = st.text_input("邮箱", placeholder="you@example.com")
                 password = st.text_input("密码", type="password")
-                remember = st.checkbox("记住登录状态 30 天", value=True)
+                remember = st.checkbox(
+                    "记住登录状态 30 天",
+                    value=bool(_remember_secret()),
+                    disabled=not _remember_secret(),
+                )
+                if not _remember_secret():
+                    st.caption("未配置 SESSION_COOKIE_SECRET，仅保留当前浏览器会话。")
                 submitted = st.form_submit_button("登录", type="primary", use_container_width=True)
             if submitted:
                 try:
@@ -910,7 +962,7 @@ def login_page():
                         st.error("登录失败：未获得有效会话，请重试。")
                     else:
                         persist_auth_session(resp.user, resp.session)
-                        if remember:
+                        if remember and _remember_secret():
                             _save_remember_cookie(
                                 cookie_manager,
                                 resp.session.refresh_token,
@@ -1072,16 +1124,18 @@ if page == "自选股":
             if r.get("price") is None:
                 rows.append({
                     "股票": t,
+                    "备注": item.get("nickname") or "",
                     "估值类型": "—",
                     "状态": "数据不足",
                     "错误": r.get("analysis_error") or "行情数据暂时获取失败",
                     "_core_gap": float("inf"),
                 })
                 continue
-            if auto_save and r.get("fair") is not None:
+            if auto_save and r.get("price") is not None:
                 save_snapshot(db, user_id, r)
             rows.append({
                 "股票": t,
+                "备注": item.get("nickname") or "",
                 "估值类型": r.get("valuation_class_label") or "—",
                 "价格": r["price"],
                 "SMA30": r["sma30"],
@@ -1103,7 +1157,7 @@ if page == "自选股":
                 err_text = public_db_error("upsert", "valuation_snapshots", e, client=db)
             else:
                 err_text = public_analysis_error(t, e)
-            rows.append({"股票": t, "估值类型": "—", "状态": "数据不足", "错误": err_text, "_core_gap": float("inf")})
+            rows.append({"股票": t, "备注": item.get("nickname") or "", "估值类型": "—", "状态": "数据不足", "错误": err_text, "_core_gap": float("inf")})
         progress.progress(i / len(watch), text=f"正在更新 {i}/{len(watch)}")
     progress.empty()
 

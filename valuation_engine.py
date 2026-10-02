@@ -5,7 +5,7 @@ import math
 import re
 from dataclasses import dataclass, field
 
-from mag7_monitor import (
+from valuation_primitives import (
     DISCOUNT_RATE,
     MODEL_OUTLIER_THRESHOLD,
     MIN_MODELS_FOR_BLEND,
@@ -307,8 +307,22 @@ def normalize_ticker(raw: str | None) -> str | None:
     return ticker
 
 
+def _multiple_eps(financials: dict) -> tuple[float | None, str, bool]:
+    """Return (eps, source, is_proxy). Never mutates forward_eps."""
+    forward = fnum(financials.get("forward_eps"))
+    if forward is not None and forward > 0:
+        return forward, "forward_eps", False
+    proxy = fnum(financials.get("eps_proxy"))
+    if proxy is not None and proxy > 0:
+        return proxy, str(financials.get("eps_proxy_source") or "trailing_eps"), True
+    trailing = fnum(financials.get("trailing_eps"))
+    if trailing is not None and trailing > 0:
+        return trailing, "trailing_eps", True
+    return None, "", False
+
+
 def _profitability_state(financials: dict) -> str:
-    eps = fnum(financials.get("forward_eps")) or fnum(financials.get("trailing_eps"))
+    eps = fnum(financials.get("forward_eps")) or fnum(financials.get("eps_proxy")) or fnum(financials.get("trailing_eps"))
     fcf = fnum(financials.get("fcf"))
     if (eps is None or eps <= 0) and (fcf is None or fcf <= 0):
         return "unprofitable"
@@ -448,19 +462,29 @@ def _cycle_median_eps(financials: dict) -> tuple[float | None, str]:
 
 def model_forward_pe(profile: ValuationProfile, financials: dict) -> dict:
     spec = profile.spec
-    eps = fnum(financials.get("forward_eps"))
+    eps, source, is_proxy = _multiple_eps(financials)
     if eps is None or eps <= 0:
         return model_result("Forward P/E", valid=False, reason="missing_or_nonpositive_forward_eps", extra={"model_id": "forward_pe", "applicable": True})
     lo, hi = spec.get("pe_range") or (16, 22)
+    name = "Normalized / proxy P/E" if is_proxy else "Forward P/E"
+    warnings = ["forward_eps_unavailable", "using_trailing_eps_proxy"] if is_proxy else []
     return model_result(
-        "Forward P/E",
+        name,
         valid=True,
         low=eps * lo,
         mid=eps * (lo + hi) / 2,
         high=eps * hi,
-        confidence="high" if profile.confidence_policy == "medium_high" else "medium",
-        inputs={"forward_eps": eps, "pe_low": lo, "pe_high": hi},
-        extra={"model_id": "forward_pe", "applicable": True, "valuation_class": profile.valuation_class},
+        confidence="medium" if is_proxy else ("high" if profile.confidence_policy == "medium_high" else "medium"),
+        inputs={
+            "forward_eps": fnum(financials.get("forward_eps")),
+            "eps_used": eps,
+            "eps_source": source,
+            "eps_proxy": True if is_proxy else False,
+            "pe_low": lo,
+            "pe_high": hi,
+        },
+        warnings=warnings,
+        extra={"model_id": "forward_pe", "applicable": True, "valuation_class": profile.valuation_class, "eps_proxy": is_proxy},
     )
 
 
@@ -484,21 +508,32 @@ def model_normalized_pe(profile: ValuationProfile, financials: dict) -> dict:
 
 def model_growth_adjusted_pe(profile: ValuationProfile, financials: dict) -> dict:
     spec = profile.spec
-    eps = fnum(financials.get("forward_eps"))
+    eps, source, is_proxy = _multiple_eps(financials)
     if eps is None or eps <= 0:
         return model_result("Growth-adjusted P/E", valid=False, reason="missing_or_nonpositive_forward_eps", extra={"model_id": "growth_adjusted_pe", "applicable": True})
     g = _cap_growth(financials.get("earnings_growth"), spec, financials)
     floor = (spec.get("pe_range") or (10, 22))[0]
     fair_pe = max(floor, min(g * 100 * spec.get("peg_target", 1.5), spec.get("growth_pe_cap", 28)))
+    name = "Growth-adjusted P/E (trailing proxy)" if is_proxy else "Growth-adjusted P/E"
+    warnings = ["forward_eps_unavailable", "using_trailing_eps_proxy"] if is_proxy else []
     return model_result(
-        "Growth-adjusted P/E",
+        name,
         valid=True,
         low=eps * fair_pe * 0.88,
         mid=eps * fair_pe,
         high=eps * fair_pe * 1.12,
         confidence="medium",
-        inputs={"forward_eps": eps, "growth_used": g, "fair_pe": fair_pe, "peg_target": spec.get("peg_target")},
-        extra={"model_id": "growth_adjusted_pe", "applicable": True, "fair_pe": fair_pe, "growth_used": g, "valuation_class": profile.valuation_class},
+        inputs={
+            "forward_eps": fnum(financials.get("forward_eps")),
+            "eps_used": eps,
+            "eps_source": source,
+            "eps_proxy": True if is_proxy else False,
+            "growth_used": g,
+            "fair_pe": fair_pe,
+            "peg_target": spec.get("peg_target"),
+        },
+        warnings=warnings,
+        extra={"model_id": "growth_adjusted_pe", "applicable": True, "fair_pe": fair_pe, "growth_used": g, "valuation_class": profile.valuation_class, "eps_proxy": is_proxy},
     )
 
 
@@ -680,6 +715,7 @@ PEG_DISABLED_CLASSES = {"cyclical_semiconductor", "fintech_exchange"}
 class ReliabilityResult:
     overall_confidence: str
     reliability_score: int | None
+    data_quality_score: int | None = None
     model_count_total: int = 0
     model_count_valid: int = 0
     model_count_included: int = 0
@@ -698,6 +734,7 @@ class ReliabilityResult:
         return {
             "overall_confidence": self.overall_confidence,
             "reliability_score": self.reliability_score,
+            "data_quality_score": self.data_quality_score,
             "model_count_total": self.model_count_total,
             "model_count_valid": self.model_count_valid,
             "model_count_included": self.model_count_included,
@@ -743,13 +780,21 @@ def _fcf_observations(financials: dict) -> tuple[list[float], list[float]]:
 
 
 def check_forward_pe_applicable(profile: ValuationProfile, financials: dict) -> tuple[bool, str, str, dict]:
-    eps = fnum(financials.get("forward_eps"))
+    eps, source, is_proxy = _multiple_eps(financials)
     trailing = fnum(financials.get("trailing_eps"))
-    diag = {"forward_eps": eps, "trailing_eps": trailing}
+    diag = {
+        "forward_eps": fnum(financials.get("forward_eps")),
+        "trailing_eps": trailing,
+        "eps_proxy": fnum(financials.get("eps_proxy")),
+        "eps_source": source,
+        "is_proxy": is_proxy,
+    }
     if eps is None or eps <= 0:
-        return False, "missing_or_nonpositive_forward_eps", "Forward EPS 缺失或非正，Forward P/E 不适用。", diag
+        return False, "missing_or_nonpositive_forward_eps", "Forward EPS 缺失或非正，且没有可用的 trailing EPS proxy。", diag
     if eps < 0.05:
-        return False, "forward_eps_near_zero", "Forward EPS 接近 0，倍数估值不稳定。", diag
+        return False, "forward_eps_near_zero", "EPS 接近 0，倍数估值不稳定。", diag
+    if is_proxy:
+        return True, "applicable_proxy", "Forward EPS unavailable. Using trailing EPS proxy.", diag
     if trailing and trailing > 0 and eps / trailing > 5:
         return False, "eps_forecast_anomalous", "Forward EPS 相对 trailing 变化过大，预测可能异常。", diag
     why = "盈利为正，forward EPS 数据完整。"
@@ -771,14 +816,16 @@ def check_normalized_pe_applicable(profile: ValuationProfile, financials: dict) 
 def check_growth_applicable(profile: ValuationProfile, financials: dict) -> tuple[bool, str, str, dict]:
     if profile.valuation_class in PEG_DISABLED_CLASSES:
         return False, "peg_disabled_for_class", "周期或交易型业务默认禁用普通 PEG。", {"valuation_class": profile.valuation_class}
-    eps = fnum(financials.get("forward_eps"))
+    eps, source, is_proxy = _multiple_eps(financials)
     if eps is None or eps <= 0:
-        return False, "missing_or_nonpositive_forward_eps", "缺少正的 Forward EPS，Growth 模型不适用。", {}
+        return False, "missing_or_nonpositive_forward_eps", "缺少正的 Forward EPS 或 trailing EPS proxy，Growth 模型不适用。", {"eps_source": source, "is_proxy": is_proxy}
     live = fnum(financials.get("earnings_growth"))
     why = "使用规范化远期增长率，而非单年爆发增长。"
-    if live is not None and live > 1:
+    if is_proxy:
+        why = "Forward EPS unavailable. Using trailing EPS proxy."
+    elif live is not None and live > 1:
         why = "当前 EPS 增长属于 rebound/cycle effect，已忽略单年增速，改用 normalized growth。"
-    return True, "applicable", why, {"earnings_growth": live}
+    return True, "applicable_proxy" if is_proxy else "applicable", why, {"earnings_growth": live, "eps_source": source, "is_proxy": is_proxy}
 
 
 def check_dcf_applicable(profile: ValuationProfile, financials: dict) -> tuple[bool, str, str, dict]:
@@ -1085,6 +1132,7 @@ def compute_reliability(
         return ReliabilityResult(
             overall_confidence="SPECIALIZED",
             reliability_score=None,
+            data_quality_score=None,
             model_count_total=len(models),
             model_count_valid=0,
             model_count_included=0,
@@ -1098,7 +1146,7 @@ def compute_reliability(
     warnings = []
     model_warnings = []
     missing = 0
-    if fnum(financials.get("forward_eps")) is None and fnum(financials.get("trailing_eps")) is None:
+    if fnum(financials.get("forward_eps")) is None and fnum(financials.get("trailing_eps")) is None and fnum(financials.get("eps_proxy")) is None:
         missing += 10
         penalties.append({"code": "missing_eps", "delta": -10})
     if fnum(financials.get("shares")) is None:
@@ -1113,8 +1161,15 @@ def compute_reliability(
     ):
         missing += 15
         penalties.append({"code": "missing_bank_inputs", "delta": -15})
+    _, _, is_proxy = _multiple_eps(financials)
+    if is_proxy:
+        missing += 12
+        penalties.append({"code": "eps_proxy_trailing", "delta": -12})
+        warnings.append("forward_eps_unavailable")
+        warnings.append("using_trailing_eps_proxy")
     missing = min(missing, 25)
     score -= missing
+    data_quality_score = max(0, min(100, 100 - missing))
     if len(included) == 2:
         score -= 10
         penalties.append({"code": "only_two_models", "delta": -10})
@@ -1160,17 +1215,21 @@ def compute_reliability(
     band = dispersion_band(disp)
     if len(included) < MIN_MODELS_FOR_BLEND:
         confidence = "UNAVAILABLE"
+        reliability_score = None
     elif score >= 85 and (band in {None, "LOW"}) and len(included) >= 3:
         confidence = "HIGH"
+        reliability_score = score
     elif score >= 65:
         confidence = "MEDIUM"
+        reliability_score = score
     else:
         confidence = "LOW"
+        reliability_score = score
     if profile.confidence_policy == "low" and confidence in {"HIGH", "MEDIUM"}:
         confidence = "LOW"
     if missing >= 20:
         data_quality = "poor"
-    elif missing > 0:
+    elif missing > 0 or is_proxy:
         data_quality = "partial"
     else:
         data_quality = "good"
@@ -1181,7 +1240,8 @@ def compute_reliability(
     )
     return ReliabilityResult(
         overall_confidence=confidence,
-        reliability_score=score,
+        reliability_score=reliability_score,
+        data_quality_score=data_quality_score,
         model_count_total=len(models),
         model_count_valid=valid_n,
         model_count_included=len(included),
@@ -1270,6 +1330,8 @@ def check_valuation_invariants(blend: dict | None, *, strict: bool = False) -> l
     score = (blend.get("reliability") or {}).get("reliability_score")
     if score is None:
         score = blend.get("reliability_score")
+    if conf == "UNAVAILABLE" and score is not None:
+        problems.append("unavailable_has_reliability_score")
     if score is not None and float(score) >= 40 and len(included) >= MIN_MODELS_FOR_BLEND and conf == "UNAVAILABLE":
         problems.append("reliability_with_two_models_marked_unavailable")
     if mid is not None and conf in {"UNAVAILABLE", "SPECIALIZED"}:
@@ -1385,7 +1447,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             "dispersion": disp,
             "reason": "insufficient_valid_models",
             "warnings": reliability.applicability_warnings,
-            "reliability": {**reliability.to_dict(), "overall_confidence": "UNAVAILABLE"},
+            "reliability": {**reliability.to_dict(), "overall_confidence": "UNAVAILABLE", "reliability_score": None},
             "mos": None,
             "zones": None,
             "cycle": cycle,
@@ -1413,7 +1475,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             "dispersion": disp,
             "reason": "unordered_blended_range",
             "warnings": reliability.applicability_warnings,
-            "reliability": {**reliability.to_dict(), "overall_confidence": "UNAVAILABLE"},
+            "reliability": {**reliability.to_dict(), "overall_confidence": "UNAVAILABLE", "reliability_score": None},
             "mos": None,
             "zones": None,
             "cycle": cycle,

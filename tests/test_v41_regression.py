@@ -155,21 +155,29 @@ class V41RegressionTests(unittest.TestCase):
         self.assertEqual(result["blended_mid"], result["fair"])
         self.assertEqual(result["fair"], result["fair_value"])
 
-    def test_empty_info_reproduces_unavailable_82(self):
+    def test_empty_info_unavailable_has_no_reliability_score(self):
         blend = valuate("AAPL", {"shares": 14_594_180_000})
         self.assertEqual(blend["confidence"], "UNAVAILABLE")
-        self.assertEqual(blend["reliability"]["reliability_score"], 82)
         self.assertIsNone(blend["fair"])
+        self.assertIsNone(blend["reliability"]["reliability_score"])
+        self.assertIsNotNone(blend["reliability"].get("data_quality_score"))
 
-    def test_trailing_eps_fallback_emits_fair(self):
+    def test_trailing_eps_proxy_does_not_mutate_forward_eps(self):
         fin = dict(AAPL_FIN)
         fin.pop("forward_eps", None)
         filled = fill_fundamental_fallbacks(fin)
-        self.assertEqual(filled["forward_eps"], filled["trailing_eps"])
+        self.assertIsNone(filled.get("forward_eps"))
+        self.assertEqual(filled["eps_proxy"], filled["trailing_eps"])
+        self.assertEqual(filled["eps_proxy_source"], "trailing_eps")
         blend = valuate("AAPL", filled)
         self.assertIsNotNone(blend["blended_mid"])
         self.assertNotEqual(blend["confidence"], "UNAVAILABLE")
         self.assertGreaterEqual(len(blend["included"]), 2)
+        pe = (blend.get("models") or {}).get("forward_pe") or {}
+        self.assertEqual(pe.get("name"), "Normalized / proxy P/E")
+        self.assertTrue(pe.get("eps_proxy"))
+        full = valuate("AAPL", AAPL_FIN)
+        self.assertLess(blend["reliability"]["reliability_score"], full["reliability"]["reliability_score"])
 
     def test_jpm_roe_from_book_and_trailing(self):
         fin = dict(JPM_FIN)
@@ -177,7 +185,8 @@ class V41RegressionTests(unittest.TestCase):
         fin.pop("forward_eps", None)
         filled = fill_fundamental_fallbacks(fin)
         self.assertIsNotNone(filled.get("roe"))
-        self.assertEqual(filled["forward_eps"], filled["trailing_eps"])
+        self.assertIsNone(filled.get("forward_eps"))
+        self.assertEqual(filled["eps_proxy"], filled["trailing_eps"])
         blend = valuate("JPM", filled)
         self.assertIsNotNone(blend["blended_mid"])
         self.assertNotEqual(blend["confidence"], "UNAVAILABLE")
