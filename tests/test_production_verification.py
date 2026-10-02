@@ -78,7 +78,11 @@ class SessionAndSecretStaticTests(unittest.TestCase):
         src = _read("streamlit_app.py")
         self.assertIn("_seal_remember_payload", src)
         self.assertIn("SESSION_COOKIE_SECRET", src)
+        self.assertIn("seal_remember_payload", src)
+        self.assertIn("from cryptography.fernet import Fernet, InvalidToken", _read("remember_session.py"))
         self.assertNotIn("cookie_manager.set(\n            REMEMBER_COOKIE,\n            refresh_token", src)
+        self.assertNotIn("keystream", _read("remember_session.py").lower())
+        self.assertNotIn("hmac.new", _read("remember_session.py"))
 
     def test_logs_do_not_print_token_values(self):
         src = _read("streamlit_app.py")

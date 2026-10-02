@@ -9,5 +9,6 @@ websockets>=12.0
 lxml>=4.9.0
 beautifulsoup4>=4.11.1
 peewee>=3.16.2
-pandas>=2.2,<3
+cryptography>=42.0.0,<47
 numpy>=1.26,<3
+pandas>=2.2,<3

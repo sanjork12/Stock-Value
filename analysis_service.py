@@ -140,6 +140,7 @@ def analyze_ticker(
     pe = dcf = growth = None
     fair = None
     note = ""
+    snapshot_fetch_failed = False
 
     if historical:
         try:
@@ -153,6 +154,7 @@ def analyze_ticker(
             )
             errors.append({"stage": "snapshot", "error_type": type(exc).__name__, "message": str(exc)[:200]})
             snap = None
+            snapshot_fetch_failed = True
         if snap:
             blend = reconstruct_blend_from_snapshot(snap)
             pe = snap.get("pe_model")
@@ -172,6 +174,8 @@ def analyze_ticker(
             note = f"历史估值使用 {snap['snapshot_date']} 保存的云端估值快照，可靠性数据取当时结果。"
             if is_legacy_snapshot(snap):
                 note += " 该历史快照创建于可靠性层之前，部分可靠性指标不可用。"
+        elif snapshot_fetch_failed:
+            note = "历史估值暂时读取失败，请稍后重试。"
         else:
             note = "该日期没有历史估值快照，仅显示技术数据。"
     else:
@@ -293,8 +297,11 @@ def analyze_ticker(
         "cycle": (blend or {}).get("cycle"),
         "errors": errors,
         "analysis_error": None,
+        "snapshot_error": "历史估值暂时读取失败，请稍后重试。" if snapshot_fetch_failed else None,
     }
-    if errors and not fair:
+    if snapshot_fetch_failed:
+        r["analysis_error"] = r["snapshot_error"]
+    elif errors and not fair:
         r["analysis_error"] = "财务数据暂时获取失败" if any(e.get("stage") == "fundamentals" for e in errors) else None
     r["recommendation"] = _recommendation_label(r)
     return r
@@ -386,6 +393,25 @@ def is_schema_cache_error(exc: Exception) -> bool:
     if "column" in text and "does not exist" in text:
         return True
     return False
+
+
+def fetch_historical_snapshot(sb, user_id: str, ticker: str, as_of: str):
+    """Return the latest snapshot on/before as_of, or None if the query succeeds with 0 rows.
+
+    RLS, schema-cache, network, and database errors propagate to the caller.
+    """
+    res = (
+        sb.table("valuation_snapshots")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("ticker", ticker)
+        .lte("snapshot_date", as_of)
+        .order("snapshot_date", desc=True)
+        .limit(1)
+        .execute()
+    )
+    data = getattr(res, "data", None) or []
+    return data[0] if data else None
 
 
 def build_snapshot_record(user_id: str, r: dict) -> dict:

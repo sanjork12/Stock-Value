@@ -1,10 +1,6 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
-import base64
-import hashlib
-import hmac
-import json
 import logging
 import os
 import pandas as pd
@@ -21,10 +17,12 @@ from mag7_monitor import (
 from analysis_service import (
     analyze_ticker,
     build_snapshot_record,
+    fetch_historical_snapshot,
     format_fair_value,
     is_schema_cache_error,
     legacy_snapshot_record,
 )
+from remember_session import seal_remember_payload, unseal_remember_payload
 from valuation_engine import (
     MODEL_DISPLAY_NAMES,
     MODEL_VERSION,
@@ -238,55 +236,11 @@ def _remember_secret() -> str | None:
 
 
 def _seal_remember_payload(refresh_token: str) -> str | None:
-    secret = _remember_secret()
-    if not secret or not refresh_token:
-        return None
-    key = hashlib.sha256(secret.encode("utf-8")).digest()
-    nonce = os.urandom(16)
-    raw = json.dumps(
-        {
-            "rt": refresh_token,
-            "exp": int((datetime.now(timezone.utc) + timedelta(days=REMEMBER_DAYS)).timestamp()),
-        },
-        separators=(",", ":"),
-    ).encode("utf-8")
-    stream = b""
-    counter = 0
-    while len(stream) < len(raw):
-        stream += hashlib.sha256(key + nonce + counter.to_bytes(4, "big")).digest()
-        counter += 1
-    cipher = bytes(a ^ b for a, b in zip(raw, stream))
-    mac = hmac.new(key, nonce + cipher, hashlib.sha256).digest()
-    packed = base64.urlsafe_b64encode(nonce + mac + cipher).decode("ascii").rstrip("=")
-    return f"v1.{packed}"
+    return seal_remember_payload(refresh_token, _remember_secret(), ttl_days=REMEMBER_DAYS)
 
 
 def _unseal_remember_payload(value: str | None) -> str | None:
-    secret = _remember_secret()
-    if not secret or not value or not str(value).startswith("v1."):
-        return None
-    try:
-        packed = str(value)[3:]
-        pad = "=" * ((4 - len(packed) % 4) % 4)
-        blob = base64.urlsafe_b64decode(packed + pad)
-        nonce, mac, cipher = blob[:16], blob[16:48], blob[48:]
-        key = hashlib.sha256(secret.encode("utf-8")).digest()
-        expected = hmac.new(key, nonce + cipher, hashlib.sha256).digest()
-        if not hmac.compare_digest(mac, expected):
-            return None
-        stream = b""
-        counter = 0
-        while len(stream) < len(cipher):
-            stream += hashlib.sha256(key + nonce + counter.to_bytes(4, "big")).digest()
-            counter += 1
-        raw = bytes(a ^ b for a, b in zip(cipher, stream))
-        payload = json.loads(raw.decode("utf-8"))
-        if int(payload.get("exp") or 0) < int(datetime.now(timezone.utc).timestamp()):
-            return None
-        token = payload.get("rt")
-        return token if isinstance(token, str) and token else None
-    except Exception:
-        return None
+    return unseal_remember_payload(value, _remember_secret())
 
 
 def _apply_access_token(client: Client, access_token: str) -> None:
@@ -708,25 +662,7 @@ def style_status(v):
 
 def get_cloud_snapshot(sb: Client, user_id: str, ticker: str, as_of: str):
     current_user_id = assert_live_session(sb, user_id)
-    try:
-        res = (
-            sb.table("valuation_snapshots")
-            .select("*")
-            .eq("user_id", current_user_id)
-            .eq("ticker", ticker)
-            .lte("snapshot_date", as_of)
-            .order("snapshot_date", desc=True)
-            .limit(1)
-            .execute()
-        )
-        return res.data[0] if res.data else None
-    except Exception as exc:
-        if is_rls_or_auth_error(exc):
-            raise
-        if is_schema_cache_error(exc):
-            logger.exception("snapshot select schema cache ticker=%s", ticker)
-            return None
-        raise
+    return fetch_historical_snapshot(sb, current_user_id, ticker, as_of)
 
 
 def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_id: str | None = None):
@@ -1335,7 +1271,9 @@ elif page == "单股分析":
     r = st.session_state.get("last_analysis")
 
     if r:
-        if r.get("analysis_error") and r.get("price") is None:
+        if r.get("snapshot_error"):
+            st.error(r["snapshot_error"])
+        elif r.get("analysis_error") and r.get("price") is None:
             st.error(r["analysis_error"])
         elif r.get("errors"):
             st.warning("部分数据源失败，已保留可用的价格/估值结果。")
