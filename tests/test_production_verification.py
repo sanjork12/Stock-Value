@@ -60,6 +60,17 @@ class SchemaAndPolicyStaticTests(unittest.TestCase):
         self.assertNotRegex(sql, r"(?m)^\s*drop table\b")
         self.assertNotIn("disable row level security", sql)
 
+    def test_schema_adds_v421_exit_reliability_columns(self):
+        sql = (_read("supabase_schema.sql") + "\n" + _read("supabase_v4_2_1_exit_reliability_migration.sql")).lower()
+        for col in (
+            "exit_confidence",
+            "exit_display_mode",
+            "exit_reliability_score",
+            "exit_reason_codes",
+        ):
+            self.assertIn(f"add column if not exists {col}", sql)
+        self.assertNotIn("disable row level security", sql)
+
     def test_policies_are_authenticated_and_owner_scoped(self):
         sql = _read("supabase_schema.sql")
         self.assertIn("to authenticated", sql.lower())
@@ -217,7 +228,7 @@ class PresentationStaticTests(unittest.TestCase):
         self.assertEqual(service.count("blend = valuate("), 1)
 
     def test_model_version_constant(self):
-        self.assertEqual(MODEL_VERSION, "v4.2-exit-zone")
+        self.assertEqual(MODEL_VERSION, "v4.2.1-exit-reliability")
 
     def test_upsert_conflict_targets(self):
         src = _read("streamlit_app.py")

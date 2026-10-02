@@ -176,3 +176,7 @@ alter table public.valuation_snapshots add column if not exists overvalued_price
 alter table public.valuation_snapshots add column if not exists trim_price numeric;
 alter table public.valuation_snapshots add column if not exists extreme_price numeric;
 alter table public.valuation_snapshots add column if not exists exit_zone_json jsonb;
+alter table public.valuation_snapshots add column if not exists exit_confidence text;
+alter table public.valuation_snapshots add column if not exists exit_display_mode text;
+alter table public.valuation_snapshots add column if not exists exit_reliability_score numeric;
+alter table public.valuation_snapshots add column if not exists exit_reason_codes jsonb;

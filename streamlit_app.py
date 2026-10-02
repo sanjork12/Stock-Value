@@ -54,8 +54,13 @@ REMEMBER_DAYS = 30
 
 
 def format_trim_zone(exit_zone: dict | None) -> str:
-    """Dashboard/single-stock formatter; kept local so Cloud never depends on a stale analysis_service."""
+    """Dashboard/single-stock formatter; precise prices only when Exit Reliability Guard allows."""
     if not isinstance(exit_zone, dict):
+        return "—"
+    mode = exit_zone.get("display_mode")
+    if mode and mode != "precise":
+        return "—"
+    if exit_zone.get("eligible_for_precise_exit") is False:
         return "—"
     trim = fnum(exit_zone.get("trim_price"))
     extreme = fnum(exit_zone.get("extreme_price"))
@@ -66,6 +71,11 @@ def format_trim_zone(exit_zone: dict | None) -> str:
 
 def format_extreme_zone(exit_zone: dict | None) -> str:
     if not isinstance(exit_zone, dict):
+        return "—"
+    mode = exit_zone.get("display_mode")
+    if mode and mode != "precise":
+        return "—"
+    if exit_zone.get("eligible_for_precise_exit") is False:
         return "—"
     extreme = fnum(exit_zone.get("extreme_price"))
     if extreme is None:
@@ -135,6 +145,7 @@ STATUS_META = {
     "减仓参考区": ("#FED7AA", "#9A3412", "🟠"),
     "明显高估区": ("#FECACA", "#B91C1C", "🔴"),
     "估值偏高（低置信度）": ("#FFEDD5", "#9A3412", "🟠"),
+    "估值偏高（模型分歧较大）": ("#FFEDD5", "#C2410C", "🟠"),
     "估值偏低（低置信度）": ("#DCFCE7", "#166534", "🟢"),
     "观察 / 等回调": ("#F3F4F6", "#4B5563", "⚪"),
     "仅技术观察": ("#F3F4F6", "#4B5563", "⚪"),
@@ -713,7 +724,12 @@ def render_valuation_band(r: dict):
     exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone")) or {}
     price = fnum(r.get("price"))
     conf = str(r.get("confidence") or "").upper()
+    mode = exit_zone.get("display_mode") if isinstance(exit_zone, dict) else None
     if conf in {"SPECIALIZED", "UNAVAILABLE"}:
+        return
+    if mode and mode != "precise":
+        return
+    if isinstance(exit_zone, dict) and exit_zone.get("eligible_for_precise_exit") is False:
         return
     labels = zones.get("labels") or {}
     segments = []
@@ -781,15 +797,37 @@ def render_valuation_band(r: dict):
 def render_exit_diagnostics(r: dict):
     exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone"))
     conf = str(r.get("confidence") or "").upper()
+    rel = (exit_zone or {}).get("exit_reliability") if isinstance(exit_zone, dict) else None
+    mode = (exit_zone or {}).get("display_mode") if isinstance(exit_zone, dict) else r.get("exit_display_mode")
     with st.expander("Exit / Overvaluation diagnostics"):
-        if conf in {"SPECIALIZED", "UNAVAILABLE"}:
+        st.caption(
+            "退出区仅在估值模型一致性与可靠性达到要求时提供精确价格。"
+            "模型分歧较大时，仅显示定性高估提示。"
+        )
+        if conf in {"SPECIALIZED", "UNAVAILABLE"} or mode == "unavailable":
             st.write("SPECIALIZED / UNAVAILABLE：不生成精确退出区。")
             return
-        if conf == "LOW" or not isinstance(exit_zone, dict):
-            st.write("LOW confidence：不生成精确减仓价格。仅显示估值偏高/偏低（低置信度）语义。")
-            return
+        disp = r.get("dispersion_pct")
+        disp_txt = f"{disp*100:.0f}%" if disp is not None else "—"
         lines = [
-            f"**Confidence**: {exit_zone.get('confidence') or conf}",
+            f"**Valuation confidence**: {conf or '—'}",
+            f"**Valuation reliability score**: {r.get('reliability_score') if r.get('reliability_score') is not None else '—'}",
+            f"**Model dispersion**: {disp_txt}",
+            f"**Exit confidence**: {(exit_zone or {}).get('exit_confidence') or r.get('exit_confidence') or '—'}",
+            f"**Display mode**: {mode or '—'}",
+            f"**Eligible for precise exit**: {'Yes' if (exit_zone or {}).get('eligible_for_precise_exit') else 'No'}",
+            f"**Reason codes**: {', '.join((exit_zone or {}).get('reason_codes') or r.get('exit_reason_codes') or []) or '—'}",
+        ]
+        if isinstance(rel, dict):
+            lines.append(f"**Exit reliability score**: {rel.get('exit_reliability_score')}")
+            lines.append(f"**Exit dispersion**: {rel.get('exit_dispersion_pct')}")
+        if conf == "LOW" or mode == "qualitative" or not isinstance(exit_zone, dict):
+            lines.append("")
+            lines.append("精确减仓价格已关闭（qualitative / low reliability）。")
+            st.markdown("\n".join(lines))
+            return
+        lines.extend([
+            "",
             f"**Volatility**: {exit_zone.get('volatility_1y')} ({exit_zone.get('volatility_band') or '—'})",
             f"**Cyclicality adjustment**: {exit_zone.get('cyclical_adj', 0):+.0%}" if exit_zone.get("cyclical_adj") is not None else "**Cyclicality adjustment**: —",
             f"**Dispersion adjustment**: {exit_zone.get('dispersion_adj', 0):+.0%}" if exit_zone.get("dispersion_adj") is not None else "**Dispersion adjustment**: —",
@@ -805,7 +843,7 @@ def render_exit_diagnostics(r: dict):
             f"**Overvalued price**: {money(exit_zone.get('overvalued_price'))}",
             f"**Trim reference price**: {money(exit_zone.get('trim_price'))}",
             f"**Extreme overvaluation price**: {money(exit_zone.get('extreme_price'))}",
-        ]
+        ])
         st.markdown("\n".join(lines))
         st.caption("减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
 
@@ -1366,7 +1404,10 @@ if page == "自选股":
             "错误": st.column_config.TextColumn(width=180),
         },
     )
-    st.caption("可靠性评分衡量数据完整性、模型一致性及适用性，不是股票评级，也不代表未来收益概率。减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
+    st.caption(
+        "可靠性评分衡量数据完整性、模型一致性及适用性，不是股票评级，也不代表未来收益概率。"
+        "退出区仅在估值模型一致性与可靠性达到要求时提供精确价格；模型分歧较大时，仅显示定性高估提示。"
+    )
 
     st.markdown("#### 颜色说明")
     cols = st.columns(8)
@@ -1589,7 +1630,8 @@ elif page == "单股分析":
             if conf == "LOW":
                 st.warning("估值不确定性较高，此价格区仅为模型参考。")
             exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone"))
-            if conf in {"HIGH", "MEDIUM"} and isinstance(exit_zone, dict):
+            mode = (exit_zone or {}).get("display_mode") if isinstance(exit_zone, dict) else None
+            if conf in {"HIGH", "MEDIUM"} and isinstance(exit_zone, dict) and mode == "precise":
                 e1, e2, e3, e4 = st.columns(4)
                 e1.info(
                     f"**合理持有区**\n\n≤ {money(exit_zone.get('hold_upper_price'))}"
@@ -1605,6 +1647,13 @@ elif page == "单股分析":
                 )
                 st.caption("减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
                 render_valuation_band(r)
+            elif conf in {"HIGH", "MEDIUM"} and mode == "qualitative":
+                disp = r.get("dispersion_pct")
+                disp_txt = f"{disp*100:.0f}%" if disp is not None else "—"
+                st.warning("**Exit valuation: 低确定性**")
+                st.write(f"**Reason:** 模型分歧 {disp_txt}")
+                st.write(f"**Current interpretation:** {r.get('recommendation')}")
+                st.caption("由于估值模型分歧较大，不提供精确减仓价格。")
             elif conf == "LOW":
                 st.caption("低置信度不生成精确减仓价；若价格明显高于 indicative range，状态显示「估值偏高（低置信度）」。")
         elif (r.get("blend") or {}).get("specialized") or r.get("confidence") == "SPECIALIZED":

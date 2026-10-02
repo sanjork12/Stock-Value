@@ -39,6 +39,17 @@ def _profile(**kwargs):
     return dynamic_overvaluation_profile(**base)
 
 
+def _precise(**kwargs):
+    ez = _profile(**kwargs)
+    if ez is None:
+        return None
+    ez = dict(ez)
+    ez["display_mode"] = "precise"
+    ez["eligible_for_precise_exit"] = True
+    ez["exit_confidence"] = "MEDIUM"
+    return ez
+
+
 class ExitZoneCoreTests(unittest.TestCase):
     def test_1_high_confidence_emits_exit_zones(self):
         ez = _profile(confidence="HIGH")
@@ -155,7 +166,7 @@ class ExitZoneCoreTests(unittest.TestCase):
         self.assertEqual(result["exit_zone"]["trim_price"], 390.0)
 
     def test_11_price_in_trim_range_status(self):
-        ez = _profile()
+        ez = _precise()
         r = {
             "price": (ez["trim_price"] + ez["extreme_price"]) / 2,
             "confidence": "MEDIUM",
@@ -171,7 +182,7 @@ class ExitZoneCoreTests(unittest.TestCase):
         self.assertEqual(_recommendation_label(r), "减仓参考区")
 
     def test_12_price_above_extreme_status(self):
-        ez = _profile()
+        ez = _precise()
         r = {
             "price": ez["extreme_price"] + 5,
             "confidence": "MEDIUM",
@@ -229,14 +240,14 @@ class ExitZoneCoreTests(unittest.TestCase):
         self.assertIsNone(row.get("exit_zone_json"))
 
     def test_model_version_v42(self):
-        self.assertEqual(MODEL_VERSION, "v4.2-exit-zone")
+        self.assertEqual(MODEL_VERSION, "v4.2.1-exit-reliability")
 
 
 class ExitZoneBuyZoneRegression(unittest.TestCase):
     """TEST 14: existing buy-zone path still works with exit layer present."""
 
     def test_14_buy_zone_undervalued_status_unchanged(self):
-        ez = _profile()
+        ez = _precise()
         r = {
             "price": 210,
             "confidence": "MEDIUM",

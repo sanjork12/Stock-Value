@@ -17,11 +17,11 @@ from mag7_monitor import (
 )
 from valuation_engine import (
     MODEL_VERSION,
+    build_exit_zone,
     can_emit_buy_zones,
     can_emit_exit_zones,
     check_valuation_invariants,
     dynamic_buy_zones,
-    dynamic_overvaluation_profile,
     exit_zone_from_snapshot,
     is_legacy_snapshot,
     normalize_ticker,
@@ -226,7 +226,7 @@ def analyze_ticker(
         elif blend.get("confidence") == "UNAVAILABLE":
             note = f"估值类型：{class_label}。有效估值模型不足。"
         else:
-            note = f"估值类型：{class_label}。使用 V4.2 dynamic exit / overvaluation layer。"
+            note = f"估值类型：{class_label}。使用 V4.2.1 exit reliability guard。"
         if blend.get("excluded"):
             note += " 部分模型已排除。"
         if "high_valuation_uncertainty" in (blend.get("warnings") or []):
@@ -263,7 +263,7 @@ def analyze_ticker(
         exit_zone = blend.get("exit_zone")
         if exit_zone is None and can_emit_exit_zones(blend):
             profile = blend.get("profile") or {}
-            exit_zone = dynamic_overvaluation_profile(
+            exit_zone = build_exit_zone(
                 blended_low=blend.get("blended_low") if blend.get("blended_low") is not None else blend.get("fair_low"),
                 blended_mid=_mid(blend),
                 blended_high=blend.get("blended_high") if blend.get("blended_high") is not None else blend.get("fair_high"),
@@ -278,12 +278,27 @@ def analyze_ticker(
     else:
         zones = None
         exit_zone = (blend or {}).get("exit_zone")
+        if exit_zone is None and blend and can_emit_exit_zones(blend):
+            profile = blend.get("profile") or {}
+            exit_zone = build_exit_zone(
+                blended_low=blend.get("blended_low") if blend.get("blended_low") is not None else blend.get("fair_low"),
+                blended_mid=_mid(blend),
+                blended_high=blend.get("blended_high") if blend.get("blended_high") is not None else blend.get("fair_high"),
+                confidence=blend.get("confidence"),
+                reliability_score=(blend.get("reliability") or {}).get("reliability_score"),
+                dispersion_pct=blend.get("dispersion"),
+                volatility_1y=blend.get("volatility_1y"),
+                cyclicality=profile.get("cyclicality"),
+                valuation_class=profile.get("valuation_class"),
+            )
+            blend["exit_zone"] = exit_zone
 
     display_name = (financials or {}).get("long_name") or NAMES.get(ticker, ticker)
     reliability = (blend or {}).get("reliability") or {}
     if blend:
         check_valuation_invariants(blend, strict=False)
 
+    exit_mode = (exit_zone or {}).get("display_mode") if isinstance(exit_zone, dict) else None
     r = {
         "ticker": ticker,
         "name": display_name,
@@ -305,6 +320,14 @@ def analyze_ticker(
         "fair_high": (blend or {}).get("fair_high"),
         "zones": zones,
         "exit_zone": exit_zone,
+        "exit_confidence": (exit_zone or {}).get("exit_confidence") if isinstance(exit_zone, dict) else None,
+        "exit_display_mode": exit_mode,
+        "exit_reliability_score": (
+            ((exit_zone or {}).get("exit_reliability") or {}).get("exit_reliability_score")
+            if isinstance(exit_zone, dict)
+            else None
+        ),
+        "exit_reason_codes": list((exit_zone or {}).get("reason_codes") or []) if isinstance(exit_zone, dict) else [],
         "note": note,
         "state": classify_price(price, fair) if fair else "技术面模式",
         "history": df,
@@ -334,6 +357,21 @@ def analyze_ticker(
         r["analysis_error"] = "财务数据暂时获取失败" if any(e.get("stage") == "fundamentals" for e in errors) else None
     r["recommendation"] = _recommendation_label(r)
     return r
+
+
+def _exit_display_mode(exit_zone) -> str | None:
+    if not isinstance(exit_zone, dict):
+        return None
+    mode = exit_zone.get("display_mode")
+    if mode:
+        return str(mode)
+    if exit_zone.get("eligible_for_precise_exit") and fnum(exit_zone.get("trim_price")) is not None:
+        return "precise"
+    if exit_zone.get("internal_thresholds_disabled_by_reliability"):
+        return "qualitative"
+    if fnum(exit_zone.get("trim_price")) is not None:
+        return "precise"
+    return "qualitative"
 
 
 def _recommendation_label(r):
@@ -382,11 +420,17 @@ def _recommendation_label(r):
             return "估值偏低（低置信度）"
         return "观察 / 等回调（低置信度）"
 
-    if conf in {"HIGH", "MEDIUM"} and isinstance(exit_zone, dict):
+    mode = _exit_display_mode(exit_zone)
+    high = fnum(r.get("blended_high") if r.get("blended_high") is not None else r.get("fair_high"))
+    if conf in {"HIGH", "MEDIUM"} and mode == "qualitative":
+        if high is not None and p > high:
+            return "估值偏高（模型分歧较大）"
+        return "合理持有区"
+
+    if conf in {"HIGH", "MEDIUM"} and mode == "precise" and isinstance(exit_zone, dict):
         hold = fnum(exit_zone.get("hold_upper_price"))
         trim = fnum(exit_zone.get("trim_price"))
         extreme = fnum(exit_zone.get("extreme_price"))
-        over = fnum(exit_zone.get("overvalued_price"))
         if hold is not None and p <= hold:
             return "合理持有区"
         if extreme is not None and p >= extreme:
@@ -394,9 +438,6 @@ def _recommendation_label(r):
         if trim is not None and extreme is not None and trim <= p < extreme:
             return "减仓参考区"
         if hold is not None and trim is not None and hold < p < trim:
-            # Optional finer start: overvalued_price marks deeper 偏高估 within the band.
-            if over is not None and p < over:
-                return "偏高估区"
             return "偏高估区"
         if hold is not None:
             return "合理持有区"
@@ -409,6 +450,8 @@ def _recommendation_label(r):
 def format_trim_zone(exit_zone: dict | None) -> str:
     if not isinstance(exit_zone, dict):
         return "—"
+    if _exit_display_mode(exit_zone) != "precise":
+        return "—"
     trim = fnum(exit_zone.get("trim_price"))
     extreme = fnum(exit_zone.get("extreme_price"))
     if trim is None or extreme is None:
@@ -418,6 +461,8 @@ def format_trim_zone(exit_zone: dict | None) -> str:
 
 def format_extreme_zone(exit_zone: dict | None) -> str:
     if not isinstance(exit_zone, dict):
+        return "—"
+    if _exit_display_mode(exit_zone) != "precise":
         return "—"
     extreme = fnum(exit_zone.get("extreme_price"))
     if extreme is None:
@@ -468,6 +513,13 @@ SNAPSHOT_V42_FIELDS = (
     "trim_price",
     "extreme_price",
     "exit_zone_json",
+)
+
+SNAPSHOT_V421_FIELDS = (
+    "exit_confidence",
+    "exit_display_mode",
+    "exit_reliability_score",
+    "exit_reason_codes",
 )
 
 
@@ -526,6 +578,30 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
             return None
 
     exit_json = dict(exit_zone) if isinstance(exit_zone, dict) else None
+    mode = _exit_display_mode(exit_zone) if exit_json else None
+    precise = mode == "precise"
+    # User-visible price columns are null unless precise mode.
+    hold_p = (exit_json or {}).get("hold_upper_price") if precise else None
+    over_p = (exit_json or {}).get("overvalued_price") if precise else None
+    trim_p = (exit_json or {}).get("trim_price") if precise else None
+    extreme_p = (exit_json or {}).get("extreme_price") if precise else None
+    if exit_json is not None and not precise:
+        exit_json = dict(exit_json)
+        exit_json["hold_upper_price"] = None
+        exit_json["overvalued_price"] = None
+        exit_json["trim_price"] = None
+        exit_json["extreme_price"] = None
+        exit_json["internal_thresholds_disabled_by_reliability"] = True
+        exit_json["display_mode"] = mode or exit_json.get("display_mode") or "qualitative"
+
+    exit_conf = r.get("exit_confidence") or ((exit_json or {}).get("exit_confidence") if exit_json else None)
+    exit_score = r.get("exit_reliability_score")
+    if exit_score is None and exit_json:
+        exit_score = ((exit_json.get("exit_reliability") or {}).get("exit_reliability_score")
+                      if isinstance(exit_json.get("exit_reliability"), dict)
+                      else exit_json.get("exit_reliability_score"))
+    reason_codes = r.get("exit_reason_codes") or ((exit_json or {}).get("reason_codes") if exit_json else []) or []
+
     return {
         "user_id": user_id,
         "ticker": r["ticker"],
@@ -562,10 +638,14 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
             "volatility_1y": r.get("volatility_1y"),
             "cycle": r.get("cycle") or blend.get("cycle"),
             "exit_zone_json": exit_json,
-            "hold_upper_price": (exit_json or {}).get("hold_upper_price") if exit_json else None,
-            "overvalued_price": (exit_json or {}).get("overvalued_price") if exit_json else None,
-            "trim_price": (exit_json or {}).get("trim_price") if exit_json else None,
-            "extreme_price": (exit_json or {}).get("extreme_price") if exit_json else None,
+            "hold_upper_price": hold_p,
+            "overvalued_price": over_p,
+            "trim_price": trim_p,
+            "extreme_price": extreme_p,
+            "exit_confidence": exit_conf,
+            "exit_display_mode": mode,
+            "exit_reliability_score": exit_score,
+            "exit_reason_codes": reason_codes,
         },
         "valuation_class": r.get("valuation_class"),
         "confidence": r.get("confidence"),
@@ -577,11 +657,15 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
         "blended_high": r.get("fair_high"),
         "volatility_1y": r.get("volatility_1y"),
         "reliability_json": blend.get("reliability"),
-        "hold_upper_price": (exit_json or {}).get("hold_upper_price") if exit_json else None,
-        "overvalued_price": (exit_json or {}).get("overvalued_price") if exit_json else None,
-        "trim_price": (exit_json or {}).get("trim_price") if exit_json else None,
-        "extreme_price": (exit_json or {}).get("extreme_price") if exit_json else None,
+        "hold_upper_price": hold_p,
+        "overvalued_price": over_p,
+        "trim_price": trim_p,
+        "extreme_price": extreme_p,
         "exit_zone_json": exit_json,
+        "exit_confidence": exit_conf,
+        "exit_display_mode": mode,
+        "exit_reliability_score": exit_score,
+        "exit_reason_codes": reason_codes,
     }
 
 

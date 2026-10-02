@@ -26,7 +26,7 @@ from valuation_primitives import (
     structural_valid,
 )
 
-MODEL_VERSION = "v4.2-exit-zone"
+MODEL_VERSION = "v4.2.1-exit-reliability"
 TICKER_RE = re.compile(r"^[A-Z][A-Z0-9.\-]{0,9}$")
 COST_OF_EQUITY_DEFAULT = 0.10
 logger = logging.getLogger("stock_fair_value_monitor")
@@ -1289,7 +1289,7 @@ def _class_exit_adjustment(valuation_class: str | None, confidence: str) -> tupl
 
 
 def can_emit_exit_zones(blend: dict | None) -> bool:
-    """Precise exit / overvaluation prices only for HIGH or MEDIUM with a fair range."""
+    """True when a fair range exists for HIGH/MEDIUM — profile may still be qualitative."""
     if not blend:
         return False
     conf = str(blend.get("confidence") or blend.get("overall_confidence") or "").upper()
@@ -1298,6 +1298,207 @@ def can_emit_exit_zones(blend: dict | None) -> bool:
     mid = fnum(blend.get("blended_mid") if blend.get("blended_mid") is not None else blend.get("fair"))
     high = fnum(blend.get("blended_high") if blend.get("blended_high") is not None else blend.get("fair_high"))
     return mid is not None and mid > 0 and high is not None and high > 0
+
+
+def compute_exit_reliability(
+    confidence,
+    reliability_score=None,
+    dispersion_pct=None,
+    blended_mid=None,
+    blended_high=None,
+) -> dict:
+    """ExitReliabilityResult: gates precise exit prices separately from valuation confidence."""
+    conf = str(confidence or "").upper()
+    mid = fnum(blended_mid)
+    high = fnum(blended_high)
+    score = fnum(reliability_score)
+    disp = fnum(dispersion_pct)
+    reason_codes: list[str] = []
+    warnings: list[str] = []
+
+    if conf in {"SPECIALIZED", "UNAVAILABLE"} or mid is None or high is None:
+        exit_conf = "UNAVAILABLE"
+        display_mode = "unavailable"
+        eligible = False
+        if conf == "SPECIALIZED":
+            reason_codes.append("specialized_valuation")
+        elif conf == "UNAVAILABLE" or mid is None or high is None:
+            reason_codes.append("insufficient_fair_value")
+        return {
+            "eligible_for_precise_exit": False,
+            "exit_confidence": exit_conf,
+            "exit_reliability_score": score,
+            "exit_dispersion_pct": disp,
+            "reason_codes": reason_codes,
+            "warnings": warnings,
+            "display_mode": display_mode,
+        }
+
+    if conf == "LOW":
+        reason_codes.append("valuation_confidence_low")
+        return {
+            "eligible_for_precise_exit": False,
+            "exit_confidence": "LOW",
+            "exit_reliability_score": score,
+            "exit_dispersion_pct": disp,
+            "reason_codes": reason_codes,
+            "warnings": warnings,
+            "display_mode": "qualitative",
+        }
+
+    # HIGH / MEDIUM valuation confidence with a fair range.
+    if score is None or score < 65:
+        reason_codes.append("insufficient_exit_reliability")
+    if disp is None:
+        reason_codes.append("missing_dispersion")
+    elif disp > 0.50:
+        reason_codes.append("high_model_dispersion")
+    elif disp > 0.30:
+        reason_codes.append("elevated_model_dispersion")
+
+    eligible = (
+        conf in {"HIGH", "MEDIUM"}
+        and mid is not None
+        and high is not None
+        and score is not None
+        and score >= 65
+        and disp is not None
+        and disp <= 0.30
+    )
+
+    if eligible:
+        display_mode = "precise"
+        if conf == "HIGH" and score >= 85 and disp <= 0.15:
+            exit_conf = "HIGH"
+        else:
+            exit_conf = "MEDIUM"
+    else:
+        display_mode = "qualitative"
+        exit_conf = "LOW"
+        if disp is not None and disp > 0.50:
+            warnings.append("high_model_dispersion_blocks_precise_exit")
+        elif score is not None and score < 65:
+            warnings.append("insufficient_exit_reliability_blocks_precise_exit")
+        elif disp is not None and disp > 0.30:
+            warnings.append("elevated_dispersion_blocks_precise_exit")
+
+    return {
+        "eligible_for_precise_exit": eligible,
+        "exit_confidence": exit_conf,
+        "exit_reliability_score": score,
+        "exit_dispersion_pct": disp,
+        "reason_codes": reason_codes,
+        "warnings": warnings,
+        "display_mode": display_mode,
+    }
+
+
+def apply_exit_display_guard(profile: dict | None, reliability: dict | None) -> dict | None:
+    """Attach ExitReliabilityResult; hide precise prices unless eligible."""
+    if not isinstance(profile, dict):
+        return None
+    out = dict(profile)
+    rel = reliability or compute_exit_reliability(
+        confidence=out.get("confidence"),
+        reliability_score=out.get("reliability_score"),
+        dispersion_pct=out.get("dispersion_pct"),
+        blended_mid=out.get("blended_mid"),
+        blended_high=out.get("blended_high"),
+    )
+    out["exit_reliability"] = rel
+    out["display_mode"] = rel.get("display_mode")
+    out["exit_confidence"] = rel.get("exit_confidence")
+    out["eligible_for_precise_exit"] = bool(rel.get("eligible_for_precise_exit"))
+    out["reason_codes"] = list(rel.get("reason_codes") or [])
+    out["exit_warnings"] = list(rel.get("warnings") or [])
+
+    if out["eligible_for_precise_exit"] and out.get("display_mode") == "precise":
+        out["internal_thresholds_disabled_by_reliability"] = False
+        return out
+
+    # Keep pct thresholds for diagnostics; null user-visible prices.
+    out["hold_upper_price"] = None
+    out["overvalued_price"] = None
+    out["trim_price"] = None
+    out["extreme_price"] = None
+    out["internal_thresholds_disabled_by_reliability"] = True
+    out["internal_hold_upper_pct"] = out.get("hold_upper_pct")
+    out["internal_trim_pct"] = out.get("trim_pct")
+    out["internal_extreme_pct"] = out.get("extreme_pct")
+    return out
+
+
+def build_exit_zone(
+    blended_low,
+    blended_mid,
+    blended_high,
+    confidence,
+    reliability_score=None,
+    dispersion_pct=None,
+    volatility_1y=None,
+    cyclicality: str | None = "low",
+    valuation_class: str | None = None,
+) -> dict | None:
+    """Compute overvaluation profile then apply Exit Reliability Guard."""
+    rel = compute_exit_reliability(
+        confidence=confidence,
+        reliability_score=reliability_score,
+        dispersion_pct=dispersion_pct,
+        blended_mid=blended_mid,
+        blended_high=blended_high,
+    )
+    if rel.get("display_mode") == "unavailable":
+        return {
+            "display_mode": "unavailable",
+            "exit_confidence": rel.get("exit_confidence"),
+            "eligible_for_precise_exit": False,
+            "exit_reliability": rel,
+            "reason_codes": list(rel.get("reason_codes") or []),
+            "hold_upper_price": None,
+            "overvalued_price": None,
+            "trim_price": None,
+            "extreme_price": None,
+            "internal_thresholds_disabled_by_reliability": True,
+            "blended_low": fnum(blended_low),
+            "blended_mid": fnum(blended_mid),
+            "blended_high": fnum(blended_high),
+            "confidence": str(confidence or "").upper(),
+            "reliability_score": fnum(reliability_score),
+            "dispersion_pct": fnum(dispersion_pct),
+        }
+
+    profile = dynamic_overvaluation_profile(
+        blended_low=blended_low,
+        blended_mid=blended_mid,
+        blended_high=blended_high,
+        confidence=confidence,
+        reliability_score=reliability_score,
+        dispersion_pct=dispersion_pct,
+        volatility_1y=volatility_1y,
+        cyclicality=cyclicality,
+        valuation_class=valuation_class,
+    )
+    if profile is None:
+        # LOW confidence etc.: qualitative shell without precise prices.
+        return {
+            "display_mode": rel.get("display_mode") or "qualitative",
+            "exit_confidence": rel.get("exit_confidence") or "LOW",
+            "eligible_for_precise_exit": False,
+            "exit_reliability": rel,
+            "reason_codes": list(rel.get("reason_codes") or []),
+            "hold_upper_price": None,
+            "overvalued_price": None,
+            "trim_price": None,
+            "extreme_price": None,
+            "internal_thresholds_disabled_by_reliability": True,
+            "blended_low": fnum(blended_low),
+            "blended_mid": fnum(blended_mid),
+            "blended_high": fnum(blended_high),
+            "confidence": str(confidence or "").upper(),
+            "reliability_score": fnum(reliability_score),
+            "dispersion_pct": fnum(dispersion_pct),
+        }
+    return apply_exit_display_guard(profile, rel)
 
 
 def dynamic_overvaluation_profile(
@@ -1876,7 +2077,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
 
     mos = margin_of_safety_profile(confidence, disp, volatility, profile.cyclicality, profile.valuation_class)
     zones = dynamic_buy_zones(mid, mos, low_confidence=(confidence == "LOW"))
-    exit_zone = dynamic_overvaluation_profile(
+    exit_zone = build_exit_zone(
         blended_low=low,
         blended_mid=mid,
         blended_high=high,
@@ -1962,23 +2163,48 @@ def exit_zone_from_snapshot(snap: dict | None) -> dict | None:
     if not isinstance(payload, dict):
         payload = raw.get("exit_zone_json")
     if isinstance(payload, dict) and payload:
-        # Prefer explicit top-level price columns when present (schema v4.2+).
         out = dict(payload)
         for key in ("hold_upper_price", "overvalued_price", "trim_price", "extreme_price"):
-            if snap.get(key) is not None:
+            if key in snap and snap.get(key) is not None:
                 out[key] = snap.get(key)
+            elif out.get("display_mode") and out.get("display_mode") != "precise":
+                # Explicit nulls for qualitative/unavailable snapshots.
+                if key in snap and snap.get(key) is None:
+                    out[key] = None
+        for key in ("exit_confidence", "exit_display_mode", "exit_reliability_score"):
+            col = key if key != "exit_display_mode" else "exit_display_mode"
+            if snap.get(col) is not None:
+                if key == "exit_display_mode":
+                    out["display_mode"] = snap.get(col)
+                else:
+                    out[key] = snap.get(col)
+        if snap.get("exit_reason_codes") is not None:
+            out["reason_codes"] = snap.get("exit_reason_codes")
+        elif raw.get("exit_reason_codes") is not None:
+            out["reason_codes"] = raw.get("exit_reason_codes")
+        if out.get("display_mode") is None and snap.get("exit_display_mode"):
+            out["display_mode"] = snap.get("exit_display_mode")
+        if out.get("exit_confidence") is None and snap.get("exit_confidence"):
+            out["exit_confidence"] = snap.get("exit_confidence")
         return out
     hold = snap.get("hold_upper_price")
     over = snap.get("overvalued_price")
     trim = snap.get("trim_price")
     extreme = snap.get("extreme_price")
-    if hold is None and over is None and trim is None and extreme is None:
+    display_mode = snap.get("exit_display_mode") or raw.get("exit_display_mode")
+    exit_conf = snap.get("exit_confidence") or raw.get("exit_confidence")
+    if hold is None and over is None and trim is None and extreme is None and not display_mode and not exit_conf:
         return None
     return {
         "hold_upper_price": hold,
         "overvalued_price": over,
         "trim_price": trim,
         "extreme_price": extreme,
+        "display_mode": display_mode or ("precise" if trim is not None else "qualitative"),
+        "exit_confidence": exit_conf,
+        "exit_reliability_score": snap.get("exit_reliability_score") or raw.get("exit_reliability_score"),
+        "reason_codes": snap.get("exit_reason_codes") or raw.get("exit_reason_codes") or [],
+        "eligible_for_precise_exit": bool(trim is not None and extreme is not None),
         "from_columns": True,
     }
 
