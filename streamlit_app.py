@@ -1045,6 +1045,11 @@ if "nav_initialized" not in st.session_state:
         st.session_state._last_watch_select = qp_boot
     st.session_state.nav_initialized = True
 
+# Apply page jumps before the nav widget is instantiated (cannot mutate widget keys after).
+_pending_nav = st.session_state.pop("_pending_nav_page", None)
+if _pending_nav in NAV_PAGES:
+    st.session_state.nav_page = _pending_nav
+
 if hasattr(st, "segmented_control"):
     page = st.segmented_control(
         "页面",
@@ -1247,7 +1252,7 @@ if page == "自选股":
         st.session_state.selected_ticker = jump
         st.session_state.watch_select = jump
         st.session_state._last_watch_select = jump
-        st.session_state.nav_page = "单股分析"
+        st.session_state._pending_nav_page = "单股分析"
         try:
             st.query_params["ticker"] = jump
         except Exception:
