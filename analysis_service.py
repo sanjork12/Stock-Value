@@ -413,7 +413,7 @@ def format_trim_zone(exit_zone: dict | None) -> str:
     extreme = fnum(exit_zone.get("extreme_price"))
     if trim is None or extreme is None:
         return "—"
-    return f"${trim:,.0f} – ${extreme:,.0f}"
+    return f"${trim:,.0f} - ${extreme:,.0f}"
 
 
 def format_extreme_zone(exit_zone: dict | None) -> str:

@@ -3,35 +3,10 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 import logging
 import os
+import traceback
+
 import pandas as pd
 import streamlit as st
-import extra_streamlit_components as stx
-from supabase import create_client, Client
-
-from mag7_monitor import (
-    add_indicators,
-    get_history,
-    get_live_fundamentals,
-    fnum,
-)
-from analysis_service import (
-    analyze_ticker,
-    build_snapshot_record,
-    fetch_historical_snapshot,
-    format_extreme_zone,
-    format_fair_value,
-    format_trim_zone,
-    is_schema_cache_error,
-    legacy_snapshot_record,
-)
-from remember_session import seal_remember_payload, unseal_remember_payload
-from valuation_engine import (
-    MODEL_DISPLAY_NAMES,
-    MODEL_VERSION,
-    is_legacy_snapshot,
-    normalize_ticker,
-    primary_valuation_view,
-)
 
 st.set_page_config(
     page_title="Stock Fair Value Monitor",
@@ -40,9 +15,42 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-NAV_PAGES = ["自选股", "单股分析", "历史快照", "账户"]
+try:
+    import extra_streamlit_components as stx
+    from supabase import create_client, Client
+
+    from mag7_monitor import (
+        add_indicators,
+        get_history,
+        get_live_fundamentals,
+        fnum,
+    )
+    from analysis_service import (
+        analyze_ticker,
+        build_snapshot_record,
+        fetch_historical_snapshot,
+        format_extreme_zone,
+        format_fair_value,
+        format_trim_zone,
+        is_schema_cache_error,
+        legacy_snapshot_record,
+    )
+    from remember_session import seal_remember_payload, unseal_remember_payload
+    from valuation_engine import (
+        MODEL_DISPLAY_NAMES,
+        MODEL_VERSION,
+        is_legacy_snapshot,
+        normalize_ticker,
+        primary_valuation_view,
+    )
+except Exception as _boot_exc:
+    st.error(f"App boot import failed: {type(_boot_exc).__name__}: {_boot_exc}")
+    st.code(traceback.format_exc())
+    st.stop()
 
 logger = logging.getLogger("stock_fair_value_monitor")
+
+NAV_PAGES = ["自选股", "单股分析", "历史快照", "账户"]
 REMEMBER_COOKIE = "stock_monitor_refresh"
 REMEMBER_DAYS = 30
 
