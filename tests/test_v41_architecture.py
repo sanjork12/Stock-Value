@@ -91,9 +91,53 @@ class ArchitectureCleanupTests(unittest.TestCase):
         src = _read("streamlit_app.py")
         self.assertIn('"备注": item.get("nickname") or ""', src)
         self.assertIn('"估值类型": r.get("valuation_class_label") or "—"', src)
-        dash_block = src.split("if page == \"自选股\":", 1)[1]
-        self.assertIn('"备注"', dash_block.split("elif page ==")[0])
-        self.assertIn('"估值类型"', dash_block.split("elif page ==")[0])
+        dash_block = src.split("if page == \"自选股\":", 1)[1].split("elif page ==", 1)[0]
+        self.assertIn('"备注"', dash_block)
+        self.assertIn('"估值类型"', dash_block)
+        self.assertIn('show_advanced_cols', dash_block)
+        self.assertIn('显示高级列', dash_block)
+        # Advanced columns append at the end only when toggle is on.
+        self.assertIn('dashboard_columns.extend(["备注", "估值类型"])', dash_block)
+
+    def test_f2_dashboard_default_column_order_decision_first(self):
+        src = _read("streamlit_app.py")
+        dash_block = src.split("if page == \"自选股\":", 1)[1].split("elif page ==", 1)[0]
+        expected = [
+            "股票",
+            "价格",
+            "状态",
+            "公允价值",
+            "置信度",
+            "距公允价值%",
+            "第一批区",
+            "核心买入区",
+            "深度价值区",
+            "可靠性",
+            "模型分歧",
+            "SMA30",
+            "SMA50",
+            "SMA200",
+        ]
+        # Parse default dashboard_columns list before advanced extend.
+        start = dash_block.find("dashboard_columns = [")
+        self.assertGreaterEqual(start, 0)
+        end = dash_block.find("]", start)
+        block = dash_block[start:end]
+        order = []
+        for name in expected + ["错误", "备注", "估值类型"]:
+            token = f'"{name}"'
+            if token in block:
+                order.append((block.find(token), name))
+        order.sort()
+        names = [n for _, n in order if n != "错误"]
+        self.assertEqual(names, expected)
+        self.assertNotIn("备注", names)
+        self.assertNotIn("估值类型", names)
+        self.assertIn('if show_advanced_cols:', dash_block)
+        self.assertIn('dashboard_columns.extend(["备注", "估值类型"])', dash_block)
+        # Valuation engine files remain untouched by this UI change path.
+        self.assertNotIn("valuation_engine", dash_block)
+        self.assertNotIn("financial_normalization", dash_block)
 
     def test_g_only_one_production_valuation_engine(self):
         monitor = _read("mag7_monitor.py")

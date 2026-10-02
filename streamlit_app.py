@@ -1090,6 +1090,7 @@ if page == "自选股":
         st.stop()
 
     auto_save = st.checkbox("自动保存今天的估值快照", value=True)
+    show_advanced_cols = st.checkbox("显示高级列", value=False, key="dash_advanced_cols")
     rows = []
     progress = st.progress(0, text="正在更新自选股…")
     for i, item in enumerate(watch, start=1):
@@ -1099,32 +1100,50 @@ if page == "自选股":
             if r.get("price") is None:
                 rows.append({
                     "股票": t,
-                    "备注": item.get("nickname") or "",
-                    "估值类型": "—",
+                    "价格": None,
                     "状态": "数据不足",
                     "错误": r.get("analysis_error") or "行情数据暂时获取失败",
+                    "公允价值": "—",
+                    "置信度": "—",
+                    "距公允价值%": "—",
+                    "第一批区": "—",
+                    "核心买入区": "—",
+                    "深度价值区": "—",
+                    "可靠性": "—",
+                    "模型分歧": "—",
+                    "SMA30": None,
+                    "SMA50": None,
+                    "SMA200": None,
+                    "备注": item.get("nickname") or "",
+                    "估值类型": "—",
                     "_core_gap": float("inf"),
                 })
                 continue
             if auto_save and r.get("price") is not None:
                 save_snapshot(db, user_id, r)
+            conf_u = str(r.get("confidence") or "").upper()
+            if r.get("fair") is None or conf_u in {"SPECIALIZED", "UNAVAILABLE"}:
+                delta_display = "—"
+            else:
+                d = delta_pct(r["price"], r["fair"])
+                delta_display = "—" if d is None else f"{float(d):.1f}%"
             rows.append({
                 "股票": t,
-                "备注": item.get("nickname") or "",
-                "估值类型": r.get("valuation_class_label") or "—",
                 "价格": r["price"],
-                "SMA30": r["sma30"],
-                "SMA50": r["sma50"],
-                "SMA200": r["sma200"],
+                "状态": r["recommendation"],
                 "公允价值": dashboard_fair_text(r),
                 "置信度": r.get("confidence") or "—",
-                "可靠性": r.get("reliability_score") if r.get("reliability_score") is not None else "—",
-                "模型分歧": f"{r['dispersion_pct']*100:.0f}%" if r.get("dispersion_pct") is not None else "—",
-                "距公允价值%": delta_pct(r["price"], r["fair"]) if str(r.get("confidence") or "").upper() not in {"LOW", "SPECIALIZED", "UNAVAILABLE"} else None,
+                "距公允价值%": delta_display,
                 "第一批区": zone_text(r["zones"]["first"]) if r["zones"] else "—",
                 "核心买入区": zone_text(r["zones"]["core"]) if r["zones"] else "—",
                 "深度价值区": zone_text(r["zones"]["deep"]) if r["zones"] else "—",
-                "状态": r["recommendation"],
+                "可靠性": r.get("reliability_score") if r.get("reliability_score") is not None else "—",
+                "模型分歧": f"{r['dispersion_pct']*100:.0f}%" if r.get("dispersion_pct") is not None else "—",
+                "SMA30": r["sma30"],
+                "SMA50": r["sma50"],
+                "SMA200": r["sma200"],
+                "备注": item.get("nickname") or "",
+                "估值类型": r.get("valuation_class_label") or "—",
                 "_core_gap": core_zone_gap(r["price"], r.get("zones")),
             })
         except Exception as e:
@@ -1132,7 +1151,26 @@ if page == "自选股":
                 err_text = public_db_error("upsert", "valuation_snapshots", e, client=db)
             else:
                 err_text = public_analysis_error(t, e)
-            rows.append({"股票": t, "备注": item.get("nickname") or "", "估值类型": "—", "状态": "数据不足", "错误": err_text, "_core_gap": float("inf")})
+            rows.append({
+                "股票": t,
+                "价格": None,
+                "状态": "数据不足",
+                "错误": err_text,
+                "公允价值": "—",
+                "置信度": "—",
+                "距公允价值%": "—",
+                "第一批区": "—",
+                "核心买入区": "—",
+                "深度价值区": "—",
+                "可靠性": "—",
+                "模型分歧": "—",
+                "SMA30": None,
+                "SMA50": None,
+                "SMA200": None,
+                "备注": item.get("nickname") or "",
+                "估值类型": "—",
+                "_core_gap": float("inf"),
+            })
         progress.progress(i / len(watch), text=f"正在更新 {i}/{len(watch)}")
     progress.empty()
 
@@ -1146,17 +1184,53 @@ if page == "自选股":
         else:
             df = df.sort_values("_core_gap", kind="stable")
         df = df.drop(columns=["_core_gap"])
-    styled = df.style.map(style_status, subset=["状态"])
+    dashboard_columns = [
+        "股票",
+        "价格",
+        "状态",
+        "错误",
+        "公允价值",
+        "置信度",
+        "距公允价值%",
+        "第一批区",
+        "核心买入区",
+        "深度价值区",
+        "可靠性",
+        "模型分歧",
+        "SMA30",
+        "SMA50",
+        "SMA200",
+    ]
+    if show_advanced_cols:
+        dashboard_columns.extend(["备注", "估值类型"])
+    visible = [col for col in dashboard_columns if col in df.columns]
+    if "错误" in visible and "错误" in df.columns:
+        err_series = df["错误"]
+        if err_series.isna().all() or err_series.fillna("").astype(str).str.strip().eq("").all():
+            visible = [col for col in visible if col != "错误"]
+    df = df.loc[:, visible]
+    styled = df.style.map(style_status, subset=["状态"] if "状态" in df.columns else [])
     st.dataframe(
         styled,
         use_container_width=True,
         hide_index=True,
         column_config={
-            "价格": st.column_config.NumberColumn(format="$%.2f"),
-            "SMA30": st.column_config.NumberColumn(format="$%.2f"),
-            "SMA50": st.column_config.NumberColumn(format="$%.2f"),
-            "SMA200": st.column_config.NumberColumn(format="$%.2f"),
-            "距公允价值%": st.column_config.NumberColumn(format="%.1f%%"),
+            "股票": st.column_config.TextColumn(width="small"),
+            "价格": st.column_config.NumberColumn(format="$%.2f", width="small"),
+            "状态": st.column_config.TextColumn(width="medium"),
+            "公允价值": st.column_config.TextColumn(width="medium"),
+            "置信度": st.column_config.TextColumn(width="small"),
+            "距公允价值%": st.column_config.TextColumn(width="small"),
+            "第一批区": st.column_config.TextColumn(width="medium"),
+            "核心买入区": st.column_config.TextColumn(width="medium"),
+            "深度价值区": st.column_config.TextColumn(width="medium"),
+            "可靠性": st.column_config.TextColumn(width="small"),
+            "模型分歧": st.column_config.TextColumn(width="small"),
+            "SMA30": st.column_config.NumberColumn(format="$%.2f", width="small"),
+            "SMA50": st.column_config.NumberColumn(format="$%.2f", width="small"),
+            "SMA200": st.column_config.NumberColumn(format="$%.2f", width="small"),
+            "备注": st.column_config.TextColumn(width="medium"),
+            "估值类型": st.column_config.TextColumn(width="medium"),
         },
     )
     st.caption("可靠性评分衡量数据完整性、模型一致性及适用性，不是股票评级，也不代表未来收益概率。")
