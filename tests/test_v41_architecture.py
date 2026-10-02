@@ -112,6 +112,8 @@ class ArchitectureCleanupTests(unittest.TestCase):
             "第一批区",
             "核心买入区",
             "深度价值区",
+            "减仓参考区",
+            "明显高估区",
             "可靠性",
             "模型分歧",
             "SMA30",

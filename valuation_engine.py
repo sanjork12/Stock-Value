@@ -26,7 +26,7 @@ from valuation_primitives import (
     structural_valid,
 )
 
-MODEL_VERSION = "v4.1-normalization"
+MODEL_VERSION = "v4.2-exit-zone"
 TICKER_RE = re.compile(r"^[A-Z][A-Z0-9.\-]{0,9}$")
 COST_OF_EQUITY_DEFAULT = 0.10
 logger = logging.getLogger("stock_fair_value_monitor")
@@ -1272,6 +1272,164 @@ def dynamic_buy_zones(
     }
 
 
+def _class_exit_adjustment(valuation_class: str | None, confidence: str) -> tuple[float, str | None]:
+    vclass = str(valuation_class or "")
+    conf = (confidence or "").upper()
+    if vclass == "bank":
+        return -0.02, "bank_narrower"
+    if vclass == "semiconductor_growth":
+        return 0.05, "semiconductor_growth"
+    if vclass == "cyclical_semiconductor":
+        return 0.08, "cyclical_semiconductor"
+    if vclass == "high_growth_software" and conf == "MEDIUM":
+        return 0.08, "high_growth_software_medium"
+    if vclass == "consumer_platform":
+        return 0.03, "consumer_platform"
+    return 0.0, None
+
+
+def can_emit_exit_zones(blend: dict | None) -> bool:
+    """Precise exit / overvaluation prices only for HIGH or MEDIUM with a fair range."""
+    if not blend:
+        return False
+    conf = str(blend.get("confidence") or blend.get("overall_confidence") or "").upper()
+    if conf not in {"HIGH", "MEDIUM"}:
+        return False
+    mid = fnum(blend.get("blended_mid") if blend.get("blended_mid") is not None else blend.get("fair"))
+    high = fnum(blend.get("blended_high") if blend.get("blended_high") is not None else blend.get("fair_high"))
+    return mid is not None and mid > 0 and high is not None and high > 0
+
+
+def dynamic_overvaluation_profile(
+    blended_low,
+    blended_mid,
+    blended_high,
+    confidence,
+    reliability_score=None,
+    dispersion_pct=None,
+    volatility_1y=None,
+    cyclicality: str | None = "low",
+    valuation_class: str | None = None,
+) -> dict | None:
+    """Dynamic exit / overvaluation thresholds. Not a sell recommendation."""
+    conf = str(confidence or "").upper()
+    mid = fnum(blended_mid)
+    high = fnum(blended_high)
+    low = fnum(blended_low)
+    if conf not in {"HIGH", "MEDIUM"} or mid is None or mid <= 0 or high is None or high <= 0:
+        return None
+
+    if conf == "HIGH":
+        hold_upper, overvalued, trim, extreme = 0.08, 0.15, 0.25, 0.40
+    else:
+        hold_upper, overvalued, trim, extreme = 0.10, 0.20, 0.30, 0.45
+
+    adjustments: list[str] = []
+    vol_band = classify_volatility(fnum(volatility_1y))
+    vol_adj = 0.0
+    if vol_band == "MEDIUM":
+        vol_adj = 0.03
+        adjustments.append("medium_volatility_+3pct")
+    elif vol_band == "HIGH":
+        vol_adj = 0.05
+        adjustments.append("high_volatility_+5pct")
+
+    hold_upper += vol_adj
+    overvalued += vol_adj
+    trim += vol_adj
+    extreme += vol_adj
+
+    cyclical = str(cyclicality or "").lower() == "high" or "cyclical" in str(valuation_class or "")
+    cyclical_adj = 0.0
+    if cyclical:
+        cyclical_adj = 0.05
+        adjustments.append("cyclical_+5pct")
+        overvalued += cyclical_adj
+        trim += cyclical_adj
+        extreme += cyclical_adj
+
+    disp = fnum(dispersion_pct)
+    disp_adj = 0.0
+    if disp is not None:
+        if 0.15 <= disp < 0.30:
+            disp_adj = 0.02
+            adjustments.append("dispersion_15_30_+2pct")
+        elif 0.30 <= disp < 0.50:
+            disp_adj = 0.05
+            adjustments.append("dispersion_30_50_+5pct")
+        elif disp >= 0.50:
+            # Very high dispersion should usually be LOW; if still MEDIUM, widen further.
+            disp_adj = 0.07
+            adjustments.append("dispersion_gt50_+7pct")
+    hold_upper += disp_adj
+    overvalued += disp_adj
+    trim += disp_adj
+    extreme += disp_adj
+
+    class_adj, class_tag = _class_exit_adjustment(valuation_class, conf)
+    if class_tag:
+        adjustments.append(class_tag)
+    hold_upper += class_adj
+    overvalued += class_adj
+    trim += class_adj
+    extreme += class_adj
+
+    hold_upper = max(0.0, min(hold_upper, 0.20))
+    overvalued = max(0.0, min(overvalued, 0.35))
+    trim = max(0.0, min(trim, 0.50))
+    extreme = max(0.0, min(extreme, 0.70))
+
+    # Enforce strict pct ordering after caps.
+    if overvalued <= hold_upper:
+        overvalued = min(0.35, hold_upper + 0.02)
+    if trim <= overvalued:
+        trim = min(0.50, overvalued + 0.05)
+    if extreme <= trim:
+        extreme = min(0.70, trim + 0.05)
+    if not (hold_upper < overvalued < trim < extreme):
+        # Last-resort ladder inside caps.
+        hold_upper = min(hold_upper, 0.18)
+        overvalued = min(max(overvalued, hold_upper + 0.02), 0.35)
+        trim = min(max(trim, overvalued + 0.05), 0.50)
+        extreme = min(max(extreme, trim + 0.05), 0.70)
+
+    hold_upper_price = max(mid * (1.0 + hold_upper), high)
+    overvalued_price = mid * (1.0 + overvalued)
+    trim_price = mid * (1.0 + trim)
+    extreme_price = mid * (1.0 + extreme)
+
+    # Prices must stay ordered and trim must clear the fair high bound.
+    overvalued_price = max(overvalued_price, hold_upper_price * 1.001)
+    trim_price = max(trim_price, overvalued_price * 1.001, high * 1.001)
+    extreme_price = max(extreme_price, trim_price * 1.001)
+
+    return {
+        "hold_upper_pct": hold_upper,
+        "overvalued_pct": overvalued,
+        "trim_pct": trim,
+        "extreme_pct": extreme,
+        "hold_upper_price": hold_upper_price,
+        "overvalued_price": overvalued_price,
+        "trim_price": trim_price,
+        "extreme_price": extreme_price,
+        "blended_low": low,
+        "blended_mid": mid,
+        "blended_high": high,
+        "confidence": conf,
+        "reliability_score": reliability_score,
+        "dispersion_pct": disp,
+        "volatility_1y": fnum(volatility_1y),
+        "volatility_band": vol_band,
+        "cyclicality": cyclicality,
+        "valuation_class": valuation_class,
+        "adjustments": adjustments,
+        "vol_adj": vol_adj,
+        "cyclical_adj": cyclical_adj,
+        "dispersion_adj": disp_adj,
+        "class_adj": class_adj,
+    }
+
+
 def _blend_range(model_pairs: list[tuple[str, dict]], weights_used: dict) -> tuple[float | None, float | None, float | None]:
     low_sum = mid_sum = high_sum = 0.0
     total = 0.0
@@ -1566,6 +1724,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             "reliability": reliability.to_dict(),
             "mos": None,
             "zones": None,
+            "exit_zone": None,
             "cycle": cycle,
             "volatility_1y": volatility,
             "view": primary_valuation_view({"confidence": overall}),
@@ -1653,6 +1812,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             },
             "mos": None,
             "zones": None,
+            "exit_zone": None,
             "cycle": cycle,
             "volatility_1y": volatility,
             "view": primary_valuation_view({"confidence": "UNAVAILABLE"}),
@@ -1679,6 +1839,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             "reliability": {**reliability.to_dict(), "overall_confidence": "UNAVAILABLE", "reliability_score": None},
             "mos": None,
             "zones": None,
+            "exit_zone": None,
             "cycle": cycle,
             "volatility_1y": volatility,
             "view": primary_valuation_view({"confidence": "UNAVAILABLE"}),
@@ -1707,6 +1868,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             "reliability": {**reliability.to_dict(), "overall_confidence": "UNAVAILABLE", "reliability_score": None},
             "mos": None,
             "zones": None,
+            "exit_zone": None,
             "cycle": cycle,
             "volatility_1y": volatility,
             "view": primary_valuation_view({"confidence": "UNAVAILABLE"}),
@@ -1714,6 +1876,17 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
 
     mos = margin_of_safety_profile(confidence, disp, volatility, profile.cyclicality, profile.valuation_class)
     zones = dynamic_buy_zones(mid, mos, low_confidence=(confidence == "LOW"))
+    exit_zone = dynamic_overvaluation_profile(
+        blended_low=low,
+        blended_mid=mid,
+        blended_high=high,
+        confidence=confidence,
+        reliability_score=reliability.reliability_score,
+        dispersion_pct=disp,
+        volatility_1y=volatility,
+        cyclicality=profile.cyclicality,
+        valuation_class=profile.valuation_class,
+    )
     warnings = list(reliability.applicability_warnings)
     if disp is not None and disp > 0.50:
         warnings.append("high_valuation_uncertainty")
@@ -1738,6 +1911,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
         "reliability": reliability.to_dict(),
         "mos": mos,
         "zones": zones,
+        "exit_zone": exit_zone,
         "cycle": cycle,
         "volatility_1y": volatility,
         "view": view,
@@ -1779,6 +1953,36 @@ def is_legacy_snapshot(snap: dict | None) -> bool:
     return bool(missing_reliability and missing_range)
 
 
+def exit_zone_from_snapshot(snap: dict | None) -> dict | None:
+    """Restore saved exit / overvaluation profile. Never recomputes from live inputs."""
+    if not snap:
+        return None
+    raw = snap.get("raw") if isinstance(snap.get("raw"), dict) else {}
+    payload = snap.get("exit_zone_json")
+    if not isinstance(payload, dict):
+        payload = raw.get("exit_zone_json")
+    if isinstance(payload, dict) and payload:
+        # Prefer explicit top-level price columns when present (schema v4.2+).
+        out = dict(payload)
+        for key in ("hold_upper_price", "overvalued_price", "trim_price", "extreme_price"):
+            if snap.get(key) is not None:
+                out[key] = snap.get(key)
+        return out
+    hold = snap.get("hold_upper_price")
+    over = snap.get("overvalued_price")
+    trim = snap.get("trim_price")
+    extreme = snap.get("extreme_price")
+    if hold is None and over is None and trim is None and extreme is None:
+        return None
+    return {
+        "hold_upper_price": hold,
+        "overvalued_price": over,
+        "trim_price": trim,
+        "extreme_price": extreme,
+        "from_columns": True,
+    }
+
+
 def reconstruct_blend_from_snapshot(snap: dict | None) -> dict | None:
     """Rebuild the valuation payload from a stored snapshot. Never recomputes live models."""
     if not snap:
@@ -1809,6 +2013,7 @@ def reconstruct_blend_from_snapshot(snap: dict | None) -> dict | None:
     fair_low = snap.get("blended_low") if snap.get("blended_low") is not None else raw.get("blended_low")
     fair_high = snap.get("blended_high") if snap.get("blended_high") is not None else raw.get("blended_high")
     version = snap.get("model_version") or raw.get("model_version") or "legacy"
+    exit_zone = exit_zone_from_snapshot(snap)
     blend = {
         "fair": fair,
         "fair_low": fair_low,
@@ -1828,6 +2033,7 @@ def reconstruct_blend_from_snapshot(snap: dict | None) -> dict | None:
         "dispersion": snap.get("dispersion_pct") if snap.get("dispersion_pct") is not None else raw.get("dispersion_pct"),
         "volatility_1y": snap.get("volatility_1y") if snap.get("volatility_1y") is not None else raw.get("volatility_1y"),
         "cycle": raw.get("cycle"),
+        "exit_zone": exit_zone,
         "legacy": is_legacy_snapshot(snap),
         "snapshot_date": snap.get("snapshot_date"),
         "snapshot_created_at": snap.get("created_at") or snap.get("updated_at"),

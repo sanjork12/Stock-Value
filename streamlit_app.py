@@ -18,7 +18,9 @@ from analysis_service import (
     analyze_ticker,
     build_snapshot_record,
     fetch_historical_snapshot,
+    format_extreme_zone,
     format_fair_value,
+    format_trim_zone,
     is_schema_cache_error,
     legacy_snapshot_record,
 )
@@ -102,6 +104,12 @@ STATUS_META = {
     "核心买入区": ("#D1FAE5", "#047857", "🟢"),
     "第一批区": ("#FEF3C7", "#92400E", "🟡"),
     "接近第一批区": ("#E0F2FE", "#075985", "🔵"),
+    "合理持有区": ("#F3F4F6", "#4B5563", "⚪"),
+    "偏高估区": ("#FFEDD5", "#C2410C", "🟠"),
+    "减仓参考区": ("#FED7AA", "#9A3412", "🟠"),
+    "明显高估区": ("#FECACA", "#B91C1C", "🔴"),
+    "估值偏高（低置信度）": ("#FFEDD5", "#9A3412", "🟠"),
+    "估值偏低（低置信度）": ("#DCFCE7", "#166534", "🟢"),
     "观察 / 等回调": ("#F3F4F6", "#4B5563", "⚪"),
     "仅技术观察": ("#F3F4F6", "#4B5563", "⚪"),
     "低于深度价值区": ("#BBF7D0", "#14532D", "🟢"),
@@ -654,39 +662,13 @@ def blend_caption(blend) -> str:
 
 
 def recommendation_label(r):
-    conf = str((r.get("blend") or {}).get("confidence") or r.get("confidence") or "").upper()
-    if conf in {"SPECIALIZED", "UNAVAILABLE"} or not r.get("zones") or r.get("price") is None:
-        return "仅技术观察"
-    z = r["zones"]
-    p = r["price"]
-    labels = z.get("labels") or {}
-    low_conf = conf == "LOW" or z.get("low_confidence")
-    deep_name = labels.get("deep") or ("深度折价区" if low_conf else "深度价值区")
-    core_name = labels.get("core") or ("参考折价区" if low_conf else "核心买入区")
-    first_name = labels.get("first") or ("参考关注区" if low_conf else "第一批区")
-    deep = z.get("deep") or (None, None)
-    core = z.get("core") or (None, None)
-    first = z.get("first") or (None, None)
-    if deep[0] is not None and p < deep[0]:
-        label = f"低于{deep_name}"
-    elif deep[0] is not None and deep[1] is not None and deep[0] <= p <= deep[1]:
-        label = deep_name
-    elif core[0] is not None and core[1] is not None and core[0] <= p <= core[1]:
-        label = core_name
-    elif first[0] is not None and first[1] is not None and first[0] <= p <= first[1]:
-        label = first_name
-    elif first[1] is not None and p <= first[1] * 1.05:
-        label = "接近第一批区" if not low_conf else f"接近{first_name}"
-    else:
-        label = "观察 / 等回调"
-    if low_conf and "低置信度" not in label:
-        return f"{label}（低置信度）"
-    return label
+    from analysis_service import _recommendation_label
+    return _recommendation_label(r)
 
 
 def status_badge(label: str):
     base = str(label).replace("（低置信度）", "")
-    bg, fg, icon = STATUS_META.get(base, ("#F3F4F6", "#4B5563", "⚪"))
+    bg, fg, icon = STATUS_META.get(base, STATUS_META.get(str(label), ("#F3F4F6", "#4B5563", "⚪")))
     st.markdown(
         f'<span style="background:{bg};color:{fg};padding:0.35rem 0.7rem;border-radius:999px;font-weight:700">{icon} {label}</span>',
         unsafe_allow_html=True,
@@ -695,8 +677,111 @@ def status_badge(label: str):
 
 def style_status(v):
     base = str(v).replace("（低置信度）", "")
-    bg, fg, _ = STATUS_META.get(base, ("#FFFFFF", "#111827", ""))
+    bg, fg, _ = STATUS_META.get(base, STATUS_META.get(str(v), ("#FFFFFF", "#111827", "")))
     return f"background-color:{bg}; color:{fg}; font-weight:700"
+
+
+def render_valuation_band(r: dict):
+    """Continuous valuation band from deep value through extreme overvaluation."""
+    zones = r.get("zones") or {}
+    exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone")) or {}
+    price = fnum(r.get("price"))
+    conf = str(r.get("confidence") or "").upper()
+    if conf in {"SPECIALIZED", "UNAVAILABLE"}:
+        return
+    labels = zones.get("labels") or {}
+    segments = []
+    if zones.get("deep"):
+        segments.append((labels.get("deep") or "深度价值区", "#86EFAC", zones["deep"][0], zones["deep"][1]))
+    if zones.get("core"):
+        segments.append((labels.get("core") or "核心买入区", "#4ADE80", zones["core"][0], zones["core"][1]))
+    if zones.get("first"):
+        segments.append((labels.get("first") or "第一批区", "#FDE68A", zones["first"][0], zones["first"][1]))
+    hold = fnum(exit_zone.get("hold_upper_price"))
+    over = fnum(exit_zone.get("overvalued_price"))
+    trim = fnum(exit_zone.get("trim_price"))
+    extreme = fnum(exit_zone.get("extreme_price"))
+    first_hi = (zones.get("first") or (None, None))[1]
+    if hold is not None and first_hi is not None:
+        segments.append(("合理持有区", "#E5E7EB", first_hi, hold))
+    elif hold is not None:
+        mid = fnum(r.get("blended_mid") or r.get("fair"))
+        if mid is not None:
+            segments.append(("合理持有区", "#E5E7EB", mid, hold))
+    if hold is not None and trim is not None:
+        start = over if over is not None else hold
+        segments.append(("偏高估区", "#FED7AA", hold, trim if trim > hold else start))
+    if trim is not None and extreme is not None:
+        segments.append(("减仓参考区", "#FB923C", trim, extreme))
+    if extreme is not None:
+        segments.append(("明显高估区", "#F87171", extreme, extreme * 1.08))
+
+    if not segments:
+        return
+
+    active = str(r.get("recommendation") or "")
+    cells = []
+    for name, color, lo, hi in segments:
+        lo_f, hi_f = fnum(lo), fnum(hi)
+        here = False
+        if price is not None and lo_f is not None and hi_f is not None:
+            if name == "明显高估区":
+                here = price >= lo_f
+            else:
+                here = lo_f <= price <= hi_f
+        if name in active or here:
+            border = "3px solid #111827"
+            weight = "800"
+        else:
+            border = "1px solid rgba(0,0,0,0.08)"
+            weight = "600"
+        sat = "0.55" if conf == "LOW" else "1"
+        cells.append(
+            f'<div style="flex:1;min-width:72px;background:{color};opacity:{sat};border:{border};'
+            f'padding:0.45rem 0.35rem;text-align:center;font-size:0.78rem;font-weight:{weight};color:#111827">'
+            f"{name}<br/><span style='font-weight:500'>{money(lo_f)} – {money(hi_f) if name != '明显高估区' else ('>' + money(lo_f))}</span>"
+            f"</div>"
+        )
+    st.markdown(
+        '<div style="display:flex;gap:2px;width:100%;border-radius:8px;overflow:hidden;margin:0.4rem 0 0.8rem 0">'
+        + "".join(cells)
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+    if price is not None:
+        st.caption(f"当前价格位置高亮。现价 {money(price)}。减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
+
+
+def render_exit_diagnostics(r: dict):
+    exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone"))
+    conf = str(r.get("confidence") or "").upper()
+    with st.expander("Exit / Overvaluation diagnostics"):
+        if conf in {"SPECIALIZED", "UNAVAILABLE"}:
+            st.write("SPECIALIZED / UNAVAILABLE：不生成精确退出区。")
+            return
+        if conf == "LOW" or not isinstance(exit_zone, dict):
+            st.write("LOW confidence：不生成精确减仓价格。仅显示估值偏高/偏低（低置信度）语义。")
+            return
+        lines = [
+            f"**Confidence**: {exit_zone.get('confidence') or conf}",
+            f"**Volatility**: {exit_zone.get('volatility_1y')} ({exit_zone.get('volatility_band') or '—'})",
+            f"**Cyclicality adjustment**: {exit_zone.get('cyclical_adj', 0):+.0%}" if exit_zone.get("cyclical_adj") is not None else "**Cyclicality adjustment**: —",
+            f"**Dispersion adjustment**: {exit_zone.get('dispersion_adj', 0):+.0%}" if exit_zone.get("dispersion_adj") is not None else "**Dispersion adjustment**: —",
+            f"**Class adjustment**: {exit_zone.get('class_adj', 0):+.0%}" if exit_zone.get("class_adj") is not None else "**Class adjustment**: —",
+            f"**Adjustments**: {', '.join(exit_zone.get('adjustments') or []) or '—'}",
+            "",
+            f"**Hold upper**: {exit_zone.get('hold_upper_pct', 0):.0%}",
+            f"**Overvalued threshold**: {exit_zone.get('overvalued_pct', 0):.0%}",
+            f"**Trim threshold**: {exit_zone.get('trim_pct', 0):.0%}",
+            f"**Extreme threshold**: {exit_zone.get('extreme_pct', 0):.0%}",
+            "",
+            f"**Hold upper price**: {money(exit_zone.get('hold_upper_price'))}",
+            f"**Overvalued price**: {money(exit_zone.get('overvalued_price'))}",
+            f"**Trim reference price**: {money(exit_zone.get('trim_price'))}",
+            f"**Extreme overvaluation price**: {money(exit_zone.get('extreme_price'))}",
+        ]
+        st.markdown("\n".join(lines))
+        st.caption("减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
 
 
 def get_cloud_snapshot(sb: Client, user_id: str, ticker: str, as_of: str):
@@ -1114,6 +1199,8 @@ if page == "自选股":
                     "第一批区": "—",
                     "核心买入区": "—",
                     "深度价值区": "—",
+                    "减仓参考区": "—",
+                    "明显高估区": "—",
                     "可靠性": "—",
                     "模型分歧": "—",
                     "SMA30": None,
@@ -1132,6 +1219,12 @@ if page == "自选股":
             else:
                 d = delta_pct(r["price"], r["fair"])
                 delta_display = "—" if d is None else f"{float(d):.1f}%"
+            exit_zone = r.get("exit_zone")
+            if conf_u in {"LOW", "SPECIALIZED", "UNAVAILABLE"}:
+                trim_txt, extreme_txt = "—", "—"
+            else:
+                trim_txt = format_trim_zone(exit_zone)
+                extreme_txt = format_extreme_zone(exit_zone)
             rows.append({
                 "股票": t,
                 "价格": r["price"],
@@ -1142,6 +1235,8 @@ if page == "自选股":
                 "第一批区": zone_text(r["zones"]["first"]) if r["zones"] else "—",
                 "核心买入区": zone_text(r["zones"]["core"]) if r["zones"] else "—",
                 "深度价值区": zone_text(r["zones"]["deep"]) if r["zones"] else "—",
+                "减仓参考区": trim_txt,
+                "明显高估区": extreme_txt,
                 "可靠性": r.get("reliability_score") if r.get("reliability_score") is not None else "—",
                 "模型分歧": f"{r['dispersion_pct']*100:.0f}%" if r.get("dispersion_pct") is not None else "—",
                 "SMA30": r["sma30"],
@@ -1167,6 +1262,8 @@ if page == "自选股":
                 "第一批区": "—",
                 "核心买入区": "—",
                 "深度价值区": "—",
+                "减仓参考区": "—",
+                "明显高估区": "—",
                 "可靠性": "—",
                 "模型分歧": "—",
                 "SMA30": None,
@@ -1200,6 +1297,8 @@ if page == "自选股":
         "第一批区",
         "核心买入区",
         "深度价值区",
+        "减仓参考区",
+        "明显高估区",
         "可靠性",
         "模型分歧",
         "SMA30",
@@ -1226,9 +1325,11 @@ if page == "自选股":
             "公允价值": st.column_config.TextColumn(width=120),
             "置信度": st.column_config.TextColumn(width=90),
             "距公允价值%": st.column_config.TextColumn(width=105),
-            "第一批区": st.column_config.TextColumn(width=160),
-            "核心买入区": st.column_config.TextColumn(width=160),
-            "深度价值区": st.column_config.TextColumn(width=160),
+            "第一批区": st.column_config.TextColumn(width=150),
+            "核心买入区": st.column_config.TextColumn(width=150),
+            "深度价值区": st.column_config.TextColumn(width=150),
+            "减仓参考区": st.column_config.TextColumn(width=140),
+            "明显高估区": st.column_config.TextColumn(width=110),
             "可靠性": st.column_config.TextColumn(width=80),
             "模型分歧": st.column_config.TextColumn(width=90),
             "SMA30": st.column_config.NumberColumn(format="$%.2f", width=90),
@@ -1239,11 +1340,14 @@ if page == "自选股":
             "错误": st.column_config.TextColumn(width=180),
         },
     )
-    st.caption("可靠性评分衡量数据完整性、模型一致性及适用性，不是股票评级，也不代表未来收益概率。")
+    st.caption("可靠性评分衡量数据完整性、模型一致性及适用性，不是股票评级，也不代表未来收益概率。减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
 
     st.markdown("#### 颜色说明")
-    cols = st.columns(6)
-    for col, label in zip(cols, ["低于深度价值区", "深度价值区", "核心买入区", "第一批区", "观察 / 等回调", "仅技术观察"]):
+    cols = st.columns(8)
+    for col, label in zip(
+        cols,
+        ["低于深度价值区", "深度价值区", "核心买入区", "第一批区", "合理持有区", "偏高估区", "减仓参考区", "明显高估区"],
+    ):
         with col:
             status_badge(label)
 
@@ -1458,6 +1562,25 @@ elif page == "单股分析":
             z3.success(f"**{labels.get('deep', '深度价值区')}**\n\n{zone_text(r['zones']['deep'])}")
             if conf == "LOW":
                 st.warning("估值不确定性较高，此价格区仅为模型参考。")
+            exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone"))
+            if conf in {"HIGH", "MEDIUM"} and isinstance(exit_zone, dict):
+                e1, e2, e3, e4 = st.columns(4)
+                e1.info(
+                    f"**合理持有区**\n\n≤ {money(exit_zone.get('hold_upper_price'))}"
+                )
+                e2.warning(
+                    f"**偏高估区**\n\n{money(exit_zone.get('hold_upper_price'))} – {money(exit_zone.get('trim_price'))}"
+                )
+                e3.warning(
+                    f"**减仓参考区**\n\n{format_trim_zone(exit_zone)}"
+                )
+                e4.error(
+                    f"**明显高估区**\n\n{format_extreme_zone(exit_zone)}"
+                )
+                st.caption("减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
+                render_valuation_band(r)
+            elif conf == "LOW":
+                st.caption("低置信度不生成精确减仓价；若价格明显高于 indicative range，状态显示「估值偏高（低置信度）」。")
         elif (r.get("blend") or {}).get("specialized") or r.get("confidence") == "SPECIALIZED":
             st.info("传统估值模型不适用，需要专项场景估值。仅显示技术指标，不生成价值买入区。")
         else:
@@ -1506,6 +1629,7 @@ elif page == "单股分析":
         render_cycle_panel(r)
         render_model_explanations(r)
         render_valuation_diagnostics(r)
+        render_exit_diagnostics(r)
         if use_latest and st.button("保存当前估值快照"):
             try:
                 save_snapshot(db, user_id, r)

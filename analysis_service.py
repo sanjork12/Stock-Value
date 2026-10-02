@@ -18,8 +18,11 @@ from mag7_monitor import (
 from valuation_engine import (
     MODEL_VERSION,
     can_emit_buy_zones,
+    can_emit_exit_zones,
     check_valuation_invariants,
     dynamic_buy_zones,
+    dynamic_overvaluation_profile,
+    exit_zone_from_snapshot,
     is_legacy_snapshot,
     normalize_ticker,
     reconstruct_blend_from_snapshot,
@@ -223,7 +226,7 @@ def analyze_ticker(
         elif blend.get("confidence") == "UNAVAILABLE":
             note = f"估值类型：{class_label}。有效估值模型不足。"
         else:
-            note = f"估值类型：{class_label}。使用 V4.1 reliability layer。"
+            note = f"估值类型：{class_label}。使用 V4.2 dynamic exit / overvaluation layer。"
         if blend.get("excluded"):
             note += " 部分模型已排除。"
         if "high_valuation_uncertainty" in (blend.get("warnings") or []):
@@ -237,12 +240,17 @@ def analyze_ticker(
             else:
                 note += " Forward EPS unavailable. Using trailing EPS proxy."
 
+    exit_zone = None
     if historical:
         conf = str((blend or {}).get("confidence") or "").upper()
         if snap_zones and snap_zones["first"][0] is not None and conf not in {"SPECIALIZED", "UNAVAILABLE"}:
             zones = snap_zones
         else:
             zones = None
+        if snap:
+            exit_zone = exit_zone_from_snapshot(snap)
+            if blend is not None and exit_zone is not None:
+                blend["exit_zone"] = exit_zone
     elif can_emit_buy_zones(blend) and blend.get("mos"):
         zones = dynamic_buy_zones(
             _mid(blend),
@@ -252,8 +260,24 @@ def analyze_ticker(
             low_confidence=str(blend.get("confidence")) == "LOW",
         )
         blend["zones"] = zones
+        exit_zone = blend.get("exit_zone")
+        if exit_zone is None and can_emit_exit_zones(blend):
+            profile = blend.get("profile") or {}
+            exit_zone = dynamic_overvaluation_profile(
+                blended_low=blend.get("blended_low") if blend.get("blended_low") is not None else blend.get("fair_low"),
+                blended_mid=_mid(blend),
+                blended_high=blend.get("blended_high") if blend.get("blended_high") is not None else blend.get("fair_high"),
+                confidence=blend.get("confidence"),
+                reliability_score=(blend.get("reliability") or {}).get("reliability_score"),
+                dispersion_pct=blend.get("dispersion"),
+                volatility_1y=blend.get("volatility_1y"),
+                cyclicality=profile.get("cyclicality"),
+                valuation_class=profile.get("valuation_class"),
+            )
+            blend["exit_zone"] = exit_zone
     else:
         zones = None
+        exit_zone = (blend or {}).get("exit_zone")
 
     display_name = (financials or {}).get("long_name") or NAMES.get(ticker, ticker)
     reliability = (blend or {}).get("reliability") or {}
@@ -280,6 +304,7 @@ def analyze_ticker(
         "fair_low": (blend or {}).get("fair_low"),
         "fair_high": (blend or {}).get("fair_high"),
         "zones": zones,
+        "exit_zone": exit_zone,
         "note": note,
         "state": classify_price(price, fair) if fair else "技术面模式",
         "history": df,
@@ -313,33 +338,91 @@ def analyze_ticker(
 
 def _recommendation_label(r):
     conf = str((r.get("blend") or {}).get("confidence") or r.get("confidence") or "").upper()
-    if conf in {"SPECIALIZED", "UNAVAILABLE"} or not r.get("zones") or r.get("price") is None:
+    if conf in {"SPECIALIZED", "UNAVAILABLE"} or r.get("price") is None:
         return "仅技术观察" if r.get("price") is not None else "数据不足"
-    z = r["zones"]
+    if conf == "UNAVAILABLE" or (not r.get("zones") and conf == "SPECIALIZED"):
+        return "仅技术观察"
     p = r["price"]
-    labels = z.get("labels") or {}
-    low_conf = conf == "LOW" or z.get("low_confidence")
-    deep_name = labels.get("deep") or ("深度折价区" if low_conf else "深度价值区")
-    core_name = labels.get("core") or ("参考折价区" if low_conf else "核心买入区")
-    first_name = labels.get("first") or ("参考关注区" if low_conf else "第一批区")
-    deep = z.get("deep") or (None, None)
-    core = z.get("core") or (None, None)
-    first = z.get("first") or (None, None)
-    if deep[0] is not None and p < deep[0]:
-        label = f"低于{deep_name}"
-    elif deep[0] is not None and deep[1] is not None and deep[0] <= p <= deep[1]:
-        label = deep_name
-    elif core[0] is not None and core[1] is not None and core[0] <= p <= core[1]:
-        label = core_name
-    elif first[0] is not None and first[1] is not None and first[0] <= p <= first[1]:
-        label = first_name
-    elif first[1] is not None and p <= first[1] * 1.05:
-        label = "接近第一批区" if not low_conf else f"接近{first_name}"
-    else:
-        label = "观察 / 等回调"
-    if low_conf and "低置信度" not in label:
-        return f"{label}（低置信度）"
-    return label
+    z = r.get("zones")
+    exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone"))
+    labels = (z or {}).get("labels") or {}
+    low_conf = conf == "LOW" or bool((z or {}).get("low_confidence"))
+
+    if z:
+        deep_name = labels.get("deep") or ("深度折价区" if low_conf else "深度价值区")
+        core_name = labels.get("core") or ("参考折价区" if low_conf else "核心买入区")
+        first_name = labels.get("first") or ("参考关注区" if low_conf else "第一批区")
+        deep = z.get("deep") or (None, None)
+        core = z.get("core") or (None, None)
+        first = z.get("first") or (None, None)
+        if deep[0] is not None and p < deep[0]:
+            label = f"低于{deep_name}"
+            return f"{label}（低置信度）" if low_conf and "低置信度" not in label else label
+        if deep[0] is not None and deep[1] is not None and deep[0] <= p <= deep[1]:
+            label = deep_name
+            return f"{label}（低置信度）" if low_conf and "低置信度" not in label else label
+        if core[0] is not None and core[1] is not None and core[0] <= p <= core[1]:
+            label = core_name
+            return f"{label}（低置信度）" if low_conf and "低置信度" not in label else label
+        if first[0] is not None and first[1] is not None and first[0] <= p <= first[1]:
+            label = first_name
+            return f"{label}（低置信度）" if low_conf and "低置信度" not in label else label
+        if first[1] is not None and p <= first[1] * 1.05:
+            label = "接近第一批区" if not low_conf else f"接近{first_name}"
+            return f"{label}（低置信度）" if low_conf and "低置信度" not in label else label
+
+    # Above buy zones: overvaluation / hold semantics.
+    if conf == "LOW":
+        high = fnum(r.get("blended_high") if r.get("blended_high") is not None else r.get("fair_high"))
+        low = fnum(r.get("blended_low") if r.get("blended_low") is not None else r.get("fair_low"))
+        mid = fnum(r.get("blended_mid") if r.get("blended_mid") is not None else r.get("fair"))
+        if high is not None and p > high * 1.10:
+            return "估值偏高（低置信度）"
+        if low is not None and mid is not None and p < low * 0.95:
+            return "估值偏低（低置信度）"
+        return "观察 / 等回调（低置信度）"
+
+    if conf in {"HIGH", "MEDIUM"} and isinstance(exit_zone, dict):
+        hold = fnum(exit_zone.get("hold_upper_price"))
+        trim = fnum(exit_zone.get("trim_price"))
+        extreme = fnum(exit_zone.get("extreme_price"))
+        over = fnum(exit_zone.get("overvalued_price"))
+        if hold is not None and p <= hold:
+            return "合理持有区"
+        if extreme is not None and p >= extreme:
+            return "明显高估区"
+        if trim is not None and extreme is not None and trim <= p < extreme:
+            return "减仓参考区"
+        if hold is not None and trim is not None and hold < p < trim:
+            # Optional finer start: overvalued_price marks deeper 偏高估 within the band.
+            if over is not None and p < over:
+                return "偏高估区"
+            return "偏高估区"
+        if hold is not None:
+            return "合理持有区"
+
+    if not z:
+        return "仅技术观察" if conf in {"SPECIALIZED", "UNAVAILABLE"} else "观察 / 等回调"
+    return "观察 / 等回调"
+
+
+def format_trim_zone(exit_zone: dict | None) -> str:
+    if not isinstance(exit_zone, dict):
+        return "—"
+    trim = fnum(exit_zone.get("trim_price"))
+    extreme = fnum(exit_zone.get("extreme_price"))
+    if trim is None or extreme is None:
+        return "—"
+    return f"${trim:,.0f} – ${extreme:,.0f}"
+
+
+def format_extreme_zone(exit_zone: dict | None) -> str:
+    if not isinstance(exit_zone, dict):
+        return "—"
+    extreme = fnum(exit_zone.get("extreme_price"))
+    if extreme is None:
+        return "—"
+    return f">${extreme:,.0f}"
 
 
 SNAPSHOT_CORE_FIELDS = (
@@ -377,6 +460,14 @@ SNAPSHOT_V41_FIELDS = (
     "blended_high",
     "volatility_1y",
     "reliability_json",
+)
+
+SNAPSHOT_V42_FIELDS = (
+    "hold_upper_price",
+    "overvalued_price",
+    "trim_price",
+    "extreme_price",
+    "exit_zone_json",
 )
 
 
@@ -423,6 +514,7 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
     z = r.get("zones") or {}
     vp = r.get("vp") or {}
     blend = r.get("blend") or {}
+    exit_zone = r.get("exit_zone") or blend.get("exit_zone")
 
     def _bound(zone, idx):
         if not z:
@@ -433,6 +525,7 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
         except Exception:
             return None
 
+    exit_json = dict(exit_zone) if isinstance(exit_zone, dict) else None
     return {
         "user_id": user_id,
         "ticker": r["ticker"],
@@ -468,6 +561,11 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
             "dispersion_pct": r.get("dispersion_pct"),
             "volatility_1y": r.get("volatility_1y"),
             "cycle": r.get("cycle") or blend.get("cycle"),
+            "exit_zone_json": exit_json,
+            "hold_upper_price": (exit_json or {}).get("hold_upper_price") if exit_json else None,
+            "overvalued_price": (exit_json or {}).get("overvalued_price") if exit_json else None,
+            "trim_price": (exit_json or {}).get("trim_price") if exit_json else None,
+            "extreme_price": (exit_json or {}).get("extreme_price") if exit_json else None,
         },
         "valuation_class": r.get("valuation_class"),
         "confidence": r.get("confidence"),
@@ -479,6 +577,11 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
         "blended_high": r.get("fair_high"),
         "volatility_1y": r.get("volatility_1y"),
         "reliability_json": blend.get("reliability"),
+        "hold_upper_price": (exit_json or {}).get("hold_upper_price") if exit_json else None,
+        "overvalued_price": (exit_json or {}).get("overvalued_price") if exit_json else None,
+        "trim_price": (exit_json or {}).get("trim_price") if exit_json else None,
+        "extreme_price": (exit_json or {}).get("extreme_price") if exit_json else None,
+        "exit_zone_json": exit_json,
     }
 
 

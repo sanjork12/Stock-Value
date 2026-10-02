@@ -171,3 +171,8 @@ alter table public.valuation_snapshots add column if not exists blended_low nume
 alter table public.valuation_snapshots add column if not exists blended_high numeric;
 alter table public.valuation_snapshots add column if not exists volatility_1y numeric;
 alter table public.valuation_snapshots add column if not exists reliability_json jsonb;
+alter table public.valuation_snapshots add column if not exists hold_upper_price numeric;
+alter table public.valuation_snapshots add column if not exists overvalued_price numeric;
+alter table public.valuation_snapshots add column if not exists trim_price numeric;
+alter table public.valuation_snapshots add column if not exists extreme_price numeric;
+alter table public.valuation_snapshots add column if not exists exit_zone_json jsonb;
