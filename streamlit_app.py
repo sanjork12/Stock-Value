@@ -29,9 +29,7 @@ try:
         analyze_ticker,
         build_snapshot_record,
         fetch_historical_snapshot,
-        format_extreme_zone,
         format_fair_value,
-        format_trim_zone,
         is_schema_cache_error,
         legacy_snapshot_record,
     )
@@ -53,6 +51,26 @@ logger = logging.getLogger("stock_fair_value_monitor")
 NAV_PAGES = ["自选股", "单股分析", "历史快照", "账户"]
 REMEMBER_COOKIE = "stock_monitor_refresh"
 REMEMBER_DAYS = 30
+
+
+def format_trim_zone(exit_zone: dict | None) -> str:
+    """Dashboard/single-stock formatter; kept local so Cloud never depends on a stale analysis_service."""
+    if not isinstance(exit_zone, dict):
+        return "—"
+    trim = fnum(exit_zone.get("trim_price"))
+    extreme = fnum(exit_zone.get("extreme_price"))
+    if trim is None or extreme is None:
+        return "—"
+    return f"${trim:,.0f} - ${extreme:,.0f}"
+
+
+def format_extreme_zone(exit_zone: dict | None) -> str:
+    if not isinstance(exit_zone, dict):
+        return "—"
+    extreme = fnum(exit_zone.get("extreme_price"))
+    if extreme is None:
+        return "—"
+    return f">${extreme:,.0f}"
 
 
 def inject_layout_css() -> None:
