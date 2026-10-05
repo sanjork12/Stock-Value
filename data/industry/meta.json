@@ -1,0 +1,10 @@
+{
+  "schema_version": "v5.1",
+  "dataset_name": "AI Industry Intelligence Map",
+  "data_through": "FY2025 Q2 / CY2025 Q2 (company-specific fiscal calendars)",
+  "last_refreshed_at": "2025-10-03T00:00:00Z",
+  "events_default_range": "current_quarter",
+  "market_share_note": "Latest available disclosed period per market; not same-day synced with earnings.",
+  "update_policy": "Manual curated JSON V1; future API/scheduled updater allowed.",
+  "disclaimer": "Industry research layer only. Not investment advice. Valuation BUY/HOLD/EXIT comes from Stock Analysis."
+}

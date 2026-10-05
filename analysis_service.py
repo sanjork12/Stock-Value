@@ -671,3 +671,37 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
 
 def legacy_snapshot_record(record: dict) -> dict:
     return {key: record.get(key) for key in SNAPSHOT_CORE_FIELDS}
+
+
+def industry_valuation_snapshot(
+    ticker: str,
+    *,
+    analyze_fn=None,
+    **analyze_kwargs,
+) -> dict:
+    """Read-only valuation summary for Industry Map.
+
+    Does not change PE/DCF/MOS/exit math — only reshapes ``analyze_ticker`` output.
+    """
+    fn = analyze_fn or analyze_ticker
+    r = fn(ticker, **analyze_kwargs) or {}
+    fin = r.get("financials") or {}
+    mcap = fnum(fin.get("market_cap") or fin.get("marketCap"))
+    price = fnum(r.get("price"))
+    return {
+        "ticker": r.get("ticker") or normalize_ticker(ticker) or str(ticker).upper(),
+        "name": r.get("name"),
+        "price": price,
+        "price_display": f"${price:,.2f}" if price is not None else "—",
+        "market_cap": mcap,
+        "market_cap_display": (
+            f"${mcap/1e12:.2f}T"
+            if mcap is not None and mcap >= 1e12
+            else (f"${mcap/1e9:.1f}B" if mcap is not None and mcap >= 1e9 else ("—" if mcap is None else f"${mcap:,.0f}"))
+        ),
+        "fair_value_display": format_fair_value(r),
+        "blended_mid": _mid(r),
+        "confidence": r.get("confidence"),
+        "status": r.get("recommendation") or _recommendation_label(r),
+        "valuation_class": r.get("valuation_class"),
+    }

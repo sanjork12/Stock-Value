@@ -1,0 +1,205 @@
+[
+  {
+    "company_id": "NVDA",
+    "ticker": "NVDA",
+    "event_date": "2026-10-28",
+    "event_type": "product",
+    "headline": "Next-gen AI platform roadmap update for data-center customers",
+    "summary": "Company reiterated multi-year AI infrastructure demand and software attach narrative.",
+    "strategic_impact": "Reinforces infrastructure profit engine; software still emerging.",
+    "layer_impact": [
+      "infrastructure",
+      "model_platform"
+    ],
+    "financial_impact": "Supports Data Center mix concentration narrative; not a valuation signal.",
+    "impact_label": "Strategic",
+    "source_url": "https://investor.nvidia.com/",
+    "source_name": "NVIDIA Investor Relations"
+  },
+  {
+    "company_id": "MSFT",
+    "ticker": "MSFT",
+    "event_date": "2026-10-20",
+    "event_type": "capex",
+    "headline": "Continued elevated AI CapEx commentary for cloud capacity",
+    "summary": "Management emphasized Azure AI capacity buildout and Copilot distribution.",
+    "strategic_impact": "Cloud + platform expansion funded by high CapEx intensity.",
+    "layer_impact": [
+      "cloud",
+      "model_platform"
+    ],
+    "financial_impact": "Near-term FCF trade-off vs long-duration cloud growth.",
+    "impact_label": "Strategic",
+    "source_url": "https://www.microsoft.com/en-us/investor",
+    "source_name": "Microsoft Investor Relations"
+  },
+  {
+    "company_id": "GOOG",
+    "ticker": "GOOG",
+    "event_date": "2026-10-18",
+    "event_type": "AI infrastructure",
+    "headline": "Gemini + Cloud AI backlog highlighted in investor materials",
+    "summary": "Ads remain primary profit engine; Cloud/AI capacity spend stays elevated.",
+    "strategic_impact": "Applications monetization + Cloud investment coexistence.",
+    "layer_impact": [
+      "applications",
+      "cloud",
+      "model_platform"
+    ],
+    "financial_impact": "CapEx/revenue elevated; ads cash flow funds infra.",
+    "impact_label": "Positive",
+    "source_url": "https://abc.xyz/investor/",
+    "source_name": "Alphabet Investor Relations"
+  },
+  {
+    "company_id": "AMZN",
+    "ticker": "AMZN",
+    "event_date": "2026-10-15",
+    "event_type": "cloud",
+    "headline": "AWS AI services and custom silicon (Trainium) progress update",
+    "summary": "AWS remains core profit engine; merchant GPU peer comparison not applicable for Trainium.",
+    "strategic_impact": "Cloud DIRECT monetization; chips mostly AWS-ecosystem.",
+    "layer_impact": [
+      "cloud",
+      "infrastructure"
+    ],
+    "financial_impact": "Supports AWS growth narrative; CapEx remains high.",
+    "impact_label": "Positive",
+    "source_url": "https://ir.aboutamazon.com/",
+    "source_name": "Amazon Investor Relations"
+  },
+  {
+    "company_id": "META",
+    "ticker": "META",
+    "event_date": "2026-10-12",
+    "event_type": "AI infrastructure",
+    "headline": "AI CapEx and Llama ecosystem investment update",
+    "summary": "Ads efficiency remains INDIRECT AI monetization; Reality Labs still investment.",
+    "strategic_impact": "Infrastructure spend = investment; Applications = current profit.",
+    "layer_impact": [
+      "infrastructure",
+      "applications",
+      "model_platform"
+    ],
+    "financial_impact": "High CapEx intensity vs ad cash generation.",
+    "impact_label": "Strategic",
+    "source_url": "https://investor.atmeta.com/",
+    "source_name": "Meta Investor Relations"
+  },
+  {
+    "company_id": "AAPL",
+    "ticker": "AAPL",
+    "event_date": "2026-10-10",
+    "event_type": "product",
+    "headline": "On-device Apple Intelligence feature cadence update",
+    "summary": "AI positioned as Services/device attach; no separate AI revenue line disclosed.",
+    "strategic_impact": "INDIRECT / EMERGING monetization via ecosystem.",
+    "layer_impact": [
+      "applications",
+      "model_platform"
+    ],
+    "financial_impact": "Supports Services narrative; not a discrete AI P&L.",
+    "impact_label": "Neutral",
+    "source_url": "https://investor.apple.com/",
+    "source_name": "Apple Investor Relations"
+  },
+  {
+    "company_id": "TSLA",
+    "ticker": "TSLA",
+    "event_date": "2026-10-05",
+    "event_type": "autonomy",
+    "headline": "Autonomy / robotaxi optionality commentary",
+    "summary": "Automotive remains current revenue; robotaxi treated as OPTIONALLY priced narrative.",
+    "strategic_impact": "Do not conflate autonomy story with current Automotive profit engine.",
+    "layer_impact": [
+      "applications",
+      "model_platform"
+    ],
+    "financial_impact": "Optional upside; not current segment revenue.",
+    "impact_label": "Strategic",
+    "source_url": "https://ir.tesla.com/",
+    "source_name": "Tesla Investor Relations"
+  },
+  {
+    "company_id": "ORCL",
+    "ticker": "ORCL",
+    "event_date": "2026-10-09",
+    "event_type": "earnings",
+    "headline": "OCI capacity and CapEx ramp in latest earnings materials",
+    "summary": "Cloud growth and AI infrastructure contracts remain the strategic focus.",
+    "strategic_impact": "Cloud expansion with very high CapEx intensity.",
+    "layer_impact": [
+      "cloud"
+    ],
+    "financial_impact": "Near-term CapEx pressure vs backlog narrative.",
+    "impact_label": "Strategic",
+    "source_url": "https://investor.oracle.com/",
+    "source_name": "Oracle Investor Relations"
+  },
+  {
+    "company_id": "MU",
+    "ticker": "MU",
+    "event_date": "2026-10-24",
+    "event_type": "chip",
+    "headline": "HBM / cloud memory demand commentary with earnings",
+    "summary": "Memory cycle + HBM AI demand remain primary AI exposure.",
+    "strategic_impact": "Infrastructure DIRECT monetization via memory.",
+    "layer_impact": [
+      "infrastructure"
+    ],
+    "financial_impact": "Mix shift toward cloud memory / HBM.",
+    "impact_label": "Positive",
+    "source_url": "https://investors.micron.com/",
+    "source_name": "Micron Investor Relations"
+  },
+  {
+    "company_id": "PLTR",
+    "ticker": "PLTR",
+    "event_date": "2026-08-04",
+    "event_type": "earnings",
+    "headline": "US Commercial AIP growth highlighted",
+    "summary": "Commercial acceleration continues alongside government franchise.",
+    "strategic_impact": "Application-layer AI platform monetization.",
+    "layer_impact": [
+      "applications",
+      "model_platform"
+    ],
+    "financial_impact": "Supports commercial mix expansion narrative.",
+    "impact_label": "Positive",
+    "source_url": "https://investors.palantir.com/",
+    "source_name": "Palantir Investor Relations"
+  },
+  {
+    "company_id": "AVGO",
+    "ticker": "AVGO",
+    "event_date": "2026-10-04",
+    "event_type": "earnings",
+    "headline": "AI semiconductor and networking demand update",
+    "summary": "Custom accelerators / networking remain infrastructure cash engine.",
+    "strategic_impact": "Infrastructure DIRECT; software segment separate.",
+    "layer_impact": [
+      "infrastructure"
+    ],
+    "financial_impact": "AI semi commentary within Semiconductor solutions.",
+    "impact_label": "Positive",
+    "source_url": "https://investors.broadcom.com/",
+    "source_name": "Broadcom Investor Relations"
+  },
+  {
+    "company_id": "ANET",
+    "ticker": "ANET",
+    "event_date": "2026-08-05",
+    "event_type": "earnings",
+    "headline": "AI cluster networking demand commentary",
+    "summary": "Ethernet switching demand tied to AI cluster buildouts.",
+    "strategic_impact": "Infrastructure networking presence.",
+    "layer_impact": [
+      "infrastructure",
+      "cloud"
+    ],
+    "financial_impact": "Supports product growth narrative.",
+    "impact_label": "Positive",
+    "source_url": "https://investors.arista.com/",
+    "source_name": "Arista Investor Relations"
+  }
+]

@@ -30,9 +30,11 @@ try:
         build_snapshot_record,
         fetch_historical_snapshot,
         format_fair_value,
+        industry_valuation_snapshot,
         is_schema_cache_error,
         legacy_snapshot_record,
     )
+    from industry.ui import render_industry_page
     from remember_session import seal_remember_payload, unseal_remember_payload
     from valuation_engine import (
         MODEL_DISPLAY_NAMES,
@@ -48,7 +50,7 @@ except Exception as _boot_exc:
 
 logger = logging.getLogger("stock_fair_value_monitor")
 
-NAV_PAGES = ["自选股", "单股分析", "历史快照", "账户"]
+NAV_PAGES = ["自选股", "单股分析", "AI Industry Map", "历史快照", "账户"]
 REMEMBER_COOKIE = "stock_monitor_refresh"
 REMEMBER_DAYS = 30
 
@@ -1711,6 +1713,17 @@ elif page == "单股分析":
                 st.success("已保存。")
             except Exception as e:
                 st.error(public_db_error("upsert", "valuation_snapshots", e, client=db))
+
+elif page == "AI Industry Map":
+    def _industry_val_loader(ticker: str):
+        # Cached live summary; Industry Map never reimplements valuation math.
+        return industry_valuation_snapshot(
+            ticker,
+            history_loader=history_cached,
+            fundamentals_loader=fundamentals_cached,
+        )
+
+    render_industry_page(valuation_loader=_industry_val_loader)
 
 elif page == "历史快照":
     st.subheader("历史估值快照")
