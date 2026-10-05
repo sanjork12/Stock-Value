@@ -61,7 +61,7 @@ except Exception as _industry_exc:
 
 logger = logging.getLogger("stock_fair_value_monitor")
 
-NAV_PAGES = ["自选股", "单股分析", "AI Industry Map", "历史快照", "账户"]
+NAV_PAGES = ["自选股", "单股分析", "AI 产业链", "历史快照", "账户"]
 REMEMBER_COOKIE = "stock_monitor_refresh"
 REMEMBER_DAYS = 30
 
@@ -1209,8 +1209,13 @@ if "nav_initialized" not in st.session_state:
 
 # Apply page jumps before the nav widget is instantiated (cannot mutate widget keys after).
 _pending_nav = st.session_state.pop("_pending_nav_page", None)
+if _pending_nav == "AI Industry Map":
+    _pending_nav = "AI 产业链"
 if _pending_nav in NAV_PAGES:
     st.session_state.nav_page = _pending_nav
+# Migrate old English nav label still stuck in session
+if st.session_state.get("nav_page") == "AI Industry Map":
+    st.session_state.nav_page = "AI 产业链"
 
 if hasattr(st, "segmented_control"):
     page = st.segmented_control(
@@ -1725,9 +1730,9 @@ elif page == "单股分析":
             except Exception as e:
                 st.error(public_db_error("upsert", "valuation_snapshots", e, client=db))
 
-elif page == "AI Industry Map":
+elif page == "AI 产业链":
     if not _INDUSTRY_MAP_AVAILABLE or render_industry_page is None or industry_valuation_snapshot is None:
-        st.error("AI Industry Map 模块尚未加载完成。请确认部署已包含 V5（analysis_service.industry_valuation_snapshot + industry/）。")
+        st.error("「AI 产业链」模块尚未加载完成。请确认部署已包含 V5（analysis_service.industry_valuation_snapshot + industry/）。")
         if _INDUSTRY_IMPORT_ERROR is not None:
             st.code(
                 f"{type(_INDUSTRY_IMPORT_ERROR).__name__}: {_INDUSTRY_IMPORT_ERROR}\n\n"
