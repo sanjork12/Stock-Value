@@ -89,15 +89,15 @@ class ArchitectureCleanupTests(unittest.TestCase):
 
     def test_f_dashboard_retains_note_and_valuation_class(self):
         src = _read("streamlit_app.py")
+        # Nickname / valuation_class still computed in row payload for notes / edit flows
         self.assertIn('"备注": item.get("nickname") or ""', src)
         self.assertIn('"估值类型": r.get("valuation_class_label") or "—"', src)
         dash_block = src.split("if page == \"自选股\":", 1)[1].split("elif page ==", 1)[0]
-        self.assertIn('"备注"', dash_block)
-        self.assertIn('"估值类型"', dash_block)
         self.assertIn('show_advanced_cols', dash_block)
-        self.assertIn('显示高级列', dash_block)
-        # Advanced columns append at the end only when toggle is on.
-        self.assertIn('dashboard_columns.extend(["备注", "估值类型"])', dash_block)
+        self.assertIn('更多指标', dash_block)
+        # V5.2: advanced metrics are zone/SMA/reliability — not 备注/估值类型 columns
+        self.assertIn('dashboard_columns.extend([', dash_block)
+        self.assertIn('"第一批区"', dash_block)
 
     def test_f2_dashboard_default_column_order_decision_first(self):
         src = _read("streamlit_app.py")
@@ -107,18 +107,10 @@ class ArchitectureCleanupTests(unittest.TestCase):
             "价格",
             "状态",
             "公允价值",
-            "置信度",
             "距公允价值%",
-            "第一批区",
             "核心买入区",
-            "深度价值区",
             "减仓参考区",
-            "明显高估区",
-            "可靠性",
-            "模型分歧",
-            "SMA30",
-            "SMA50",
-            "SMA200",
+            "置信度",
         ]
         # Parse default dashboard_columns list before advanced extend.
         start = dash_block.find("dashboard_columns = [")
@@ -126,7 +118,7 @@ class ArchitectureCleanupTests(unittest.TestCase):
         end = dash_block.find("]", start)
         block = dash_block[start:end]
         order = []
-        for name in expected + ["错误", "备注", "估值类型"]:
+        for name in expected + ["错误", "备注", "估值类型", "第一批区"]:
             token = f'"{name}"'
             if token in block:
                 order.append((block.find(token), name))
@@ -136,7 +128,7 @@ class ArchitectureCleanupTests(unittest.TestCase):
         self.assertNotIn("备注", names)
         self.assertNotIn("估值类型", names)
         self.assertIn('if show_advanced_cols:', dash_block)
-        self.assertIn('dashboard_columns.extend(["备注", "估值类型"])', dash_block)
+        self.assertIn('更多指标', dash_block)
         # Valuation engine files remain untouched by this UI change path.
         self.assertNotIn("valuation_engine", dash_block)
         self.assertNotIn("financial_normalization", dash_block)

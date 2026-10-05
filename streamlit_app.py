@@ -82,9 +82,16 @@ except Exception as _industry_exc:
 
 logger = logging.getLogger("stock_fair_value_monitor")
 
-NAV_PAGES = ["自选股", "单股分析", "AI 产业链", "历史快照", "账户"]
+NAV_PAGES = ["AI产业链", "自选股", "单股分析", "头等大事"]
+SINGLE_STOCK_TABS = ["估值", "财报与业务", "行业地位", "重大事件", "历史"]
 REMEMBER_COOKIE = "stock_monitor_refresh"
 REMEMBER_DAYS = 30
+_LEGACY_NAV = {
+    "AI 产业链": "AI产业链",
+    "AI Industry Map": "AI产业链",
+    "历史快照": "单股分析",
+    "账户": "自选股",
+}
 
 
 def format_trim_zone(exit_zone: dict | None) -> str:
@@ -539,6 +546,79 @@ def query_ticker_param():
     if isinstance(raw, (list, tuple)):
         raw = raw[0] if raw else None
     return normalize_ticker(raw)
+
+
+def query_tab_param():
+    """Optional ?tab=history|valuation|earnings|position|events deep link."""
+    try:
+        raw = st.query_params.get("tab")
+    except Exception:
+        return None
+    if isinstance(raw, (list, tuple)):
+        raw = raw[0] if raw else None
+    if not raw:
+        return None
+    key = str(raw).strip().lower()
+    mapping = {
+        "history": "历史",
+        "历史": "历史",
+        "valuation": "估值",
+        "估值": "估值",
+        "earnings": "财报与业务",
+        "财报与业务": "财报与业务",
+        "position": "行业地位",
+        "行业地位": "行业地位",
+        "events": "重大事件",
+        "重大事件": "重大事件",
+    }
+    return mapping.get(key)
+
+
+def open_single_stock(ticker: str, *, tab: str | None = None) -> None:
+    """Shared jump from 自选股 / AI产业链 / 头等大事 → 单股分析."""
+    t = normalize_ticker(ticker)
+    if not t:
+        return
+    st.session_state.selected_ticker = t
+    st.session_state._last_watch_select = t
+    st.session_state._pending_watch_select = t
+    st.session_state._pending_nav_page = "单股分析"
+    if tab and tab in SINGLE_STOCK_TABS:
+        st.session_state._pending_single_stock_tab = tab
+    try:
+        st.query_params["ticker"] = t
+        if tab == "历史":
+            st.query_params["tab"] = "history"
+    except Exception:
+        pass
+    st.rerun()
+
+
+def render_account_panel(user_email: str, db: Client) -> None:
+    st.subheader("账户设置")
+    st.write(f"邮箱：**{user_email}**")
+    st.caption("密码由 Supabase Auth 管理，不保存在应用数据库中。")
+    st.caption("产品能力：自选股数据库 · Sector-aware 公允价值 · SMA30/50/200 · 成交密集区 · 分层买入区")
+    st.caption(f"登录状态：已登录 · {user_email}")
+    with st.form("change_password"):
+        p1 = st.text_input("新密码", type="password")
+        p2 = st.text_input("确认新密码", type="password")
+        change = st.form_submit_button("修改密码")
+    if change:
+        if p1 != p2:
+            st.error("两次密码不一致。")
+        elif len(p1) < 8:
+            st.error("密码至少 8 位。")
+        else:
+            try:
+                db.auth.update_user({"password": p1})
+                st.success("密码已更新。")
+            except Exception as exc:
+                logger.warning("password update failed error_type=%s", type(exc).__name__)
+                st.error("修改失败，请重新登录后再试。")
+    if st.button("← 返回", key="account_back"):
+        st.session_state.account_open = False
+        st.rerun()
 
 
 MODEL_LABELS = {
@@ -1204,7 +1284,7 @@ if not st.session_state.get("_profile_ensured"):
 
 # ---------------- Main app ----------------
 
-header_left, header_right = st.columns([12, 1], vertical_alignment="center")
+header_left, header_right = st.columns([10, 2], vertical_alignment="center")
 with header_left:
     st.markdown(
         '<div style="font-size:30px;font-weight:700;line-height:1.15;margin:0.1rem 0 0.35rem 0">'
@@ -1212,11 +1292,18 @@ with header_left:
         unsafe_allow_html=True,
     )
 with header_right:
-    avatar = (user_email[:1] if user_email else "U").upper()
-    with st.popover(avatar, help=user_email or "账户"):
+    email_prefix = (user_email.split("@")[0] if user_email else "User")
+    with st.popover(f"{email_prefix} ▼", help=user_email or "账户"):
         st.caption("已登录")
         st.write(user_email)
-        if st.button("退出登录", use_container_width=True):
+        if st.button("账户设置", use_container_width=True, key="menu_account_settings"):
+            st.session_state.account_open = True
+            st.rerun()
+        if st.button("修改密码", use_container_width=True, key="menu_change_password"):
+            st.session_state.account_open = True
+            st.session_state.account_focus = "password"
+            st.rerun()
+        if st.button("退出登录", use_container_width=True, key="menu_logout"):
             try:
                 db.auth.sign_out()
             except Exception:
@@ -1232,32 +1319,44 @@ if "nav_initialized" not in st.session_state:
         st.session_state.selected_ticker = qp_boot
         st.session_state.watch_select = qp_boot
         st.session_state._last_watch_select = qp_boot
+        qp_tab = query_tab_param()
+        if qp_tab:
+            st.session_state._pending_single_stock_tab = qp_tab
     st.session_state.nav_initialized = True
 
 # Apply page jumps before the nav widget is instantiated (cannot mutate widget keys after).
 _pending_nav = st.session_state.pop("_pending_nav_page", None)
-if _pending_nav == "AI Industry Map":
-    _pending_nav = "AI 产业链"
+if _pending_nav in _LEGACY_NAV:
+    _pending_nav = _LEGACY_NAV[_pending_nav]
 if _pending_nav in NAV_PAGES:
     st.session_state.nav_page = _pending_nav
-# Migrate old English nav label still stuck in session
-if st.session_state.get("nav_page") == "AI Industry Map":
-    st.session_state.nav_page = "AI 产业链"
+    st.session_state.account_open = False
+# Migrate legacy nav labels still stuck in session
+_cur_nav = st.session_state.get("nav_page")
+if _cur_nav in _LEGACY_NAV:
+    st.session_state.nav_page = _LEGACY_NAV[_cur_nav]
+elif _cur_nav not in NAV_PAGES:
+    st.session_state.nav_page = "AI产业链"
 
 if hasattr(st, "segmented_control"):
     page = st.segmented_control(
         "页面",
         options=NAV_PAGES,
-        default="自选股",
+        default="AI产业链",
         key="nav_page",
         label_visibility="collapsed",
-    ) or "自选股"
+    ) or "AI产业链"
 else:
     page = st.radio("页面", NAV_PAGES, horizontal=True, key="nav_page", label_visibility="collapsed")
 
+if st.session_state.get("account_open"):
+    render_account_panel(user_email, db)
+    st.divider()
+    st.caption("研究工具，不构成个性化投资建议。自定义股票使用通用估值假设；重要持仓应进一步校准增长率、折现率与合理估值倍数。")
+    st.stop()
 
 if page == "自选股":
-    st.subheader("我的自选股")
+    st.subheader("自选股")
     with st.expander("➕ 添加股票", expanded=False):
         with st.form("add_watchlist_form", clear_on_submit=False):
             c1, c2, c3 = st.columns([1, 1.4, 0.7])
@@ -1289,7 +1388,7 @@ if page == "自选股":
         st.stop()
 
     auto_save = st.checkbox("自动保存今天的估值快照", value=True)
-    show_advanced_cols = st.checkbox("显示高级列", value=False, key="dash_advanced_cols")
+    show_advanced_cols = st.checkbox("更多指标", value=False, key="dash_advanced_cols")
     rows = []
     progress = st.progress(0, text="正在更新自选股…")
     for i, item in enumerate(watch, start=1):
@@ -1401,21 +1500,21 @@ if page == "自选股":
         "状态",
         "错误",
         "公允价值",
-        "置信度",
         "距公允价值%",
-        "第一批区",
         "核心买入区",
-        "深度价值区",
         "减仓参考区",
-        "明显高估区",
-        "可靠性",
-        "模型分歧",
-        "SMA30",
-        "SMA50",
-        "SMA200",
+        "置信度",
     ]
     if show_advanced_cols:
-        dashboard_columns.extend(["备注", "估值类型"])
+        dashboard_columns.extend([
+            "第一批区",
+            "深度价值区",
+            "可靠性",
+            "模型分歧",
+            "SMA30",
+            "SMA50",
+            "SMA200",
+        ])
     visible = [col for col in dashboard_columns if col in df.columns]
     if "错误" in visible and "错误" in df.columns:
         err_series = df["错误"]
@@ -1438,14 +1537,11 @@ if page == "自选股":
             "核心买入区": st.column_config.TextColumn(width=150),
             "深度价值区": st.column_config.TextColumn(width=150),
             "减仓参考区": st.column_config.TextColumn(width=140),
-            "明显高估区": st.column_config.TextColumn(width=110),
             "可靠性": st.column_config.TextColumn(width=80),
             "模型分歧": st.column_config.TextColumn(width=90),
             "SMA30": st.column_config.NumberColumn(format="$%.2f", width=90),
             "SMA50": st.column_config.NumberColumn(format="$%.2f", width=90),
             "SMA200": st.column_config.NumberColumn(format="$%.2f", width=90),
-            "备注": st.column_config.TextColumn(width=120),
-            "估值类型": st.column_config.TextColumn(width=120),
             "错误": st.column_config.TextColumn(width=180),
         },
     )
@@ -1463,18 +1559,9 @@ if page == "自选股":
         with col:
             status_badge(label)
 
-    jump = st.selectbox("在单股分析中打开", [x["ticker"] for x in watch], key="dashboard_jump_ticker")
+    jump = st.selectbox("打开单股分析", [x["ticker"] for x in watch], key="dashboard_jump_ticker")
     if st.button("打开单股分析", type="primary"):
-        st.session_state.selected_ticker = jump
-        st.session_state._last_watch_select = jump
-        st.session_state._pending_watch_select = jump
-        st.session_state._pending_nav_page = "单股分析"
-        try:
-            st.query_params["ticker"] = jump
-        except Exception:
-            pass
-        st.rerun()
-
+        open_single_stock(jump)
     with st.expander("管理自选股"):
         to_remove = st.selectbox("选择要删除的股票", [x["ticker"] for x in watch])
         if st.button("从自选股删除"):
@@ -1591,175 +1678,249 @@ elif page == "单股分析":
                 except Exception as e:
                     st.error(public_db_error("insert", "watchlist", e, client=db))
 
-    use_latest = st.checkbox("使用最新交易日", value=True)
-    chosen_date = st.date_input("历史日期", value=date.today(), disabled=use_latest)
-    as_of = None if use_latest else chosen_date.isoformat()
-
     if not current:
         st.info("请选择或输入一只股票。")
         st.stop()
 
-    cache_key = (current, as_of)
-    if st.session_state.get("analysis_cache_key") != cache_key:
-        with st.spinner(f"正在分析 {current}…"):
-            try:
-                r = analyze_one(current, as_of, db, user_id)
-            except Exception as e:
-                st.error(public_analysis_error(current, e))
-                st.stop()
-        st.session_state.last_analysis = r
-        st.session_state.analysis_cache_key = cache_key
-    r = st.session_state.get("last_analysis")
+    _pending_tab = st.session_state.pop("_pending_single_stock_tab", None)
+    if _pending_tab in SINGLE_STOCK_TABS:
+        st.session_state.single_stock_tab = _pending_tab
+    qp_tab_now = query_tab_param()
+    if qp_tab_now and qp_tab_now in SINGLE_STOCK_TABS:
+        st.session_state.single_stock_tab = qp_tab_now
+    if st.session_state.get("single_stock_tab") not in SINGLE_STOCK_TABS:
+        st.session_state.single_stock_tab = "估值"
 
-    if r:
-        if r.get("snapshot_error"):
-            st.error(r["snapshot_error"])
-        elif r.get("analysis_error") and r.get("price") is None:
-            st.error(r["analysis_error"])
-        elif r.get("errors"):
-            st.warning("部分数据源失败，已保留可用的价格/估值结果。")
-        st.markdown(f"### {r['ticker']} · {r['name']} — {r.get('date') or '—'}")
-        if (r.get("blend") or {}).get("legacy"):
-            st.info("该历史快照创建于可靠性层之前，部分可靠性指标不可用。")
-        meta1, meta2, meta3 = st.columns(3)
-        meta1.metric("估值类型", r.get("valuation_class_label") or "—")
-        meta2.metric("置信度", r.get("confidence") or "—")
-        score = r.get("reliability_score")
-        meta3.metric("可靠性评分", f"{score} / 100" if score is not None else "—")
-        status_badge(r["recommendation"])
-        st.write("")
-        rel = (r.get("blend") or {}).get("reliability") or {}
-        disp = r.get("dispersion_pct")
-        inc = rel.get("model_count_included")
-        total = rel.get("model_count_total")
-        conf = str(r.get("confidence") or "").upper()
-        view = (r.get("blend") or {}).get("view") or primary_valuation_view(r.get("blend") or {})
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("价格", money(r["price"]))
-        if view.get("mode") == "specialized":
-            c2.metric("公允价值", "不适用")
-            st.info("传统估值模型不适用，需要专项场景估值。仅显示技术观察。")
-        elif view.get("mode") == "unavailable":
-            c2.metric("公允价值", "数据不足")
-        elif view.get("mode") == "indicative_range":
-            c2.metric(
-                "Indicative Valuation Range",
-                f"{money_conf(view.get('low'), 'LOW')} – {money_conf(view.get('high'), 'LOW')}",
+    if hasattr(st, "segmented_control"):
+        ss_tab = (
+            st.segmented_control(
+                "单股页签",
+                SINGLE_STOCK_TABS,
+                default=st.session_state.single_stock_tab,
+                key="single_stock_tab",
+                label_visibility="collapsed",
             )
-            st.caption(
-                f"Reference midpoint: {money_conf(view.get('mid'), 'LOW')}  ·  Confidence: LOW"
-            )
-            st.caption("估值不确定性较高，区间是主信息，中枢仅供参考。不得把中枢当作精确公允价值。")
-        elif view.get("mode") == "point":
-            c2.metric("Fair Value", money_conf(view.get("mid"), "HIGH"))
-            st.caption(f"Range: {money(view.get('low'))} – {money(view.get('high'))}")
-        else:
-            c2.metric("Fair Value Estimate", money_conf(view.get("mid"), conf))
-            st.caption(f"Reasonable Range: {money(view.get('low'))} – {money(view.get('high'))}")
-        c3.metric("SMA50", money(r["sma50"]), pct(delta_pct(r["price"], r["sma50"])) if r["sma50"] else None)
-        c4.metric("SMA200", money(r["sma200"]), pct(delta_pct(r["price"], r["sma200"])) if r["sma200"] else None)
-        r1, r2, r3 = st.columns(3)
-        r1.metric("模型分歧", f"{disp*100:.0f}%" if disp is not None else "—")
-        r2.metric("有效模型", f"{inc} / {total}" if inc is not None and total is not None else "—")
-        r3.metric("数据质量", rel.get("data_quality") or "—")
-        cap = blend_caption(r.get("blend"))
-        if cap:
-            st.caption(cap)
+            or "估值"
+        )
+    else:
+        ss_tab = st.radio(
+            "单股页签",
+            SINGLE_STOCK_TABS,
+            horizontal=True,
+            key="single_stock_tab",
+            label_visibility="collapsed",
+        )
 
-        if r["zones"]:
-            labels = (r["zones"] or {}).get("labels") or {}
-            z1, z2, z3 = st.columns(3)
-            z1.info(f"**{labels.get('first', '第一批区')}**\n\n{zone_text(r['zones']['first'])}")
-            z2.success(f"**{labels.get('core', '核心买入区')}**\n\n{zone_text(r['zones']['core'])}")
-            z3.success(f"**{labels.get('deep', '深度价值区')}**\n\n{zone_text(r['zones']['deep'])}")
-            if conf == "LOW":
-                st.warning("估值不确定性较高，此价格区仅为模型参考。")
-            exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone"))
-            mode = (exit_zone or {}).get("display_mode") if isinstance(exit_zone, dict) else None
-            if conf in {"HIGH", "MEDIUM"} and isinstance(exit_zone, dict) and mode == "precise":
-                e1, e2, e3, e4 = st.columns(4)
-                e1.info(
-                    f"**合理持有区**\n\n≤ {money(exit_zone.get('hold_upper_price'))}"
-                )
-                e2.warning(
-                    f"**偏高估区**\n\n{money(exit_zone.get('hold_upper_price'))} – {money(exit_zone.get('trim_price'))}"
-                )
-                e3.warning(
-                    f"**减仓参考区**\n\n{format_trim_zone(exit_zone)}"
-                )
-                e4.error(
-                    f"**明显高估区**\n\n{format_extreme_zone(exit_zone)}"
-                )
-                st.caption("减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
-                render_valuation_band(r)
-            elif conf in {"HIGH", "MEDIUM"} and mode == "qualitative":
-                disp = r.get("dispersion_pct")
-                disp_txt = f"{disp*100:.0f}%" if disp is not None else "—"
-                st.warning("**Exit valuation: 低确定性**")
-                st.write(f"**Reason:** 模型分歧 {disp_txt}")
-                st.write(f"**Current interpretation:** {r.get('recommendation')}")
-                st.caption("由于估值模型分歧较大，不提供精确减仓价格。")
-            elif conf == "LOW":
-                st.caption("低置信度不生成精确减仓价；若价格明显高于 indicative range，状态显示「估值偏高（低置信度）」。")
-        elif (r.get("blend") or {}).get("specialized") or r.get("confidence") == "SPECIALIZED":
-            st.info("传统估值模型不适用，需要专项场景估值。仅显示技术指标，不生成价值买入区。")
-        else:
-            st.info("有效估值模型不足，暂不生成买入区。")
+    if ss_tab == "财报与业务":
+        try:
+            from industry.company_panels import render_earnings_panel
 
-        left, right = st.columns([1.2, 1])
-        with left:
-            tech_df = pd.DataFrame({
-                "指标": ["当前价", "SMA30", "SMA50", "SMA200"],
-                "价格": [r["price"], r["sma30"], r["sma50"], r["sma200"]],
-                "当前价距离%": [0, delta_pct(r["price"], r["sma30"]), delta_pct(r["price"], r["sma50"]), delta_pct(r["price"], r["sma200"])],
-            })
-            st.dataframe(tech_df, use_container_width=True, hide_index=True,
-                         column_config={"价格": st.column_config.NumberColumn(format="$%.2f"), "当前价距离%": st.column_config.NumberColumn(format="%.1f%%")})
-            if r["vp"]:
-                st.info(f"近一年成交密集区（估算）：**{money(r['vp']['low'])} – {money(r['vp']['high'])}**")
-        with right:
-            model_rows = []
-            model_list = (r.get("blend") or {}).get("model_list") or []
-            if not model_list:
-                model_list = [obj for obj in (r.get("pe"), r.get("dcf"), r.get("growth")) if obj]
-            for obj in model_list:
-                usable = bool(obj) and obj.get("valid") and not obj.get("outlier") and obj.get("applicable") is not False
-                model_rows.append({
-                    "模型": obj.get("name") or obj.get("model_id"),
-                    "低值": obj.get("low") if usable else None,
-                    "中枢": obj.get("mid") if usable else None,
-                    "高值": obj.get("high") if usable else None,
-                    "状态": model_status_text(obj),
-                    "置信度": obj.get("confidence") or "—",
+            render_earnings_panel(current)
+        except Exception as exc:
+            st.warning(f"财报模块暂不可用：{type(exc).__name__}")
+    elif ss_tab == "行业地位":
+        try:
+            from industry.company_panels import render_position_panel
+
+            render_position_panel(current)
+        except Exception as exc:
+            st.warning(f"行业地位模块暂不可用：{type(exc).__name__}")
+    elif ss_tab == "重大事件":
+        try:
+            from industry.company_panels import render_events_panel
+
+            render_events_panel(current)
+        except Exception as exc:
+            st.warning(f"重大事件模块暂不可用：{type(exc).__name__}")
+    elif ss_tab == "历史":
+        st.caption("历史估值快照来自当时保存的 snapshot，不会用今天的估值重新计算。")
+        try:
+            data = list_snapshots(db, user_id, current)
+        except Exception as e:
+            st.error(public_db_error("select", "valuation_snapshots", e, client=db))
+            data = []
+        if not data:
+            st.info("暂无历史快照。打开自选股页面并启用自动保存即可开始积累。")
+        else:
+            hdf = pd.DataFrame(data)
+            if any(
+                is_legacy_snapshot(row) or not row.get("model_version") or row.get("model_version") == "legacy"
+                for row in data
+            ):
+                st.info("该历史快照创建于可靠性层之前，部分可靠性指标不可用。")
+            st.dataframe(hdf, use_container_width=True, hide_index=True)
+            chart_cols = [c for c in ["price", "fair_value"] if c in hdf.columns]
+            if chart_cols and "snapshot_date" in hdf.columns:
+                chart = hdf.sort_values("snapshot_date").set_index("snapshot_date")[chart_cols]
+                chart = chart.rename(columns={"price": "股价", "fair_value": "公允价值"})
+                st.line_chart(chart, use_container_width=True)
+    else:
+        # —— 估值 Tab（原单股分析主体）——
+        use_latest = st.checkbox("使用最新交易日", value=True)
+        chosen_date = st.date_input("历史日期", value=date.today(), disabled=use_latest)
+        as_of = None if use_latest else chosen_date.isoformat()
+
+        cache_key = (current, as_of)
+        if st.session_state.get("analysis_cache_key") != cache_key:
+            with st.spinner(f"正在分析 {current}…"):
+                try:
+                    r = analyze_one(current, as_of, db, user_id)
+                except Exception as e:
+                    st.error(public_analysis_error(current, e))
+                    st.stop()
+            st.session_state.last_analysis = r
+            st.session_state.analysis_cache_key = cache_key
+        r = st.session_state.get("last_analysis")
+
+        if r:
+            if r.get("snapshot_error"):
+                st.error(r["snapshot_error"])
+            elif r.get("analysis_error") and r.get("price") is None:
+                st.error(r["analysis_error"])
+            elif r.get("errors"):
+                st.warning("部分数据源失败，已保留可用的价格/估值结果。")
+            st.markdown(f"### {r['ticker']} · {r['name']} — {r.get('date') or '—'}")
+            if (r.get("blend") or {}).get("legacy"):
+                st.info("该历史快照创建于可靠性层之前，部分可靠性指标不可用。")
+            meta1, meta2, meta3 = st.columns(3)
+            meta1.metric("估值类型", r.get("valuation_class_label") or "—")
+            meta2.metric("置信度", r.get("confidence") or "—")
+            score = r.get("reliability_score")
+            meta3.metric("可靠性评分", f"{score} / 100" if score is not None else "—")
+            status_badge(r["recommendation"])
+            st.write("")
+            rel = (r.get("blend") or {}).get("reliability") or {}
+            disp = r.get("dispersion_pct")
+            inc = rel.get("model_count_included")
+            total = rel.get("model_count_total")
+            conf = str(r.get("confidence") or "").upper()
+            view = (r.get("blend") or {}).get("view") or primary_valuation_view(r.get("blend") or {})
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("价格", money(r["price"]))
+            if view.get("mode") == "specialized":
+                c2.metric("公允价值", "不适用")
+                st.info("传统估值模型不适用，需要专项场景估值。仅显示技术观察。")
+            elif view.get("mode") == "unavailable":
+                c2.metric("公允价值", "数据不足")
+            elif view.get("mode") == "indicative_range":
+                c2.metric(
+                    "Indicative Valuation Range",
+                    f"{money_conf(view.get('low'), 'LOW')} – {money_conf(view.get('high'), 'LOW')}",
+                )
+                st.caption(
+                    f"Reference midpoint: {money_conf(view.get('mid'), 'LOW')}  ·  Confidence: LOW"
+                )
+                st.caption("估值不确定性较高，区间是主信息，中枢仅供参考。不得把中枢当作精确公允价值。")
+            elif view.get("mode") == "point":
+                c2.metric("Fair Value", money_conf(view.get("mid"), "HIGH"))
+                st.caption(f"Range: {money(view.get('low'))} – {money(view.get('high'))}")
+            else:
+                c2.metric("Fair Value Estimate", money_conf(view.get("mid"), conf))
+                st.caption(f"Reasonable Range: {money(view.get('low'))} – {money(view.get('high'))}")
+            c3.metric("SMA50", money(r["sma50"]), pct(delta_pct(r["price"], r["sma50"])) if r["sma50"] else None)
+            c4.metric("SMA200", money(r["sma200"]), pct(delta_pct(r["price"], r["sma200"])) if r["sma200"] else None)
+            r1, r2, r3 = st.columns(3)
+            r1.metric("模型分歧", f"{disp*100:.0f}%" if disp is not None else "—")
+            r2.metric("有效模型", f"{inc} / {total}" if inc is not None and total is not None else "—")
+            r3.metric("数据质量", rel.get("data_quality") or "—")
+            cap = blend_caption(r.get("blend"))
+            if cap:
+                st.caption(cap)
+
+            if r["zones"]:
+                labels = (r["zones"] or {}).get("labels") or {}
+                z1, z2, z3 = st.columns(3)
+                z1.info(f"**{labels.get('first', '第一批区')}**\n\n{zone_text(r['zones']['first'])}")
+                z2.success(f"**{labels.get('core', '核心买入区')}**\n\n{zone_text(r['zones']['core'])}")
+                z3.success(f"**{labels.get('deep', '深度价值区')}**\n\n{zone_text(r['zones']['deep'])}")
+                if conf == "LOW":
+                    st.warning("估值不确定性较高，此价格区仅为模型参考。")
+                exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone"))
+                mode = (exit_zone or {}).get("display_mode") if isinstance(exit_zone, dict) else None
+                if conf in {"HIGH", "MEDIUM"} and isinstance(exit_zone, dict) and mode == "precise":
+                    e1, e2, e3, e4 = st.columns(4)
+                    e1.info(
+                        f"**合理持有区**\n\n≤ {money(exit_zone.get('hold_upper_price'))}"
+                    )
+                    e2.warning(
+                        f"**偏高估区**\n\n{money(exit_zone.get('hold_upper_price'))} – {money(exit_zone.get('trim_price'))}"
+                    )
+                    e3.warning(
+                        f"**减仓参考区**\n\n{format_trim_zone(exit_zone)}"
+                    )
+                    e4.error(
+                        f"**明显高估区**\n\n{format_extreme_zone(exit_zone)}"
+                    )
+                    st.caption("减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
+                    render_valuation_band(r)
+                elif conf in {"HIGH", "MEDIUM"} and mode == "qualitative":
+                    disp = r.get("dispersion_pct")
+                    disp_txt = f"{disp*100:.0f}%" if disp is not None else "—"
+                    st.warning("**Exit valuation: 低确定性**")
+                    st.write(f"**Reason:** 模型分歧 {disp_txt}")
+                    st.write(f"**Current interpretation:** {r.get('recommendation')}")
+                    st.caption("由于估值模型分歧较大，不提供精确减仓价格。")
+                elif conf == "LOW":
+                    st.caption("低置信度不生成精确减仓价；若价格明显高于 indicative range，状态显示「估值偏高（低置信度）」。")
+            elif (r.get("blend") or {}).get("specialized") or r.get("confidence") == "SPECIALIZED":
+                st.info("传统估值模型不适用，需要专项场景估值。仅显示技术指标，不生成价值买入区。")
+            else:
+                st.info("有效估值模型不足，暂不生成买入区。")
+
+            left, right = st.columns([1.2, 1])
+            with left:
+                tech_df = pd.DataFrame({
+                    "指标": ["当前价", "SMA30", "SMA50", "SMA200"],
+                    "价格": [r["price"], r["sma30"], r["sma50"], r["sma200"]],
+                    "当前价距离%": [0, delta_pct(r["price"], r["sma30"]), delta_pct(r["price"], r["sma50"]), delta_pct(r["price"], r["sma200"])],
                 })
-            if model_rows:
-                st.dataframe(
-                    pd.DataFrame(model_rows),
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "低值": st.column_config.NumberColumn(format="$%.2f"),
-                        "中枢": st.column_config.NumberColumn(format="$%.2f"),
-                        "高值": st.column_config.NumberColumn(format="$%.2f"),
-                    },
-                )
+                st.dataframe(tech_df, use_container_width=True, hide_index=True,
+                             column_config={"价格": st.column_config.NumberColumn(format="$%.2f"), "当前价距离%": st.column_config.NumberColumn(format="%.1f%%")})
+                if r["vp"]:
+                    st.info(f"近一年成交密集区（估算）：**{money(r['vp']['low'])} – {money(r['vp']['high'])}**")
+            with right:
+                model_rows = []
+                model_list = (r.get("blend") or {}).get("model_list") or []
+                if not model_list:
+                    model_list = [obj for obj in (r.get("pe"), r.get("dcf"), r.get("growth")) if obj]
+                for obj in model_list:
+                    usable = bool(obj) and obj.get("valid") and not obj.get("outlier") and obj.get("applicable") is not False
+                    model_rows.append({
+                        "模型": obj.get("name") or obj.get("model_id"),
+                        "低值": obj.get("low") if usable else None,
+                        "中枢": obj.get("mid") if usable else None,
+                        "高值": obj.get("high") if usable else None,
+                        "状态": model_status_text(obj),
+                        "置信度": obj.get("confidence") or "—",
+                    })
+                if model_rows:
+                    st.dataframe(
+                        pd.DataFrame(model_rows),
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "低值": st.column_config.NumberColumn(format="$%.2f"),
+                            "中枢": st.column_config.NumberColumn(format="$%.2f"),
+                            "高值": st.column_config.NumberColumn(format="$%.2f"),
+                        },
+                    )
 
-        st.line_chart(r["history"].tail(260)[["Close", "SMA30", "SMA50", "SMA200"]], use_container_width=True)
-        st.caption(r["note"])
-        render_cycle_panel(r)
-        render_model_explanations(r)
-        render_valuation_diagnostics(r)
-        render_exit_diagnostics(r)
-        if use_latest and st.button("保存当前估值快照"):
-            try:
-                save_snapshot(db, user_id, r)
-                st.success("已保存。")
-            except Exception as e:
-                st.error(public_db_error("upsert", "valuation_snapshots", e, client=db))
+            st.line_chart(r["history"].tail(260)[["Close", "SMA30", "SMA50", "SMA200"]], use_container_width=True)
+            st.caption(r["note"])
+            render_cycle_panel(r)
+            render_model_explanations(r)
+            render_valuation_diagnostics(r)
+            render_exit_diagnostics(r)
+            if use_latest and st.button("保存当前估值快照"):
+                try:
+                    save_snapshot(db, user_id, r)
+                    st.success("已保存。")
+                except Exception as e:
+                    st.error(public_db_error("upsert", "valuation_snapshots", e, client=db))
 
-elif page == "AI 产业链":
+elif page == "AI产业链":
     if not _INDUSTRY_MAP_AVAILABLE or render_industry_page is None:
-        st.error("「AI 产业链」模块尚未加载完成。请确认部署已包含 V5.1 产业页。")
+        st.error("「AI产业链」模块尚未加载完成。请确认部署已包含产业页。")
         if _INDUSTRY_IMPORT_ERROR is not None:
             st.code(
                 f"{type(_INDUSTRY_IMPORT_ERROR).__name__}: {_INDUSTRY_IMPORT_ERROR}\n\n"
@@ -1778,20 +1939,10 @@ elif page == "AI 产业链":
         st.error(public_db_error("select", "watchlist", e, client=db))
         st.stop()
 
-    def _industry_val_loader(ticker: str):
-        return industry_valuation_snapshot(
-            ticker,
-            history_loader=history_cached,
-            fundamentals_loader=fundamentals_cached,
-        )
+    render_industry_page(watchlist_tickers=watch_ind)
 
-    render_industry_page(
-        valuation_loader=_industry_val_loader if industry_valuation_snapshot else None,
-        watchlist_tickers=watch_ind,
-    )
-
-elif page == "历史快照":
-    st.subheader("历史估值快照")
+elif page == "头等大事":
+    st.caption("围绕自选股，只展示可能改变投资逻辑的事件（研究用途）。")
     try:
         watch = get_watchlist(db, user_id)
     except Exception as e:
@@ -1801,45 +1952,56 @@ elif page == "历史快照":
     if not tickers:
         st.info("请先添加自选股。")
         st.stop()
-    ticker = st.selectbox("股票", tickers)
-    try:
-        data = list_snapshots(db, user_id, ticker)
-    except Exception as e:
-        st.error(public_db_error("select", "valuation_snapshots", e, client=db))
-        st.stop()
-    if not data:
-        st.info("暂无历史快照。打开自选股页面并启用自动保存即可开始积累。")
+
+    range_opt = st.radio(
+        "时间范围",
+        ["过去24小时", "本周", "本季度"],
+        horizontal=True,
+        key="headline_range",
+        label_visibility="collapsed",
+    )
+    today = date.today()
+    if range_opt == "过去24小时":
+        start = (today - timedelta(days=1)).isoformat()
+    elif range_opt == "本周":
+        start = (today - timedelta(days=7)).isoformat()
     else:
-        hdf = pd.DataFrame(data)
-        st.caption("以下数值来自当时保存的 snapshot，不会用今天的估值重新计算。")
-        if any(is_legacy_snapshot(row) or not row.get("model_version") or row.get("model_version") == "legacy" for row in data):
-            st.info("该历史快照创建于可靠性层之前，部分可靠性指标不可用。")
-        st.dataframe(hdf, use_container_width=True, hide_index=True)
-        chart = hdf.sort_values("snapshot_date").set_index("snapshot_date")[["price", "fair_value"]]
-        chart.columns = ["股价", "公允价值"]
-        st.line_chart(chart, use_container_width=True)
+        q = (today.month - 1) // 3
+        start = date(today.year, q * 3 + 1, 1).isoformat()
+
+    try:
+        from industry.loader import get_watchlist_events
+
+        events = get_watchlist_events(tickers, start_date=start)
+    except Exception as exc:
+        st.warning(f"事件数据暂不可用：{type(exc).__name__}")
+        events = []
+
+    # Prefer high-importance; do not pad with irrelevant noise
+    material = [e for e in events if e.get("importance") in {"重大", "重要"}]
+    show_rows = material if material else []
+    if not show_rows:
+        st.info("目前没有发现影响投资逻辑的重大事件。")
+    else:
+        table = pd.DataFrame(
+            [
+                {
+                    "Ticker": e.get("ticker"),
+                    "Date": e.get("event_date"),
+                    "Importance": e.get("importance"),
+                    "Event": e.get("headline"),
+                    "Why it matters": e.get("why_it_matters"),
+                }
+                for e in show_rows
+            ]
+        )
+        st.dataframe(table, use_container_width=True, hide_index=True)
+        jump = st.selectbox("打开单股分析", sorted({e.get("ticker") for e in show_rows if e.get("ticker")}), key="headline_jump")
+        if st.button("打开单股 · 重大事件", type="primary", key="headline_jump_btn"):
+            open_single_stock(jump, tab="重大事件")
 
 else:
-    st.subheader("账户")
-    st.write(f"邮箱：**{user_email}**")
-    st.caption("密码由 Supabase Auth 管理，不保存在应用数据库中。")
-    st.caption("产品能力：自选股数据库 · Sector-aware 公允价值 · SMA30/50/200 · 成交密集区 · 分层买入区")
-    with st.form("change_password"):
-        p1 = st.text_input("新密码", type="password")
-        p2 = st.text_input("确认新密码", type="password")
-        change = st.form_submit_button("修改密码")
-    if change:
-        if p1 != p2:
-            st.error("两次密码不一致。")
-        elif len(p1) < 8:
-            st.error("密码至少 8 位。")
-        else:
-            try:
-                db.auth.update_user({"password": p1})
-                st.success("密码已更新。")
-            except Exception as exc:
-                logger.warning("password update failed error_type=%s", type(exc).__name__)
-                st.error("修改失败，请重新登录后再试。")
+    st.info("未知页面。")
 
 st.divider()
 st.caption("研究工具，不构成个性化投资建议。自定义股票使用通用估值假设；重要持仓应进一步校准增长率、折现率与合理估值倍数。")
