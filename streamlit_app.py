@@ -82,13 +82,15 @@ except Exception as _industry_exc:
 
 logger = logging.getLogger("stock_fair_value_monitor")
 
-NAV_PAGES = ["AI产业链", "自选股", "单股分析", "头等大事"]
+# Industry second-level tabs promoted into top nav (no nested industry menu).
+NAV_PAGES = ["产业链地图", "市场格局", "自选股", "单股分析", "头等大事"]
 SINGLE_STOCK_TABS = ["估值", "财报与业务", "行业地位", "重大事件", "历史"]
 REMEMBER_COOKIE = "stock_monitor_refresh"
 REMEMBER_DAYS = 30
 _LEGACY_NAV = {
-    "AI 产业链": "AI产业链",
-    "AI Industry Map": "AI产业链",
+    "AI产业链": "产业链地图",
+    "AI 产业链": "产业链地图",
+    "AI Industry Map": "产业链地图",
     "历史快照": "单股分析",
     "账户": "自选股",
 }
@@ -1336,16 +1338,16 @@ _cur_nav = st.session_state.get("nav_page")
 if _cur_nav in _LEGACY_NAV:
     st.session_state.nav_page = _LEGACY_NAV[_cur_nav]
 elif _cur_nav not in NAV_PAGES:
-    st.session_state.nav_page = "AI产业链"
+    st.session_state.nav_page = "产业链地图"
 
 if hasattr(st, "segmented_control"):
     page = st.segmented_control(
         "页面",
         options=NAV_PAGES,
-        default="AI产业链",
+        default="产业链地图",
         key="nav_page",
         label_visibility="collapsed",
-    ) or "AI产业链"
+    ) or "产业链地图"
 else:
     page = st.radio("页面", NAV_PAGES, horizontal=True, key="nav_page", label_visibility="collapsed")
 
@@ -1918,9 +1920,9 @@ elif page == "单股分析":
                 except Exception as e:
                     st.error(public_db_error("upsert", "valuation_snapshots", e, client=db))
 
-elif page == "AI产业链":
+elif page in {"产业链地图", "市场格局"}:
     if not _INDUSTRY_MAP_AVAILABLE or render_industry_page is None:
-        st.error("「AI产业链」模块尚未加载完成。请确认部署已包含产业页。")
+        st.error("产业模块尚未加载完成。请确认部署已包含产业页。")
         if _INDUSTRY_IMPORT_ERROR is not None:
             st.code(
                 f"{type(_INDUSTRY_IMPORT_ERROR).__name__}: {_INDUSTRY_IMPORT_ERROR}\n\n"
@@ -1939,7 +1941,10 @@ elif page == "AI产业链":
         st.error(public_db_error("select", "watchlist", e, client=db))
         st.stop()
 
-    render_industry_page(watchlist_tickers=watch_ind)
+    render_industry_page(
+        watchlist_tickers=watch_ind,
+        mode="landscape" if page == "市场格局" else "map",
+    )
 
 elif page == "头等大事":
     st.caption("围绕自选股，只展示可能改变投资逻辑的事件（研究用途）。")

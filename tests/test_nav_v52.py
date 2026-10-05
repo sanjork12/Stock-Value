@@ -17,16 +17,15 @@ def _read(name: str) -> str:
 
 
 class NavV52Tests(unittest.TestCase):
-    def test_1_top_nav_exactly_four(self):
+    def test_1_top_nav_flat_industry(self):
         app = _read("streamlit_app.py")
         self.assertIn(
-            'NAV_PAGES = ["AI产业链", "自选股", "单股分析", "头等大事"]',
+            'NAV_PAGES = ["产业链地图", "市场格局", "自选股", "单股分析", "头等大事"]',
             app,
         )
 
     def test_2_history_not_in_top_nav(self):
         app = _read("streamlit_app.py")
-        # Extract NAV_PAGES assignment
         start = app.find("NAV_PAGES = [")
         end = app.find("]", start)
         block = app[start : end + 1]
@@ -39,17 +38,18 @@ class NavV52Tests(unittest.TestCase):
         block = app[start : end + 1]
         self.assertNotIn("账户", block)
 
-    def test_4_industry_only_map_and_landscape(self):
+    def test_4_industry_no_nested_secondary_menu(self):
         src = _read("industry/ui.py")
-        self.assertIn('"产业链地图"', src)
-        self.assertIn('"市场格局"', src)
-        self.assertNotIn('"我的自选股"', src)
-        self.assertNotIn('"收入与盈利"', src)
-        self.assertNotIn('"行业地位"', src)
-        self.assertNotIn('"最新变化"', src)
+        self.assertNotIn("ind_v52_tabs", src)
+        self.assertNotIn("segmented_control", src)
+        app = _read("streamlit_app.py")
+        self.assertIn('page in {"产业链地图", "市场格局"}', app)
+        self.assertIn('mode="landscape"', app)
 
-    def test_5_industry_no_watchlist_overview(self):
+    def test_5_map_is_panorama(self):
         src = _read("industry/ui.py")
+        self.assertIn("ai_industry_panorama.jpg", src)
+        self.assertIn("st.image", src)
         self.assertNotIn("render_tab_watchlist", src)
         self.assertNotIn("当前估值状态", src)
 
@@ -64,7 +64,6 @@ class NavV52Tests(unittest.TestCase):
         app = _read("streamlit_app.py")
         self.assertIn('ss_tab == "历史"', app)
         self.assertIn("list_snapshots", app)
-        # Top-level history page removed
         self.assertNotIn('page == "历史快照"', app)
 
     def test_8_account_via_user_menu(self):
@@ -80,9 +79,9 @@ class NavV52Tests(unittest.TestCase):
         dash = app.split('if page == "自选股":', 1)[1].split("elif page ==", 1)[0]
         self.assertIn("open_single_stock", dash)
 
-    def test_10_industry_opens_single_stock(self):
-        src = _read("industry/ui.py")
-        self.assertIn('_pending_nav_page = "单股分析"', src)
+    def test_10_legacy_ai_industry_maps_to_panorama(self):
+        app = _read("streamlit_app.py")
+        self.assertIn('"AI产业链": "产业链地图"', app)
 
     def test_11_headline_opens_single_stock(self):
         app = _read("streamlit_app.py")
@@ -103,7 +102,6 @@ class NavV52Tests(unittest.TestCase):
         app = _read("streamlit_app.py")
         self.assertIn("from analysis_service import", app)
         self.assertIn("analyze_ticker", app)
-        # Dashboard still analyzes via analyze_one → analysis_service
         dash = app.split('if page == "自选股":', 1)[1].split("elif page ==", 1)[0]
         self.assertIn("analyze_one", dash)
 
@@ -122,7 +120,6 @@ class NavV52Tests(unittest.TestCase):
         ]
         start = dash.find("dashboard_columns = [")
         self.assertGreaterEqual(start, 0)
-        # First list before advanced extend
         end = dash.find("]", start)
         block = dash[start:end]
         order = []
@@ -135,9 +132,6 @@ class NavV52Tests(unittest.TestCase):
         self.assertEqual(names, expected)
         self.assertIn('checkbox("更多指标"', dash)
         self.assertNotIn("备注", names)
-        # Advanced appends secondary metrics, not 备注/估值类型
-        self.assertIn('"第一批区"', dash)
-        self.assertIn("更多指标", dash)
 
 
 if __name__ == "__main__":

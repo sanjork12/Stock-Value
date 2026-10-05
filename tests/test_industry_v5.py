@@ -32,38 +32,38 @@ class IndustryV52Tests(unittest.TestCase):
     def setUp(self):
         clear_industry_cache()
 
-    def test_1_page_accepts_watchlist_argument(self):
+    def test_1_page_accepts_watchlist_and_mode(self):
         sig = inspect.signature(industry_ui.render_industry_page)
         self.assertIn("watchlist_tickers", sig.parameters)
+        self.assertIn("mode", sig.parameters)
 
     def test_2_empty_watchlist_normalize(self):
         self.assertEqual(normalize_watchlist_tickers([]), [])
         self.assertEqual(normalize_watchlist_tickers(None), [])
 
-    def test_3_industry_only_two_tabs(self):
+    def test_3_map_uses_panorama_image(self):
         src = _read("industry/ui.py")
-        self.assertIn('"产业链地图"', src)
-        self.assertIn('"市场格局"', src)
-        self.assertNotIn('"我的自选股"', src)
-        self.assertNotIn('"收入与盈利"', src)
-        self.assertNotIn('"最新变化"', src)
+        self.assertIn("ai_industry_panorama.jpg", src)
+        self.assertIn("st.image", src)
+        img = os.path.join(ROOT, "assets", "ai_industry_panorama.jpg")
+        self.assertTrue(os.path.exists(img))
 
-    def test_4_no_watchlist_overview_renderer(self):
+    def test_4_no_nested_industry_tabs(self):
         src = _read("industry/ui.py")
+        self.assertNotIn("ind_v52_tabs", src)
+        self.assertNotIn("segmented_control", src)
         self.assertNotIn("render_tab_watchlist", src)
-        self.assertNotIn("CORE_WATCHLIST_COLS", src)
-        self.assertNotIn("当前估值状态", src)
+        self.assertNotIn("LAYER_MAP_ORDER", src)
 
     def test_5_no_stars_in_ui_source(self):
         src = _read("industry/ui.py")
         self.assertNotIn("★", src)
         self.assertNotIn("stars_to_text", src)
 
-    def test_6_map_opens_single_stock(self):
+    def test_6_no_ticker_button_grid_on_map(self):
         src = _read("industry/ui.py")
-        self.assertIn('_pending_nav_page = "单股分析"', src)
-        self.assertIn('query_params["ticker"]', src)
-        self.assertIn("LAYER_MAP_ORDER", src)
+        self.assertNotIn("ind_map_", src)
+        self.assertNotIn("companies_touching_layer", src)
 
     def test_7_cloud_module_gated(self):
         self.assertTrue(show_cloud_module(["AMZN"]))
