@@ -1,1 +1,1 @@
-# industry — AI 产业链全景图页面
+# industry — Stock-Value V5.1 watchlist-driven AI industry intelligence
