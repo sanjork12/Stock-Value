@@ -1,3 +1,4 @@
+"""V5.2 Industry + V5.2.2 market snapshot tests."""
 from __future__ import annotations
 
 import inspect
@@ -11,20 +12,21 @@ from industry.constants import MAG7
 from industry.loader import (
     clear_industry_cache,
     get_watchlist_events,
-    load_market_share,
-    market_share_rows,
+    load_market_snapshot,
+    market_snapshot_block,
     normalize_watchlist_tickers,
     resolve_company,
     show_cloud_module,
     show_compute_module,
     show_memory_module,
+    validate_market_snapshot,
 )
 from industry import ui as industry_ui
 from industry.ui import (
-    chart_rows_for_market,
-    hbm_role_rows,
-    period_for_market,
-    table_rows_for_market,
+    snapshot_chart_rows,
+    snapshot_hbm_roles,
+    snapshot_qoq_summary,
+    snapshot_table_rows,
 )
 
 
@@ -116,42 +118,47 @@ class IndustryV52Tests(unittest.TestCase):
     def test_unclassified_resolve(self):
         self.assertIsNone(resolve_company("JPM"))
 
-    def test_landscape_qoq_and_previous_columns(self):
-        table = table_rows_for_market("cloud_infrastructure")
-        self.assertTrue(table)
-        for row in table:
-            self.assertIn("当前份额", row)
-            self.assertIn("上季份额", row)
-            self.assertIn("QoQ变化", row)
-            self.assertIn("排名", row)
-            self.assertIn("公司", row)
-        aws = next(r for r in table if r["公司"] == "AWS")
-        self.assertEqual(aws["当前份额"], "30.0%")
-        self.assertEqual(aws["上季份额"], "31.0%")
-        self.assertEqual(aws["QoQ变化"], "-1.0pp")
+    def test_snapshot_periods_2026_q2(self):
+        cloud = market_snapshot_block("cloud")
+        dram = market_snapshot_block("dram")
+        hbm = market_snapshot_block("hbm")
+        self.assertEqual(cloud.get("period"), "2026 Q2")
+        self.assertEqual(dram.get("period"), "2026 Q2")
+        self.assertEqual(hbm.get("period"), "2026 Q2")
+        self.assertEqual(cloud.get("previous_period"), "2026 Q1")
+        self.assertEqual(dram.get("previous_period"), "2026 Q1")
 
-    def test_oracle_excluded_from_percentage_bar_chart(self):
-        chart = chart_rows_for_market("cloud_infrastructure")
+    def test_snapshot_share_sums_near_100(self):
+        for key in ("cloud", "dram"):
+            block = market_snapshot_block(key)
+            total = sum(float(c["share"]) for c in block["companies"])
+            self.assertAlmostEqual(total, 100.0, delta=1.5, msg=f"{key} sum={total}")
+
+    def test_snapshot_qoq_math(self):
+        for key in ("cloud", "dram"):
+            for c in market_snapshot_block(key)["companies"]:
+                expected = float(c["share"]) - float(c["previous_share"])
+                self.assertAlmostEqual(float(c["change_pp"]), expected, delta=0.051)
+
+    def test_snapshot_oracle_not_in_chart(self):
+        cloud = market_snapshot_block("cloud")
+        chart = snapshot_chart_rows(cloud, order=("AWS", "Microsoft", "Google Cloud", "Others"))
         names = [r["公司"] for r in chart]
         self.assertNotIn("Oracle", names)
-        self.assertIn("AWS", names)
-        self.assertIn("Azure", names)
-        self.assertIn("Google Cloud", names)
-        self.assertIn("Others", names)
-        # Oracle still appears in the table as non-percentage disclosure.
-        table = table_rows_for_market("cloud_infrastructure")
-        oracle = next(r for r in table if r["公司"] == "Oracle")
-        self.assertIn("not separately disclosed", oracle["当前份额"])
-        self.assertEqual(oracle["QoQ变化"], "—")
+        self.assertEqual(names, ["AWS", "Microsoft", "Google Cloud", "Others"])
+        by_name = {r["公司"]: r["份额"] for r in chart}
+        self.assertEqual(by_name["AWS"], 28.0)
+        self.assertEqual(by_name["Microsoft"], 20.0)
+        self.assertEqual(by_name["Google Cloud"], 15.0)
+        self.assertEqual(by_name["Others"], 37.0)
 
-    def test_hbm_no_fabricated_share_pct(self):
-        rows = market_share_rows("hbm")
-        self.assertTrue(rows)
-        for r in rows:
-            self.assertIsNone(r.get("share_pct"))
-        chart = chart_rows_for_market("hbm", rows)
-        self.assertEqual(chart, [])
-        roles = hbm_role_rows(rows)
+    def test_snapshot_hbm_no_fabricated_percentage(self):
+        hbm = market_snapshot_block("hbm")
+        self.assertNotIn("companies", hbm)
+        for role in hbm.get("roles") or []:
+            self.assertNotIn("share", role)
+            self.assertNotIn("share_pct", role)
+        roles = snapshot_hbm_roles(hbm)
         self.assertEqual(
             roles,
             [
@@ -161,21 +168,57 @@ class IndustryV52Tests(unittest.TestCase):
             ],
         )
 
-    def test_market_share_values_unchanged(self):
-        rows = load_market_share()
-        cloud = {r["company"]: r for r in rows if r["market"] == "cloud_infrastructure"}
-        self.assertEqual(cloud["AWS"]["share_pct"], 30.0)
-        self.assertEqual(cloud["AWS"]["previous_share_pct"], 31.0)
-        self.assertEqual(cloud["AWS"]["change_pp"], -1.0)
-        self.assertEqual(cloud["Azure"]["share_pct"], 21.0)
-        self.assertEqual(cloud["Google Cloud"]["share_pct"], 12.0)
-        self.assertIsNone(cloud["Oracle"]["share_pct"])
-        dram = {r["company"]: r for r in rows if r["market"] == "dram"}
-        self.assertEqual(dram["Samsung"]["share_pct"], 34.0)
-        self.assertEqual(dram["SK hynix"]["share_pct"], 33.0)
-        self.assertEqual(dram["Micron"]["share_pct"], 23.0)
-        self.assertEqual(period_for_market("cloud_infrastructure"), "2025 Q2")
-        self.assertEqual(period_for_market("dram"), "2025 Q2")
+    def test_snapshot_source_metadata(self):
+        for key in ("cloud", "dram", "hbm"):
+            block = market_snapshot_block(key)
+            self.assertTrue(str(block.get("source") or "").strip())
+            self.assertTrue(str(block.get("source_url") or "").strip())
+
+    def test_snapshot_table_and_qoq_columns(self):
+        cloud = market_snapshot_block("cloud")
+        table = snapshot_table_rows(cloud, order=("AWS", "Microsoft", "Google Cloud", "Others"))
+        self.assertTrue(table)
+        for row in table:
+            self.assertIn("公司", row)
+            self.assertIn("当前份额", row)
+            self.assertIn("上季份额", row)
+            self.assertIn("QoQ变化", row)
+            self.assertIn("排名", row)
+        aws = next(r for r in table if r["公司"] == "AWS")
+        self.assertEqual(aws["当前份额"], "28.0%")
+        self.assertEqual(aws["上季份额"], "28.0%")
+        self.assertEqual(aws["QoQ变化"], "+0.0pp")
+        qoq = snapshot_qoq_summary(cloud, order=("AWS", "Microsoft", "Google Cloud", "Others"))
+        self.assertEqual(qoq[0], ("AWS", "+0.0pp"))
+        self.assertEqual(qoq[1], ("Microsoft", "-1.0pp"))
+        self.assertEqual(qoq[2], ("Google", "+1.0pp"))
+
+    def test_snapshot_dram_values(self):
+        dram = market_snapshot_block("dram")
+        by_name = {c["name"]: c for c in dram["companies"]}
+        self.assertEqual(by_name["Samsung"]["share"], 39.4)
+        self.assertEqual(by_name["Samsung"]["previous_share"], 38.5)
+        self.assertEqual(by_name["SK hynix"]["share"], 24.9)
+        self.assertEqual(by_name["SK hynix"]["change_pp"], -3.9)
+        self.assertEqual(by_name["Micron"]["share"], 23.3)
+        self.assertEqual(by_name["Others"]["share"], 12.4)
+
+    def test_validate_market_snapshot_ok(self):
+        self.assertEqual(validate_market_snapshot(), [])
+        self.assertEqual(validate_market_snapshot(load_market_snapshot()), [])
+
+    def test_ui_reads_snapshot_json_not_hardcoded_shares(self):
+        src = _read("industry/ui.py")
+        self.assertIn("load_market_snapshot", src)
+        self.assertIn("market_snapshot_block", src)
+        self.assertIn("Cloud Market Share", src)
+        self.assertIn("DRAM Market Share", src)
+        self.assertIn("HBM Competitive Position", src)
+        self.assertNotIn("load_accelerator_ecosystem", src)
+        self.assertNotIn("market_share_rows", src)
+        # Shares come from JSON helpers, not literal vendor percentages in UI.
+        self.assertNotIn("28.0", src)
+        self.assertNotIn("39.4", src)
 
 
 if __name__ == "__main__":

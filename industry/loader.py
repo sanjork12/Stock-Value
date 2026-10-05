@@ -61,6 +61,14 @@ def load_market_share() -> List[Dict[str, Any]]:
 
 
 @lru_cache(maxsize=1)
+def load_market_snapshot() -> Dict[str, Any]:
+    raw = _read_json("market_snapshot.json")
+    if not isinstance(raw, dict):
+        raise ValueError("market_snapshot.json must be an object")
+    return dict(raw)
+
+
+@lru_cache(maxsize=1)
 def load_events() -> List[Dict[str, Any]]:
     rows = _read_json("events.json")
     if not isinstance(rows, list):
@@ -81,6 +89,7 @@ def clear_industry_cache() -> None:
     load_companies.cache_clear()
     load_earnings.cache_clear()
     load_market_share.cache_clear()
+    load_market_snapshot.cache_clear()
     load_events.cache_clear()
     load_accelerator_ecosystem.cache_clear()
 
@@ -210,6 +219,96 @@ def market_share_rows(market: str) -> List[Dict[str, Any]]:
     rows = [dict(r) for r in load_market_share() if r.get("market") == m]
     rows.sort(key=lambda r: (r.get("rank") is None, r.get("rank") or 999))
     return rows
+
+
+def market_snapshot_block(key: str) -> Dict[str, Any]:
+    """Return one market block from market_snapshot.json (cloud / dram / hbm)."""
+    snap = load_market_snapshot()
+    block = snap.get(str(key or "").strip().lower())
+    if not isinstance(block, dict):
+        return {}
+    return dict(block)
+
+
+def validate_market_snapshot(snap: Optional[Dict[str, Any]] = None) -> List[str]:
+    """Validate latest-quarter market snapshot. Empty list means OK."""
+    data = snap if snap is not None else load_market_snapshot()
+    errors: List[str] = []
+    if not isinstance(data, dict):
+        return ["market_snapshot must be an object"]
+
+    def _fnum(v: Any) -> Optional[float]:
+        try:
+            if v is None:
+                return None
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    for key in ("cloud", "dram"):
+        block = data.get(key)
+        if not isinstance(block, dict):
+            errors.append(f"{key}: missing block")
+            continue
+        if not str(block.get("period") or "").strip():
+            errors.append(f"{key}: period is required")
+        if not str(block.get("previous_period") or "").strip():
+            errors.append(f"{key}: previous_period is required")
+        if not str(block.get("source") or "").strip():
+            errors.append(f"{key}: source is required")
+        companies = block.get("companies")
+        if not isinstance(companies, list) or not companies:
+            errors.append(f"{key}: companies must be a non-empty list")
+            continue
+        total = 0.0
+        for i, c in enumerate(companies):
+            ctx = f"{key}.companies[{i}]"
+            if not isinstance(c, dict):
+                errors.append(f"{ctx}: must be an object")
+                continue
+            if not str(c.get("name") or "").strip():
+                errors.append(f"{ctx}: name is required")
+            share = _fnum(c.get("share"))
+            prev = _fnum(c.get("previous_share"))
+            chg = _fnum(c.get("change_pp"))
+            if share is None or not (0.0 <= share <= 100.0):
+                errors.append(f"{ctx}: share must be in 0–100")
+            else:
+                total += share
+            if prev is None or not (0.0 <= prev <= 100.0):
+                errors.append(f"{ctx}: previous_share must be in 0–100")
+            if share is not None and prev is not None and chg is not None:
+                if abs((share - prev) - chg) > 0.051:
+                    errors.append(f"{ctx}: change_pp must equal share - previous_share")
+            rank = c.get("rank")
+            if rank is not None:
+                try:
+                    ri = int(rank)
+                    if ri < 1:
+                        errors.append(f"{ctx}: rank must be positive or null")
+                except (TypeError, ValueError):
+                    errors.append(f"{ctx}: rank must be positive integer or null")
+        if abs(total - 100.0) > 1.5:
+            errors.append(f"{key}: company share sum {total:.1f} not near 100%")
+
+    hbm = data.get("hbm")
+    if not isinstance(hbm, dict):
+        errors.append("hbm: missing block")
+    else:
+        if not str(hbm.get("period") or "").strip():
+            errors.append("hbm: period is required")
+        if not str(hbm.get("source") or "").strip():
+            errors.append("hbm: source is required")
+        roles = hbm.get("roles")
+        if not isinstance(roles, list) or not roles:
+            errors.append("hbm: roles must be a non-empty list")
+        else:
+            for i, r in enumerate(roles):
+                if not isinstance(r, dict) or not r.get("name") or not r.get("role"):
+                    errors.append(f"hbm.roles[{i}]: name and role required")
+                elif r.get("share") is not None:
+                    errors.append(f"hbm.roles[{i}]: must not invent share percentage")
+    return errors
 
 
 def validate_datasets() -> List[str]:

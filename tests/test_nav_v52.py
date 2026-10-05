@@ -124,9 +124,10 @@ class NavV52Tests(unittest.TestCase):
     def test_18_landscape_uses_charts_not_only_tables(self):
         src = _read("industry/ui.py")
         self.assertIn("st.altair_chart", src)
-        self.assertIn("_hbm_role_list", src)
-        self.assertIn("_compute_role_list", src)
-        self.assertIn("Leader", src)
+        self.assertIn("_hbm_snapshot_module", src)
+        self.assertIn("market_snapshot_block", src)
+        self.assertIn("load_market_snapshot", src)
+        self.assertIn("HBM Competitive Position", src)
         self.assertNotIn("load_accelerator_ecosystem", src)
         self.assertIn("Cloud Market Share", src)
         self.assertIn("DRAM Market Share", src)
@@ -139,6 +140,7 @@ class NavV52Tests(unittest.TestCase):
         self.assertNotIn('"Share"', src)
         self.assertIn("数据说明", src)
         self.assertIn("仅供产业研究参考", src)
+        self.assertIn("来源详情", src)
 
     def test_14_valuation_uses_analysis_service(self):
         app = _read("streamlit_app.py")

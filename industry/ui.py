@@ -1,4 +1,4 @@
-"""V5.2.2 Industry views — panorama map + compact market landscape charts."""
+"""V5.2.2 Industry views — panorama map + latest-quarter market snapshot."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,38 +10,21 @@ import streamlit as st
 
 from industry.loader import (
     load_meta,
-    market_share_rows,
+    load_market_snapshot,
+    market_snapshot_block,
     normalize_watchlist_tickers,
     show_cloud_module,
-    show_compute_module,
     show_memory_module,
 )
 
 _PANORAMA = Path(__file__).resolve().parent.parent / "assets" / "ai_industry_panorama.jpg"
 
-# Investment-facing display order (named players first, residual last).
-_CLOUD_ORDER = ("AWS", "Azure", "Google Cloud", "Others", "其他")
-_DRAM_ORDER = ("Samsung", "SK hynix", "Micron", "Others", "其他")
+# Named players first; Others last. Oracle never appears in percentage charts.
+_CLOUD_ORDER = ("AWS", "Microsoft", "Google Cloud", "Others")
+_DRAM_ORDER = ("Samsung", "SK hynix", "Micron", "Others")
 
-_COMPUTE_ROLES = (
-    ("NVIDIA", "Merchant AI accelerator"),
-    ("Broadcom", "Networking / Custom silicon"),
-    ("Arista", "Data-center networking"),
-    ("Google TPU", "Internal / Cloud"),
-    ("AWS Trainium", "Internal / Cloud"),
-    ("Meta MTIA", "Internal"),
-)
-
-_HBM_ROLES = (
-    ("SK hynix", "Leader"),
-    ("Samsung", "Major supplier"),
-    ("Micron", "Challenger"),
-)
-
-_HBM_ROLE_FALLBACK = {
-    "SK hynix": "Leader",
-    "Samsung": "Major supplier",
-    "Micron": "Challenger",
+_QOQ_SHORT = {
+    "Google Cloud": "Google",
 }
 
 
@@ -60,155 +43,89 @@ def _pct_txt(v: Any) -> str:
         return "—"
 
 
-def _display_company(name: Any) -> str:
-    raw = str(name or "").strip()
-    if raw in {"其他", "Others"}:
-        return "Others"
-    return raw or "—"
+def _is_others(name: Any) -> bool:
+    return str(name or "").strip().lower() in {"others", "其他"}
 
 
-def _is_oracle(row: Dict[str, Any]) -> bool:
-    company = str(row.get("company") or "").strip().lower()
-    cid = str(row.get("company_id") or "").strip().upper()
-    return company == "oracle" or cid == "ORCL"
+def _is_oracle_name(name: Any) -> bool:
+    return str(name or "").strip().lower() == "oracle"
 
 
-def _has_numeric_share(row: Dict[str, Any]) -> bool:
-    return row.get("share_pct") is not None
-
-
-def format_period_label(period: Any) -> str:
-    """CY2025 Q2 / FY2025 Q2 → 2025 Q2 (display only; does not alter source data)."""
-    text = str(period or "").strip()
-    if not text:
-        return "—"
-    cleaned = (
-        text.replace("CY", "")
-        .replace("FY", "")
-        .replace("  ", " ")
-        .strip()
-    )
-    return cleaned or text
-
-
-def period_for_market(market: str, rows: Optional[List[Dict[str, Any]]] = None) -> str:
-    rows = rows if rows is not None else market_share_rows(market)
-    for r in rows:
-        if r.get("period"):
-            return format_period_label(r.get("period"))
-    return "—"
-
-
-def chart_rows_for_market(market: str, rows: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
-    """Numeric share rows for bar chart only — excludes Oracle / null share_pct."""
-    rows = rows if rows is not None else market_share_rows(market)
+def snapshot_chart_rows(block: Dict[str, Any], *, order: Sequence[str]) -> List[Dict[str, Any]]:
+    """Percentage bar inputs from snapshot companies — excludes Oracle / null share."""
+    companies = list(block.get("companies") or [])
     out: List[Dict[str, Any]] = []
-    for r in rows:
-        if _is_oracle(r):
+    for c in companies:
+        name = str(c.get("name") or "").strip()
+        if not name or _is_oracle_name(name):
             continue
-        if not _has_numeric_share(r):
+        if c.get("share") is None:
             continue
-        out.append(
-            {
-                "公司": _display_company(r.get("company")),
-                "份额": float(r["share_pct"]),
-                "rank": r.get("rank"),
-            }
-        )
-    order = _CLOUD_ORDER if market == "cloud_infrastructure" else _DRAM_ORDER
-    rank = {name: i for i, name in enumerate(order)}
+        out.append({"公司": name, "份额": float(c["share"]), "rank": c.get("rank")})
+    rank = {n: i for i, n in enumerate(order)}
 
     def _key(item: Dict[str, Any]):
         name = str(item.get("公司") or "")
         if name in rank:
             return (0, rank[name])
-        # Unknown named players: by share desc, then rank.
         return (1, -(float(item.get("份额") or 0)), item.get("rank") or 999)
 
     out.sort(key=_key)
     return out
 
 
-def table_rows_for_market(market: str, rows: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
-    """Minimal table: 公司 / 当前份额 / 上季份额 / QoQ变化 / 排名."""
-    rows = rows if rows is not None else market_share_rows(market)
+def snapshot_table_rows(block: Dict[str, Any], *, order: Sequence[str]) -> List[Dict[str, Any]]:
+    companies = list(block.get("companies") or [])
     out: List[Dict[str, Any]] = []
-    for r in rows:
-        company = _display_company(r.get("company"))
-        if _is_oracle(r):
-            out.append(
-                {
-                    "公司": "Oracle",
-                    "当前份额": "Tier 2 / not separately disclosed",
-                    "上季份额": "—",
-                    "QoQ变化": "—",
-                    "排名": "—",
-                }
-            )
+    for c in companies:
+        name = str(c.get("name") or "").strip()
+        if not name or _is_oracle_name(name):
             continue
-        if not _has_numeric_share(r) and not r.get("tier"):
-            # Skip pure qualitative rows that belong to other modules (e.g. HBM).
-            if market in {"cloud_infrastructure", "dram"}:
-                continue
         out.append(
             {
-                "公司": company,
-                "当前份额": _pct_txt(r.get("share_pct")),
-                "上季份额": _pct_txt(r.get("previous_share_pct")),
-                "QoQ变化": _pp(r.get("change_pp")) if r.get("change_pp") is not None else "—",
-                "排名": r.get("rank") if r.get("rank") is not None else "—",
+                "公司": name,
+                "当前份额": _pct_txt(c.get("share")),
+                "上季份额": _pct_txt(c.get("previous_share")),
+                "QoQ变化": _pp(c.get("change_pp")) if c.get("change_pp") is not None else "—",
+                "排名": c.get("rank") if c.get("rank") is not None else "—",
             }
         )
-    # Stable display: chart order for numeric, Oracle after named, residual last.
-    order = list(_CLOUD_ORDER if market == "cloud_infrastructure" else _DRAM_ORDER)
-    order_rank = {name: i for i, name in enumerate(order)}
-
-    def _tkey(item: Dict[str, Any]):
-        name = str(item.get("公司") or "")
-        if name == "Oracle":
-            return (2, 0)
-        if name in order_rank:
-            return (0, order_rank[name])
-        return (1, name)
-
-    out.sort(key=_tkey)
+    rank = {n: i for i, n in enumerate(order)}
+    out.sort(key=lambda r: (0, rank[r["公司"]]) if r["公司"] in rank else (1, r["公司"]))
     return out
 
 
-def collect_sources(rows: List[Dict[str, Any]]) -> List[str]:
-    seen: List[str] = []
-    for r in rows:
-        src = str(r.get("source") or "").strip()
-        if not src:
-            continue
-        if src not in seen:
-            seen.append(src)
-    return seen
-
-
-def hbm_role_rows(rows: Optional[List[Dict[str, Any]]] = None) -> List[Tuple[str, str]]:
-    """Ranking / role only — never invent share_pct."""
-    rows = rows if rows is not None else market_share_rows("hbm")
-    if not rows:
-        return list(_HBM_ROLES)
+def snapshot_qoq_summary(block: Dict[str, Any], *, order: Sequence[str]) -> List[Tuple[str, str]]:
+    """One-line QoQ chips for named players (exclude Others / Oracle)."""
+    by_name = {str(c.get("name") or ""): c for c in (block.get("companies") or [])}
     out: List[Tuple[str, str]] = []
-    for r in sorted(rows, key=lambda x: (x.get("rank") is None, x.get("rank") or 99)):
-        company = str(r.get("company") or "").strip()
-        if not company or company.lower() == "none":
+    for name in order:
+        if _is_others(name) or _is_oracle_name(name):
             continue
-        role = _HBM_ROLE_FALLBACK.get(company)
-        if not role:
-            raw = str(r.get("leader_status") or "")
-            if "Leader" in raw or "领先" in raw or "#1" in raw or "第一" in raw:
-                role = "Leader"
-            elif "Major" in raw or "主要" in raw:
-                role = "Major supplier"
-            elif "challenger" in raw.lower() or "挑战" in raw:
-                role = "Challenger"
-            else:
-                role = raw or "—"
-        out.append((company, role))
-    return out or list(_HBM_ROLES)
+        c = by_name.get(name)
+        if not c or c.get("change_pp") is None:
+            continue
+        label = _QOQ_SHORT.get(name, name)
+        out.append((label, _pp(c.get("change_pp"))))
+    return out
+
+
+def snapshot_hbm_roles(block: Optional[Dict[str, Any]] = None) -> List[Tuple[str, str]]:
+    block = block if block is not None else market_snapshot_block("hbm")
+    roles = block.get("roles") or []
+    out: List[Tuple[str, str]] = []
+    for r in roles:
+        name = str(r.get("name") or "").strip()
+        role = str(r.get("role") or "").strip()
+        if not name or name.lower() == "none":
+            continue
+        if not role or role.lower() == "none":
+            continue
+        # Never invent percentages for HBM.
+        if r.get("share") is not None:
+            continue
+        out.append((name, role))
+    return out
 
 
 def _empty_watchlist_message() -> None:
@@ -226,34 +143,34 @@ def render_tab_map(watch: List[str]) -> None:
 
 
 def _horizontal_share_chart(chart_rows: List[Dict[str, Any]], *, height: int = 180) -> None:
-    """Horizontal bars, company labels left (no rotation), % at bar end."""
     if not chart_rows:
         return
     df = pd.DataFrame(chart_rows)
-    # Preserve explicit order from chart_rows_for_market.
     order = list(df["公司"])
     max_share = float(df["份额"].max()) if len(df) else 40.0
     domain_max = max(40.0, max_share * 1.18)
 
-    base = alt.Chart(df).encode(
-        y=alt.Y(
-            "公司:N",
-            sort=order,
-            title=None,
-            axis=alt.Axis(labelLimit=160, labelAngle=0, ticks=False, domain=False),
-        ),
-        x=alt.X(
-            "份额:Q",
-            title=None,
-            scale=alt.Scale(domain=[0, domain_max]),
-            axis=alt.Axis(labels=False, ticks=False, domain=False, grid=False),
-        ),
-    )
-    bars = base.mark_bar(cornerRadiusEnd=3, color="#4F86C6").encode(
-        tooltip=[
-            alt.Tooltip("公司:N", title="公司"),
-            alt.Tooltip("份额:Q", title="份额", format=".1f"),
-        ]
+    bars = (
+        alt.Chart(df)
+        .mark_bar(cornerRadiusEnd=3, color="#4F86C6")
+        .encode(
+            y=alt.Y(
+                "公司:N",
+                sort=order,
+                title=None,
+                axis=alt.Axis(labelLimit=160, labelAngle=0, ticks=False, domain=False),
+            ),
+            x=alt.X(
+                "份额:Q",
+                title=None,
+                scale=alt.Scale(domain=[0, domain_max]),
+                axis=alt.Axis(labels=False, ticks=False, domain=False, grid=False),
+            ),
+            tooltip=[
+                alt.Tooltip("公司:N", title="公司"),
+                alt.Tooltip("份额:Q", title="份额", format=".1f"),
+            ],
+        )
     )
     label_df = df.copy()
     label_df["标签"] = [f"{float(v):.1f}%" for v in label_df["份额"]]
@@ -275,30 +192,37 @@ def _horizontal_share_chart(chart_rows: List[Dict[str, Any]], *, height: int = 1
     st.altair_chart(chart, use_container_width=True)
 
 
-def _module_source_line(period: str, sources: List[str], *, key: str) -> None:
-    del key
+def _module_source(block: Dict[str, Any]) -> None:
+    period = str(block.get("period") or "—")
     st.caption(f"数据：{period} · 来源")
     with st.expander("来源详情", expanded=False):
-        if sources:
-            for s in sources:
-                st.caption(s)
-        else:
-            st.caption("—")
+        st.caption(str(block.get("source") or "—"))
+        url = str(block.get("source_url") or "").strip()
+        if url:
+            st.caption(url)
+        for note in block.get("notes") or []:
+            st.caption(str(note))
 
 
-def _share_module(market: str, title_prefix: str) -> None:
-    """Title + period → horizontal chart → minimal table → compact source."""
-    rows = market_share_rows(market)
-    period = period_for_market(market, rows)
+def _share_snapshot_module(key: str, title_prefix: str, order: Sequence[str]) -> None:
+    block = market_snapshot_block(key)
+    if not block:
+        st.caption(f"{title_prefix}：暂无快照数据")
+        return
+    period = str(block.get("period") or "—")
     st.markdown(f"**{title_prefix} · {period}**")
 
-    chart_rows = chart_rows_for_market(market, rows)
+    chart_rows = snapshot_chart_rows(block, order=order)
     _horizontal_share_chart(chart_rows, height=44 * max(len(chart_rows), 1) + 16)
 
-    if market == "cloud_infrastructure" and any(_is_oracle(r) for r in rows):
-        st.caption("Oracle：公开市场份额通常未单独披露")
+    qoq = snapshot_qoq_summary(block, order=order)
+    if qoq:
+        st.caption("　".join(f"{name} {chg}" for name, chg in qoq))
 
-    table = table_rows_for_market(market, rows)
+    if key == "cloud":
+        st.caption("Oracle：公开市场份额通常未单独披露。")
+
+    table = snapshot_table_rows(block, order=order)
     if table:
         st.dataframe(
             pd.DataFrame(table),
@@ -306,57 +230,38 @@ def _share_module(market: str, title_prefix: str) -> None:
             hide_index=True,
             height=38 * (len(table) + 1),
         )
-
-    sources = collect_sources(rows)
-    _module_source_line(period, sources, key=f"src_{market}")
+    _module_source(block)
 
 
-def _hbm_role_list() -> None:
-    """HBM：仅定性角色，不画百分比 bar、不编造份额。"""
-    rows = market_share_rows("hbm")
-    period = period_for_market("hbm", rows)
-    st.markdown(f"**HBM Market Share · {period}**")
-    # Hard rule: no % chart when share_pct is missing.
-    if any(_has_numeric_share(r) for r in rows):
-        # Still do not invent — only chart true numeric shares if present.
-        numeric = chart_rows_for_market("hbm", rows)
-        if numeric:
-            _horizontal_share_chart(numeric, height=44 * len(numeric) + 16)
-    for name, role in hbm_role_rows(rows):
+def _hbm_snapshot_module() -> None:
+    block = market_snapshot_block("hbm")
+    period = str(block.get("period") or "—")
+    st.markdown(f"**HBM Competitive Position · {period}**")
+    roles = snapshot_hbm_roles(block)
+    if not roles:
+        st.caption("暂无 HBM 角色数据")
+    for name, role in roles:
         st.markdown(f"**{name}** — {role}")
-    sources = collect_sources(rows)
-    _module_source_line(period, sources, key="src_hbm")
-
-
-def _compute_role_list() -> None:
-    """AI Compute / Networking — role list only; never show None / empty table."""
-    st.markdown("**AI Compute / Networking**")
-    for name, role in _COMPUTE_ROLES:
-        if not name or str(name).lower() == "none":
-            continue
-        if not role or str(role).lower() == "none":
-            continue
-        st.markdown(f"**{name}** — {role}")
+    _module_source(block)
 
 
 def render_tab_landscape(watch: List[str]) -> None:
-    """市场格局 — 按自选股动态显示模块。"""
+    """市场格局 — latest-quarter Cloud / DRAM / HBM snapshot only."""
+    # Ensure JSON is loadable (UI reads snapshot, not hard-coded shares).
+    _ = load_market_snapshot()
     if not watch:
         _empty_watchlist_message()
         return
     any_mod = False
     if show_cloud_module(watch):
         any_mod = True
-        _share_module("cloud_infrastructure", "Cloud Market Share")
+        _share_snapshot_module("cloud", "Cloud Market Share", _CLOUD_ORDER)
     if show_memory_module(watch):
         any_mod = True
-        _share_module("dram", "DRAM Market Share")
-        _hbm_role_list()
-    if show_compute_module(watch):
-        any_mod = True
-        _compute_role_list()
+        _share_snapshot_module("dram", "DRAM Market Share", _DRAM_ORDER)
+        _hbm_snapshot_module()
     if not any_mod:
-        st.info("当前自选股暂无关联的云计算 / 存储 / AI 算力市场格局模块。")
+        st.info("当前自选股暂无关联的云计算 / 存储市场格局模块。")
 
 
 def _footer_meta() -> None:

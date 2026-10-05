@@ -1,0 +1,91 @@
+{
+  "cloud": {
+    "period": "2026 Q2",
+    "previous_period": "2026 Q1",
+    "source": "Synergy Research Group",
+    "source_url": "https://www.srgresearch.com/",
+    "companies": [
+      {
+        "name": "AWS",
+        "share": 28.0,
+        "previous_share": 28.0,
+        "change_pp": 0.0,
+        "rank": 1
+      },
+      {
+        "name": "Microsoft",
+        "share": 20.0,
+        "previous_share": 21.0,
+        "change_pp": -1.0,
+        "rank": 2
+      },
+      {
+        "name": "Google Cloud",
+        "share": 15.0,
+        "previous_share": 14.0,
+        "change_pp": 1.0,
+        "rank": 3
+      },
+      {
+        "name": "Others",
+        "share": 37.0,
+        "previous_share": 37.0,
+        "change_pp": 0.0,
+        "rank": null
+      }
+    ],
+    "notes": [
+      "Oracle is not separately disclosed in the public market-share table."
+    ]
+  },
+  "dram": {
+    "period": "2026 Q2",
+    "previous_period": "2026 Q1",
+    "source": "TrendForce",
+    "source_url": "https://www.trendforce.com/",
+    "companies": [
+      {
+        "name": "Samsung",
+        "share": 39.4,
+        "previous_share": 38.5,
+        "change_pp": 0.9,
+        "rank": 1
+      },
+      {
+        "name": "SK hynix",
+        "share": 24.9,
+        "previous_share": 28.8,
+        "change_pp": -3.9,
+        "rank": 2
+      },
+      {
+        "name": "Micron",
+        "share": 23.3,
+        "previous_share": 22.4,
+        "change_pp": 0.9,
+        "rank": 3
+      },
+      {
+        "name": "Others",
+        "share": 12.4,
+        "previous_share": 10.3,
+        "change_pp": 2.1,
+        "rank": null
+      }
+    ],
+    "notes": []
+  },
+  "hbm": {
+    "period": "2026 Q2",
+    "source": "TrendForce / industry commentary",
+    "source_url": "https://www.trendforce.com/",
+    "roles": [
+      {"name": "SK hynix", "role": "Leader"},
+      {"name": "Samsung", "role": "Major supplier"},
+      {"name": "Micron", "role": "Challenger"}
+    ],
+    "notes": [
+      "No reliable public percentage share table; qualitative ranking only."
+    ]
+  }
+}
