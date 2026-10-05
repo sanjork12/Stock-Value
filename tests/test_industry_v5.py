@@ -11,6 +11,8 @@ from industry.constants import MAG7
 from industry.loader import (
     clear_industry_cache,
     get_watchlist_events,
+    load_market_share,
+    market_share_rows,
     normalize_watchlist_tickers,
     resolve_company,
     show_cloud_module,
@@ -18,6 +20,12 @@ from industry.loader import (
     show_memory_module,
 )
 from industry import ui as industry_ui
+from industry.ui import (
+    chart_rows_for_market,
+    hbm_role_rows,
+    period_for_market,
+    table_rows_for_market,
+)
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -107,6 +115,67 @@ class IndustryV52Tests(unittest.TestCase):
 
     def test_unclassified_resolve(self):
         self.assertIsNone(resolve_company("JPM"))
+
+    def test_landscape_qoq_and_previous_columns(self):
+        table = table_rows_for_market("cloud_infrastructure")
+        self.assertTrue(table)
+        for row in table:
+            self.assertIn("当前份额", row)
+            self.assertIn("上季份额", row)
+            self.assertIn("QoQ变化", row)
+            self.assertIn("排名", row)
+            self.assertIn("公司", row)
+        aws = next(r for r in table if r["公司"] == "AWS")
+        self.assertEqual(aws["当前份额"], "30.0%")
+        self.assertEqual(aws["上季份额"], "31.0%")
+        self.assertEqual(aws["QoQ变化"], "-1.0pp")
+
+    def test_oracle_excluded_from_percentage_bar_chart(self):
+        chart = chart_rows_for_market("cloud_infrastructure")
+        names = [r["公司"] for r in chart]
+        self.assertNotIn("Oracle", names)
+        self.assertIn("AWS", names)
+        self.assertIn("Azure", names)
+        self.assertIn("Google Cloud", names)
+        self.assertIn("Others", names)
+        # Oracle still appears in the table as non-percentage disclosure.
+        table = table_rows_for_market("cloud_infrastructure")
+        oracle = next(r for r in table if r["公司"] == "Oracle")
+        self.assertIn("not separately disclosed", oracle["当前份额"])
+        self.assertEqual(oracle["QoQ变化"], "—")
+
+    def test_hbm_no_fabricated_share_pct(self):
+        rows = market_share_rows("hbm")
+        self.assertTrue(rows)
+        for r in rows:
+            self.assertIsNone(r.get("share_pct"))
+        chart = chart_rows_for_market("hbm", rows)
+        self.assertEqual(chart, [])
+        roles = hbm_role_rows(rows)
+        self.assertEqual(
+            roles,
+            [
+                ("SK hynix", "Leader"),
+                ("Samsung", "Major supplier"),
+                ("Micron", "Challenger"),
+            ],
+        )
+
+    def test_market_share_values_unchanged(self):
+        rows = load_market_share()
+        cloud = {r["company"]: r for r in rows if r["market"] == "cloud_infrastructure"}
+        self.assertEqual(cloud["AWS"]["share_pct"], 30.0)
+        self.assertEqual(cloud["AWS"]["previous_share_pct"], 31.0)
+        self.assertEqual(cloud["AWS"]["change_pp"], -1.0)
+        self.assertEqual(cloud["Azure"]["share_pct"], 21.0)
+        self.assertEqual(cloud["Google Cloud"]["share_pct"], 12.0)
+        self.assertIsNone(cloud["Oracle"]["share_pct"])
+        dram = {r["company"]: r for r in rows if r["market"] == "dram"}
+        self.assertEqual(dram["Samsung"]["share_pct"], 34.0)
+        self.assertEqual(dram["SK hynix"]["share_pct"], 33.0)
+        self.assertEqual(dram["Micron"]["share_pct"], 23.0)
+        self.assertEqual(period_for_market("cloud_infrastructure"), "2025 Q2")
+        self.assertEqual(period_for_market("dram"), "2025 Q2")
 
 
 if __name__ == "__main__":
