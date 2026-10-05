@@ -495,6 +495,45 @@ def impact_to_importance(impact_label: Any) -> str:
     return _IMPACT_TO_IMPORTANCE.get(str(impact_label or "").strip(), "一般")
 
 
+def derive_impact_area(ev: Dict[str, Any]) -> str:
+    """
+    Map existing event fields → Impact area label (UI only; does not mutate source JSON).
+    One of: Revenue / Margin / CapEx / Competition / Regulation / Product
+    """
+    et = str(ev.get("event_type") or "").lower()
+    blob = " ".join(
+        [
+            et,
+            str(ev.get("headline") or ""),
+            str(ev.get("summary") or ""),
+            str(ev.get("strategic_impact") or ""),
+            str(ev.get("financial_impact") or ""),
+        ]
+    ).lower()
+    layers = [str(x).lower() for x in (ev.get("layer_impact") or [])]
+
+    if "regulat" in blob or "antitrust" in blob or "sec " in blob:
+        return "Regulation"
+    if "capex" in et or "capex" in blob or "capacity" in blob:
+        return "CapEx"
+    if "margin" in blob or "operating margin" in blob:
+        return "Margin"
+    if "compet" in blob or "rival" in blob or "share" in blob:
+        return "Competition"
+    if et in {"product", "ai infrastructure"} or "roadmap" in blob or "feature" in blob:
+        # AI infrastructure spend is usually CapEx; product roadmap stays Product
+        if "infrastructure" in et or "capex" in blob or "capacity" in blob:
+            return "CapEx"
+        return "Product"
+    if "revenue" in blob or "growth" in blob or "demand" in blob or "monetiz" in blob:
+        return "Revenue"
+    if "infrastructure" in layers or "cloud" in layers:
+        return "CapEx"
+    if "applications" in layers:
+        return "Revenue"
+    return "Product"
+
+
 def get_watchlist_events(
     tickers: Sequence[Any],
     start_date: Optional[str] = None,
@@ -505,7 +544,7 @@ def get_watchlist_events(
 
     Returns dicts with:
       ticker, event_date, headline, summary, importance,
-      why_it_matters, source, source_url
+      why_it_matters, impact_area, source, source_url
     """
     from datetime import date
 
@@ -559,7 +598,8 @@ def get_watchlist_events(
                 or ev.get("financial_impact")
                 or ev.get("summary")
                 or "",
-                "source": ev.get("source") or "",
+                "impact_area": derive_impact_area(ev),
+                "source": ev.get("source") or ev.get("source_name") or "",
                 "source_url": ev.get("source_url") or "",
             }
         )

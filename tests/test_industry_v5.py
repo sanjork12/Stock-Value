@@ -90,6 +90,10 @@ class IndustryV52Tests(unittest.TestCase):
             self.assertIn(r["importance"], {"重大", "重要", "一般"})
             self.assertIn("headline", r)
             self.assertIn("why_it_matters", r)
+            self.assertIn(
+                r.get("impact_area"),
+                {"Revenue", "Margin", "CapEx", "Competition", "Regulation", "Product"},
+            )
 
     def test_12_get_watchlist_events_empty_watchlist(self):
         self.assertEqual(get_watchlist_events([]), [])

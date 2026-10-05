@@ -134,18 +134,20 @@ def inject_layout_css() -> None:
         [data-testid="stSidebarCollapsedControl"] {display: none;}
         [data-testid="stHeader"] {background: transparent;}
         .block-container {
-            padding-top: 1.1rem;
-            padding-left: 2rem;
-            padding-right: 2rem;
+            padding-top: 0.55rem;
+            padding-bottom: 0.6rem;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
             max-width: 100%;
         }
+        div[data-testid="stVerticalBlock"] > div { gap: 0.35rem; }
+        h1, h2, h3 { margin-top: 0.15rem !important; margin-bottom: 0.25rem !important; }
         div[data-testid="stPopover"] > button {
-            width: 2.35rem;
-            height: 2.35rem;
-            min-height: 2.35rem;
-            padding: 0;
+            min-height: 2.1rem;
+            padding: 0.15rem 0.55rem;
             border-radius: 999px;
-            font-weight: 700;
+            font-weight: 600;
+            font-size: 0.85rem;
         }
         </style>
         """,
@@ -1358,7 +1360,6 @@ if st.session_state.get("account_open"):
     st.stop()
 
 if page == "自选股":
-    st.subheader("自选股")
     with st.expander("➕ 添加股票", expanded=False):
         with st.form("add_watchlist_form", clear_on_submit=False):
             c1, c2, c3 = st.columns([1, 1.4, 0.7])
@@ -1389,8 +1390,16 @@ if page == "自选股":
         st.info("你的自选股还是空的。可以先添加 AMZN、NVDA、MSFT 等代码。")
         st.stop()
 
-    auto_save = st.checkbox("自动保存今天的估值快照", value=True)
-    show_advanced_cols = st.checkbox("更多指标", value=False, key="dash_advanced_cols")
+    # Defaults kept in session; auto-save lives under 高级设置 (collapsed)
+    if "dash_auto_save" not in st.session_state:
+        st.session_state.dash_auto_save = True
+    ctrl1, ctrl2, _ = st.columns([1.2, 1.2, 4])
+    with ctrl1:
+        sort_opt = st.selectbox("排序", ["ticker", "状态", "距离核心买入区"], key="dash_sort")
+    with ctrl2:
+        show_advanced_cols = st.checkbox("更多指标", value=False, key="dash_advanced_cols")
+    auto_save = bool(st.session_state.dash_auto_save)
+
     rows = []
     progress = st.progress(0, text="正在更新自选股…")
     for i, item in enumerate(watch, start=1):
@@ -1487,7 +1496,6 @@ if page == "自选股":
     progress.empty()
 
     df = pd.DataFrame(rows)
-    sort_opt = st.selectbox("排序", ["ticker", "状态", "距离核心买入区"], key="dash_sort")
     if "_core_gap" in df.columns:
         if sort_opt == "ticker":
             df = df.sort_values("股票", kind="stable")
@@ -1526,8 +1534,9 @@ if page == "自选股":
     styled = df.style.map(style_status, subset=["状态"] if "状态" in df.columns else [])
     st.dataframe(
         styled,
-        use_container_width=False,
+        use_container_width=True,
         hide_index=True,
+        height=min(560, 48 + 36 * max(len(df), 1)),
         column_config={
             "股票": st.column_config.TextColumn(width=75),
             "价格": st.column_config.NumberColumn(format="$%.2f", width=90),
@@ -1547,24 +1556,42 @@ if page == "自选股":
             "错误": st.column_config.TextColumn(width=180),
         },
     )
-    st.caption(
-        "可靠性评分衡量数据完整性、模型一致性及适用性，不是股票评级，也不代表未来收益概率。"
-        "退出区仅在估值模型一致性与可靠性达到要求时提供精确价格；模型分歧较大时，仅显示定性高估提示。"
-    )
 
-    st.markdown("#### 颜色说明")
-    cols = st.columns(8)
-    for col, label in zip(
-        cols,
-        ["低于深度价值区", "深度价值区", "核心买入区", "第一批区", "合理持有区", "偏高估区", "减仓参考区", "明显高估区"],
-    ):
-        with col:
-            status_badge(label)
+    jump = st.selectbox("打开单股分析", [x["ticker"] for x in watch], key="dashboard_jump_ticker", label_visibility="collapsed")
+    j1, j2 = st.columns([3, 1])
+    with j1:
+        st.caption("选择股票后打开单股分析")
+    with j2:
+        if st.button("打开单股分析", type="primary", use_container_width=True):
+            open_single_stock(jump)
 
-    jump = st.selectbox("打开单股分析", [x["ticker"] for x in watch], key="dashboard_jump_ticker")
-    if st.button("打开单股分析", type="primary"):
-        open_single_stock(jump)
-    with st.expander("管理自选股"):
+    with st.expander("说明", expanded=False):
+        st.caption(
+            "可靠性评分衡量数据完整性、模型一致性及适用性，不是股票评级，也不代表未来收益概率。"
+            "退出区仅在估值模型一致性与可靠性达到要求时提供精确价格；模型分歧较大时，仅显示定性高估提示。"
+        )
+        st.caption("颜色说明")
+        cols = st.columns(4)
+        for col, label in zip(
+            cols,
+            ["深度价值区", "核心买入区", "第一批区", "合理持有区"],
+        ):
+            with col:
+                status_badge(label)
+        cols2 = st.columns(4)
+        for col, label in zip(
+            cols2,
+            ["偏高估区", "减仓参考区", "明显高估区", "低于深度价值区"],
+        ):
+            with col:
+                status_badge(label)
+
+    with st.expander("高级设置", expanded=False):
+        st.checkbox(
+            "自动保存今天的估值快照",
+            key="dash_auto_save",
+        )
+        st.caption("关闭后仍可在单股分析中手动保存快照。下次刷新自选股时生效。")
         to_remove = st.selectbox("选择要删除的股票", [x["ticker"] for x in watch])
         if st.button("从自选股删除"):
             try:
@@ -1573,7 +1600,6 @@ if page == "自选股":
                 st.rerun()
             except Exception as e:
                 st.error(public_db_error("delete", "watchlist", e, client=db))
-        st.markdown("修改备注")
         note_ticker = st.selectbox("选择要改备注的股票", [x["ticker"] for x in watch], key="note_ticker")
         new_note = st.text_input("新备注", key="watchlist_new_note")
         if st.button("保存备注"):
@@ -1585,7 +1611,6 @@ if page == "自选股":
                 st.error(public_db_error("update", "watchlist", e, client=db))
 
 elif page == "单股分析":
-    st.subheader("单股分析")
     try:
         watch = get_watchlist(db, user_id)
     except Exception as e:
@@ -1623,31 +1648,32 @@ elif page == "单股分析":
         except Exception:
             pass
 
-    nav_l, nav_m, nav_r = st.columns([1, 2.4, 1])
-    with nav_l:
+    # Compact one-row chrome: ← | Ticker · Name | → | watchlist | other
+    n1, n2, n3, n4, n5 = st.columns([0.9, 2.2, 0.9, 1.2, 1.6], vertical_alignment="center")
+    with n1:
         prev_disabled = (not in_watch) or idx == 0
         if st.button("← 上一只", disabled=prev_disabled, use_container_width=True):
             _select_ticker(watch_tickers[idx - 1])
             st.rerun()
-    with nav_m:
-        title = current or "未选择股票"
+    with n2:
+        title = current or "未选择"
         name = NAMES.get(current or "", current or "")
-        st.markdown(f"<div style='text-align:center;font-size:1.4rem;font-weight:800'>{title} · {name}</div>", unsafe_allow_html=True)
-        if not in_watch and current:
-            st.caption("当前股票不在自选股序列，左右切换已停用。")
-    with nav_r:
+        st.markdown(
+            f"<div style='text-align:center;font-size:1.05rem;font-weight:700;line-height:1.2'>"
+            f"{title} · {name}</div>",
+            unsafe_allow_html=True,
+        )
+    with n3:
         next_disabled = (not in_watch) or idx == len(watch_tickers) - 1
         if st.button("下一只 →", disabled=next_disabled, use_container_width=True):
             _select_ticker(watch_tickers[idx + 1])
             st.rerun()
-
-    pick_c, other_c, add_c = st.columns([1.1, 1.4, 1])
-    with pick_c:
+    with n4:
         if watch_tickers:
             last = st.session_state.get("_last_watch_select")
             if "watch_select" not in st.session_state:
                 st.session_state.watch_select = current if in_watch else watch_tickers[0]
-            chosen = st.selectbox("自选股", watch_tickers, key="watch_select")
+            chosen = st.selectbox("自选股", watch_tickers, key="watch_select", label_visibility="collapsed")
             if last is None:
                 st.session_state._last_watch_select = chosen
             elif chosen != last:
@@ -1655,30 +1681,30 @@ elif page == "单股分析":
                 _select_ticker(chosen)
                 st.rerun()
         else:
-            st.info("自选股为空，请在下方输入代码分析。")
-    with other_c:
-        with st.form("manual_ticker_form", clear_on_submit=False):
-            typed = st.text_input("分析其他股票", placeholder="例如 AMD")
-            analyze_btn = st.form_submit_button("分析", type="primary")
+            st.caption("自选股为空")
+    with n5:
+        with st.form("manual_ticker_form", clear_on_submit=False, border=False):
+            f1, f2 = st.columns([2.2, 1])
+            typed = f1.text_input("分析其他股票", placeholder="AMD", label_visibility="collapsed")
+            analyze_btn = f2.form_submit_button("分析", use_container_width=True)
         if analyze_btn:
             parsed = normalize_ticker(typed)
             if not parsed:
-                st.error("股票代码格式不正确。仅允许字母、数字、. 和 -。")
+                st.error("股票代码格式不正确。")
             else:
                 _select_ticker(parsed)
                 st.rerun()
-    with add_c:
-        if current and not in_watch:
-            st.caption(f"{current} 不在你的自选股中")
-            if st.button("+ 加入自选股", use_container_width=True):
-                try:
-                    add_watchlist(db, user_id, current)
-                    st.success(f"已添加 {current}")
-                    st.rerun()
-                except ValueError as e:
-                    st.error(str(e))
-                except Exception as e:
-                    st.error(public_db_error("insert", "watchlist", e, client=db))
+
+    if current and not in_watch:
+        if st.button(f"+ 加入自选股（{current}）", key="ss_add_watch"):
+            try:
+                add_watchlist(db, user_id, current)
+                st.success(f"已添加 {current}")
+                st.rerun()
+            except ValueError as e:
+                st.error(str(e))
+            except Exception as e:
+                st.error(public_db_error("insert", "watchlist", e, client=db))
 
     if not current:
         st.info("请选择或输入一只股票。")
@@ -1735,14 +1761,27 @@ elif page == "单股分析":
         except Exception as exc:
             st.warning(f"重大事件模块暂不可用：{type(exc).__name__}")
     elif ss_tab == "历史":
-        st.caption("历史估值快照来自当时保存的 snapshot，不会用今天的估值重新计算。")
+        use_latest = st.checkbox("使用最新交易日", value=True, key="ss_hist_use_latest")
+        chosen_date = st.date_input("历史日期", value=date.today(), disabled=use_latest, key="ss_hist_date")
+        as_of = None if use_latest else chosen_date.isoformat()
+        if not use_latest:
+            with st.spinner(f"加载 {current} @ {as_of}…"):
+                try:
+                    hist_r = analyze_one(current, as_of, db, user_id)
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("价格", money(hist_r.get("price")))
+                    c2.metric("公允价值", dashboard_fair_text(hist_r) if hist_r.get("price") is not None else "—")
+                    c3.metric("置信度", hist_r.get("confidence") or "—")
+                    status_badge(hist_r.get("recommendation") or "—")
+                except Exception as e:
+                    st.error(public_analysis_error(current, e))
         try:
             data = list_snapshots(db, user_id, current)
         except Exception as e:
             st.error(public_db_error("select", "valuation_snapshots", e, client=db))
             data = []
         if not data:
-            st.info("暂无历史快照。打开自选股页面并启用自动保存即可开始积累。")
+            st.info("暂无历史快照。可在自选股「高级设置」开启自动保存。")
         else:
             hdf = pd.DataFrame(data)
             if any(
@@ -1757,11 +1796,8 @@ elif page == "单股分析":
                 chart = chart.rename(columns={"price": "股价", "fair_value": "公允价值"})
                 st.line_chart(chart, use_container_width=True)
     else:
-        # —— 估值 Tab（原单股分析主体）——
-        use_latest = st.checkbox("使用最新交易日", value=True)
-        chosen_date = st.date_input("历史日期", value=date.today(), disabled=use_latest)
-        as_of = None if use_latest else chosen_date.isoformat()
-
+        # —— 估值 Tab：始终最新交易日，无日期控件 ——
+        as_of = None
         cache_key = (current, as_of)
         if st.session_state.get("analysis_cache_key") != cache_key:
             with st.spinner(f"正在分析 {current}…"):
@@ -1781,7 +1817,6 @@ elif page == "单股分析":
                 st.error(r["analysis_error"])
             elif r.get("errors"):
                 st.warning("部分数据源失败，已保留可用的价格/估值结果。")
-            st.markdown(f"### {r['ticker']} · {r['name']} — {r.get('date') or '—'}")
             if (r.get("blend") or {}).get("legacy"):
                 st.info("该历史快照创建于可靠性层之前，部分可靠性指标不可用。")
             meta1, meta2, meta3 = st.columns(3)
@@ -1908,12 +1943,14 @@ elif page == "单股分析":
                     )
 
             st.line_chart(r["history"].tail(260)[["Close", "SMA30", "SMA50", "SMA200"]], use_container_width=True)
-            st.caption(r["note"])
-            render_cycle_panel(r)
-            render_model_explanations(r)
-            render_valuation_diagnostics(r)
-            render_exit_diagnostics(r)
-            if use_latest and st.button("保存当前估值快照"):
+            with st.expander("模型说明 / Diagnostics", expanded=False):
+                if r.get("note"):
+                    st.caption(r["note"])
+                render_cycle_panel(r)
+                render_model_explanations(r)
+                render_valuation_diagnostics(r)
+                render_exit_diagnostics(r)
+            if st.button("保存当前估值快照"):
                 try:
                     save_snapshot(db, user_id, r)
                     st.success("已保存。")
@@ -1947,7 +1984,6 @@ elif page in {"产业链地图", "市场格局"}:
     )
 
 elif page == "头等大事":
-    st.caption("围绕自选股，只展示可能改变投资逻辑的事件（研究用途）。")
     try:
         watch = get_watchlist(db, user_id)
     except Exception as e:
@@ -1996,17 +2032,22 @@ elif page == "头等大事":
                     "Importance": e.get("importance"),
                     "Event": e.get("headline"),
                     "Why it matters": e.get("why_it_matters"),
+                    "Impact area": e.get("impact_area") or "Product",
                 }
                 for e in show_rows
             ]
         )
+        # Clickable tickers (replace bottom jump controls)
+        uniq = sorted({str(t) for t in table["Ticker"].tolist() if t})
+        if uniq:
+            bcols = st.columns(min(len(uniq), 8))
+            for i, t in enumerate(uniq):
+                with bcols[i % len(bcols)]:
+                    if st.button(t, key=f"headline_open_{t}", use_container_width=True):
+                        open_single_stock(t, tab="重大事件")
         st.dataframe(table, use_container_width=True, hide_index=True)
-        jump = st.selectbox("打开单股分析", sorted({e.get("ticker") for e in show_rows if e.get("ticker")}), key="headline_jump")
-        if st.button("打开单股 · 重大事件", type="primary", key="headline_jump_btn"):
-            open_single_stock(jump, tab="重大事件")
 
 else:
     st.info("未知页面。")
 
-st.divider()
-st.caption("研究工具，不构成个性化投资建议。自定义股票使用通用估值假设；重要持仓应进一步校准增长率、折现率与合理估值倍数。")
+st.caption("研究工具，不构成个性化投资建议。")

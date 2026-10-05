@@ -1,4 +1,4 @@
-"""V5.2.1 Industry views — panorama map + market landscape (no nested tabs)."""
+"""V5.2.1 Industry views — panorama map + compact market landscape."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,7 +8,6 @@ import pandas as pd
 import streamlit as st
 
 from industry.loader import (
-    load_accelerator_ecosystem,
     load_meta,
     market_share_rows,
     normalize_watchlist_tickers,
@@ -18,6 +17,22 @@ from industry.loader import (
 )
 
 _PANORAMA = Path(__file__).resolve().parent.parent / "assets" / "ai_industry_panorama.jpg"
+
+# Presentation roles for AI Compute / Networking (no invented % shares)
+_COMPUTE_ROLES = (
+    ("NVDA", "AI accelerator"),
+    ("AVGO", "networking/custom silicon"),
+    ("ANET", "networking"),
+    ("Google TPU", "internal/cloud"),
+    ("AWS Trainium", "internal/cloud"),
+)
+
+# HBM qualitative roles when precise % unavailable
+_HBM_ROLE_SHORT = {
+    "SK hynix": "Leader",
+    "Samsung": "Major supplier",
+    "Micron": "Challenger",
+}
 
 
 def _pp(v: Any) -> str:
@@ -42,72 +57,100 @@ def render_tab_map(watch: List[str]) -> None:
     st.image(str(_PANORAMA), use_container_width=True)
 
 
-def _share_block(market: str, title: str) -> None:
+def _share_chart_and_table(market: str, title: str) -> None:
+    """Cloud / DRAM: horizontal bar + short Company/Share/Change/Rank table."""
     st.markdown(f"**{title}**")
     rows = market_share_rows(market)
     if not rows:
         st.caption("暂无数据")
         return
-    out = []
+
+    numeric = [r for r in rows if r.get("share_pct") is not None]
+    if numeric:
+        cdf = pd.DataFrame(
+            {
+                "Company": [str(r.get("company") or "") for r in numeric],
+                "Share": [float(r["share_pct"]) for r in numeric],
+            }
+        )
+        try:
+            st.bar_chart(cdf, x="Share", y="Company", horizontal=True, height=220)
+        except TypeError:
+            # Older Streamlit without horizontal=
+            st.bar_chart(cdf.set_index("Company")["Share"], height=220)
+
+    table_rows = []
     for r in rows:
         share = r.get("share_pct")
-        out.append(
+        table_rows.append(
             {
                 "Company": r.get("company"),
-                "Share": (
-                    f"{float(share):.1f}%"
-                    if share is not None
-                    else (r.get("tier") or r.get("leader_status") or "Not separately disclosed")
-                ),
-                "Previous": f"{float(r['previous_share_pct']):.1f}%" if r.get("previous_share_pct") is not None else "—",
+                "Share": f"{float(share):.1f}%" if share is not None else (r.get("tier") or "—"),
                 "Change": _pp(r.get("change_pp")) if r.get("change_pp") is not None else "—",
                 "Rank": r.get("rank") if r.get("rank") is not None else "—",
             }
         )
-    st.dataframe(pd.DataFrame(out), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
+
+
+def _hbm_role_list() -> None:
+    """HBM: qualitative roles only — no invented percentage table."""
+    st.markdown("**Memory · HBM**")
+    rows = market_share_rows("hbm")
+    if not rows:
+        # Fallback fixed presentation order from curated research notes
+        for name, role in (
+            ("SK hynix", "Leader"),
+            ("Samsung", "Major supplier"),
+            ("Micron", "Challenger"),
+        ):
+            st.markdown(f"**{name}** — {role}")
+        return
+    for r in sorted(rows, key=lambda x: (x.get("rank") is None, x.get("rank") or 99)):
+        company = str(r.get("company") or "")
+        if not company or company.lower() == "none":
+            continue
+        role = _HBM_ROLE_SHORT.get(company)
+        if not role:
+            raw = str(r.get("leader_status") or "")
+            if "Leader" in raw or "#1" in raw:
+                role = "Leader"
+            elif "Major" in raw:
+                role = "Major supplier"
+            elif "challenger" in raw.lower() or "Challenger" in raw:
+                role = "Challenger"
+            else:
+                role = raw or "—"
+        st.markdown(f"**{company}** — {role}")
+
+
+def _compute_role_list() -> None:
+    """AI Compute / Networking as role lines — skip empty/None rows."""
+    st.markdown("**AI Compute / Networking**")
+    for name, role in _COMPUTE_ROLES:
+        if not name or str(name).lower() == "none":
+            continue
+        if not role or str(role).lower() == "none":
+            continue
+        st.markdown(f"**{name}** — {role}")
 
 
 def render_tab_landscape(watch: List[str]) -> None:
-    """市场格局 — watchlist-gated Cloud / Memory / Compute modules."""
+    """市场格局 — watchlist-gated modules; charts + role lists."""
     if not watch:
         _empty_watchlist_message()
         return
     any_mod = False
     if show_cloud_module(watch):
         any_mod = True
-        _share_block("cloud_infrastructure", "Cloud")
+        _share_chart_and_table("cloud_infrastructure", "Cloud")
     if show_memory_module(watch):
         any_mod = True
-        _share_block("dram", "Memory · DRAM")
-        _share_block("hbm", "Memory · HBM")
+        _share_chart_and_table("dram", "Memory · DRAM")
+        _hbm_role_list()
     if show_compute_module(watch):
         any_mod = True
-        st.markdown("**AI Compute / Networking**")
-        eco = load_accelerator_ecosystem()
-        rows = []
-        for row in eco:
-            rows.append(
-                {
-                    "Name": row.get("name"),
-                    "Role": row.get("product"),
-                    "External / Internal": (
-                        "External"
-                        if row.get("external_market")
-                        else ("Internal" if row.get("internal_only") else "Cloud-specific")
-                    ),
-                    "Revenue status": row.get("current_revenue_status"),
-                }
-            )
-        if any(t in {"ANET", "AVGO", "NVDA"} for t in watch):
-            rows.append(
-                {
-                    "Name": "Arista Networks",
-                    "Role": "Data-center / AI cluster networking",
-                    "External / Internal": "External",
-                    "Revenue status": "Networking equipment revenue",
-                }
-            )
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        _compute_role_list()
     if not any_mod:
         st.info("当前自选股暂无关联的 Cloud / Memory / AI Compute 市场格局模块。")
 

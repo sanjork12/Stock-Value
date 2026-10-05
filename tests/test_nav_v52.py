@@ -88,6 +88,8 @@ class NavV52Tests(unittest.TestCase):
         head = app.split('page == "头等大事"', 1)[1]
         self.assertIn("open_single_stock", head)
         self.assertIn('tab="重大事件"', head)
+        self.assertIn("Impact area", head)
+        self.assertNotIn("headline_jump", head)
 
     def test_12_headline_filters_watchlist_events(self):
         app = _read("streamlit_app.py")
@@ -97,6 +99,32 @@ class NavV52Tests(unittest.TestCase):
     def test_13_headline_empty_state(self):
         app = _read("streamlit_app.py")
         self.assertIn("目前没有发现影响投资逻辑的重大事件。", app)
+
+    def test_16_watchlist_compact_controls(self):
+        app = _read("streamlit_app.py")
+        dash = app.split('if page == "自选股":', 1)[1].split("elif page ==", 1)[0]
+        self.assertIn('expander("高级设置"', dash)
+        self.assertIn('expander("说明"', dash)
+        self.assertIn("自动保存今天的估值快照", dash)
+        # Auto-save not a top-level always-visible control before the table loop setup
+        before_progress = dash.split("progress = st.progress", 1)[0]
+        self.assertNotIn("自动保存今天的估值快照", before_progress)
+
+    def test_17_valuation_tab_no_date_controls(self):
+        app = _read("streamlit_app.py")
+        # Date controls only under 历史 tab key
+        self.assertIn("ss_hist_use_latest", app)
+        self.assertIn("ss_hist_date", app)
+        # Valuation branch uses as_of = None without the old checkbox label nearby
+        self.assertIn("估值 Tab：始终最新交易日", app)
+
+    def test_18_landscape_uses_charts_not_only_tables(self):
+        src = _read("industry/ui.py")
+        self.assertIn("st.bar_chart", src)
+        self.assertIn("_hbm_role_list", src)
+        self.assertIn("_compute_role_list", src)
+        self.assertIn("Leader", src)
+        self.assertNotIn("load_accelerator_ecosystem", src)
 
     def test_14_valuation_uses_analysis_service(self):
         app = _read("streamlit_app.py")
