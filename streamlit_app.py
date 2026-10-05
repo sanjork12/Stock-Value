@@ -15,6 +15,27 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Compact app chrome (toolbar-like header, less landing-page whitespace)
+st.markdown(
+    """
+<style>
+  h1 {
+    font-size: 1.75rem !important; /* ~28px */
+    line-height: 1.2 !important;
+    margin: 0.15rem 0 0.35rem 0 !important;
+    padding: 0 !important;
+  }
+  div[data-testid="stVerticalBlockBorderWrapper"] {
+    margin-top: 0.25rem !important;
+  }
+  div[data-testid="stMetric"] {
+    background: transparent;
+  }
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 try:
     import extra_streamlit_components as stx
     from supabase import create_client, Client
@@ -1072,8 +1093,11 @@ def restore_remembered_session() -> None:
 
 
 def login_page():
-    st.title("📈 Stock Fair Value Monitor")
-    st.caption("股票估值、均线、买入区与长期跟踪")
+    st.markdown(
+        '<div style="font-size:30px;font-weight:700;line-height:1.15;margin:0.2rem 0">'
+        "📈 Stock Fair Value Monitor</div>",
+        unsafe_allow_html=True,
+    )
 
     left, center, right = st.columns([1, 1.15, 1])
     with center:
@@ -1182,8 +1206,11 @@ if not st.session_state.get("_profile_ensured"):
 
 header_left, header_right = st.columns([12, 1], vertical_alignment="center")
 with header_left:
-    st.title("📈 Stock Fair Value Monitor")
-    st.caption("自选股数据库 + Sector-aware 公允价值 + SMA30/50/200 + 成交密集区 + 分层买入区")
+    st.markdown(
+        '<div style="font-size:30px;font-weight:700;line-height:1.15;margin:0.1rem 0 0.35rem 0">'
+        "📈 Stock Fair Value Monitor</div>",
+        unsafe_allow_html=True,
+    )
 with header_right:
     avatar = (user_email[:1] if user_email else "U").upper()
     with st.popover(avatar, help=user_email or "账户"):
@@ -1796,6 +1823,7 @@ else:
     st.subheader("账户")
     st.write(f"邮箱：**{user_email}**")
     st.caption("密码由 Supabase Auth 管理，不保存在应用数据库中。")
+    st.caption("产品能力：自选股数据库 · Sector-aware 公允价值 · SMA30/50/200 · 成交密集区 · 分层买入区")
     with st.form("change_password"):
         p1 = st.text_input("新密码", type="password")
         p2 = st.text_input("确认新密码", type="password")

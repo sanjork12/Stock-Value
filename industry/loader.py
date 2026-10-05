@@ -451,7 +451,7 @@ def insight_for(ticker: str) -> Dict[str, str]:
 
 
 def trend_label(trend_key: str) -> str:
-    return TREND_LABEL.get(str(trend_key or "").lower(), "→ Stable")
+    return TREND_LABEL.get(str(trend_key or "").lower(), "→ 稳定")
 
 
 def layer_label_for_profile(company: Optional[Dict[str, Any]]) -> str:

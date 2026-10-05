@@ -1,4 +1,4 @@
-"""V5.1 Watchlist-driven Industry Intelligence UI."""
+"""V5.1.1 Watchlist-driven Industry UI — compact decision-first layout."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,8 +9,8 @@ import streamlit as st
 
 from industry.constants import (
     CAPEX_INTENSITY_LABEL,
-    LAYER_SHORT,
     MAG7,
+    MONETIZATION_ZH,
 )
 from industry.loader import (
     events_for,
@@ -31,6 +31,25 @@ from industry.loader import (
 
 _PANORAMA = Path(__file__).resolve().parent.parent / "assets" / "ai_industry_panorama.jpg"
 
+# Default core columns (decision-first order). Do not reorder lightly.
+CORE_WATCHLIST_COLS = [
+    "股票",
+    "主要利润引擎",
+    "最新收入增速",
+    "季度变化",
+    "AI变现",
+    "CapEx强度",
+    "当前估值状态",
+]
+
+ADVANCED_WATCHLIST_COLS = [
+    "产业层级",
+    "未来扩张",
+    "Catalyst",
+    "Risk",
+    "公司",
+]
+
 
 def _money(v: Any) -> str:
     try:
@@ -44,14 +63,17 @@ def _money(v: Any) -> str:
     return f"${x:,.0f}"
 
 
-def _pct(v: Any, *, signed: bool = False) -> str:
+def _pct(v: Any, *, signed: bool = False, digits: int = 0) -> str:
+    """Format growth/rates as +18% / -5% (not 0.18 or 18.0000%)."""
     try:
         x = float(v)
     except (TypeError, ValueError):
         return "—"
     if abs(x) <= 1.5 and x != 0:
         x *= 100.0
-    return f"{x:+.1f}%" if signed else f"{x:.1f}%"
+    if signed:
+        return f"{x:+.{digits}f}%"
+    return f"{x:.{digits}f}%"
 
 
 def _pp(v: Any) -> str:
@@ -64,7 +86,14 @@ def _pp(v: Any) -> str:
 
 def _capex_label(raw: Any) -> str:
     key = str(raw or "").strip().lower().replace(" ", "_")
-    return CAPEX_INTENSITY_LABEL.get(key, str(raw or "—"))
+    return CAPEX_INTENSITY_LABEL.get(key, str(raw or "—") if raw else "—")
+
+
+def _monetization_zh(raw: Any) -> str:
+    key = str(raw or "").strip().upper()
+    if not key:
+        return "—"
+    return MONETIZATION_ZH.get(key, key)
 
 
 def _open_stock(ticker: str) -> None:
@@ -78,13 +107,13 @@ def _open_stock(ticker: str) -> None:
     st.rerun()
 
 
-def _freshness_line() -> None:
+def _footer_meta() -> None:
     meta = load_meta()
-    st.caption(
-        f"数据：{meta.get('data_through') or '—'} · "
-        f"最近更新：{str(meta.get('last_refreshed_at') or '—')[:10]} · "
-        f"研究用途，不构成投资建议"
-    )
+    period = meta.get("data_through") or "—"
+    refreshed = str(meta.get("last_refreshed_at") or "—")[:10]
+    with st.expander("数据说明", expanded=False):
+        st.caption(f"数据周期：{period} · 更新：{refreshed} · 研究用途")
+    st.caption("研究工具，不构成个性化投资建议。")
 
 
 def _empty_watchlist_message() -> None:
@@ -92,7 +121,7 @@ def _empty_watchlist_message() -> None:
 
 
 def render_tab_map(watch: List[str]) -> None:
-    """「我的产业链」：仅展示用户提供的 AI 产业链全景图。"""
+    """「我的产业链」：全景图直出，无额外说明标题。"""
     if not watch:
         _empty_watchlist_message()
     if not _PANORAMA.exists():
@@ -124,17 +153,19 @@ def _overview_row(
     earn = latest_earnings(ticker) if c else None
     insight = insight_for(ticker)
     unclassified = c is None
+    reason = insight.get("quarter_reason") or ""
     return {
-        "分组": row_group,
+        "_group": row_group,
         "股票": valuation_ticker_for(ticker) or ticker,
         "公司": (c or {}).get("company_name") or ticker,
         "产业层级": layer_label_for_profile(c) if c else "Other / Unclassified",
-        "主要利润引擎": (c or {}).get("main_revenue_engine") or ("暂无产业分类数据" if unclassified else "—"),
-        "收入增速": _pct((earn or {}).get("revenue_growth_yoy"), signed=True) if earn else "—",
+        "主要利润引擎": (c or {}).get("main_revenue_engine") or ("—" if unclassified else "—"),
+        "最新收入增速": _pct((earn or {}).get("revenue_growth_yoy"), signed=True) if earn else "—",
         "季度变化": trend_label(insight.get("quarter_trend")),
-        "AI 变现": (c or {}).get("ai_monetization_status") or "—",
-        "CapEx 强度": _capex_label((c or {}).get("ai_capex_intensity")) if c else "—",
-        "估值状态": _valuation_status(ticker, valuation_loader),
+        "_quarter_reason": reason,
+        "AI变现": _monetization_zh((c or {}).get("ai_monetization_status")) if c else "—",
+        "CapEx强度": _capex_label((c or {}).get("ai_capex_intensity")) if c else "—",
+        "当前估值状态": _valuation_status(ticker, valuation_loader),
         "未来扩张": (c or {}).get("next_expansion") or "—",
         "Catalyst": insight.get("catalyst") or "—",
         "Risk": insight.get("risk") or "—",
@@ -150,32 +181,70 @@ def render_tab_watchlist(
         _empty_watchlist_message()
         return
 
-    show_bench = st.checkbox("显示七巨头对照（Benchmark）", value=False, key="ind_v51_benchmark")
+    # Compact same-row toggles
+    t1, t2, _ = st.columns([1.2, 1.0, 4.0])
+    with t1:
+        show_bench = st.checkbox("七巨头对照", value=False, key="ind_v51_benchmark")
+    with t2:
+        show_adv = st.checkbox("更多信息", value=False, key="ind_v51_adv")
+
     rows = [_overview_row(t, row_group="My Watchlist", valuation_loader=valuation_loader) for t in watch]
     if show_bench:
         watch_keys = set(watch) | ({"GOOG", "GOOGL"} if ("GOOG" in watch or "GOOGL" in watch) else set())
         for mid in MAG7:
-            # Avoid duplicate if already in watchlist
             if mid in watch_keys or (mid == "GOOG" and ("GOOG" in watch_keys or "GOOGL" in watch_keys)):
                 continue
             rows.append(_overview_row(mid, row_group="Benchmark", valuation_loader=valuation_loader))
 
-    show_adv = st.checkbox("显示高级列（公司 / 未来扩张 / Catalyst / Risk）", value=False, key="ind_v51_adv")
-    base_cols = ["分组", "股票", "产业层级", "主要利润引擎", "收入增速", "季度变化", "AI 变现", "CapEx 强度", "估值状态"]
+    unclassified = [r["股票"] for r in rows if r.get("_unclassified") and r.get("_group") == "My Watchlist"]
+    if unclassified:
+        with st.expander(f"⚠ {len(unclassified)}只未分类", expanded=False):
+            st.caption("、".join(unclassified))
+
+    cols = list(CORE_WATCHLIST_COLS)
     if show_adv:
-        base_cols = ["分组", "股票", "公司", "产业层级", "主要利润引擎", "收入增速", "季度变化", "AI 变现", "CapEx 强度", "估值状态", "未来扩张", "Catalyst", "Risk"]
+        cols = cols + list(ADVANCED_WATCHLIST_COLS)
 
     df = pd.DataFrame(rows)
-    for flag in df.get("_unclassified", []):
-        pass
-    if any(r.get("_unclassified") for r in rows):
-        st.caption("部分自选股暂无产业分类数据，已标为 Other / Unclassified。")
-    view = df[[c for c in base_cols if c in df.columns]]
-    st.dataframe(view, use_container_width=True, hide_index=True)
+    view = df[[c for c in cols if c in df.columns]]
 
-    jump = st.selectbox("打开单股分析", [r["股票"] for r in rows if r.get("分组") == "My Watchlist"], key="ind_v51_jump")
-    if st.button("前往单股分析", type="primary", key="ind_v51_jump_btn"):
-        _open_stock(jump)
+    # Column config: keep core columns narrow enough for first-screen (no large)
+    col_cfg: Dict[str, Any] = {
+        "股票": st.column_config.TextColumn("股票", width="small"),
+        "主要利润引擎": st.column_config.TextColumn("主要利润引擎", width="medium"),
+        "最新收入增速": st.column_config.TextColumn("最新收入增速", width="small"),
+        "季度变化": st.column_config.TextColumn("季度变化", width="small", help="原因见「更多信息」或最新变化 Tab"),
+        "AI变现": st.column_config.TextColumn(
+            "AI变现",
+            width="small",
+            help="直接=DIRECT · 间接=INDIRECT · 起步=EMERGING · 期权=OPTIONALITY",
+        ),
+        "CapEx强度": st.column_config.TextColumn("CapEx强度", width="small"),
+        "当前估值状态": st.column_config.TextColumn("当前估值状态", width="medium"),
+        "产业层级": st.column_config.TextColumn("产业层级", width="medium"),
+        "未来扩张": st.column_config.TextColumn("未来扩张", width="medium"),
+        "Catalyst": st.column_config.TextColumn("Catalyst", width="medium"),
+        "Risk": st.column_config.TextColumn("Risk", width="medium"),
+        "公司": st.column_config.TextColumn("公司", width="medium"),
+    }
+    st.dataframe(
+        view,
+        use_container_width=True,
+        hide_index=True,
+        column_config={k: v for k, v in col_cfg.items() if k in view.columns},
+    )
+
+    j1, j2 = st.columns([3, 1])
+    with j1:
+        jump = st.selectbox(
+            "打开单股分析",
+            [r["股票"] for r in rows if r.get("_group") == "My Watchlist"],
+            key="ind_v51_jump",
+            label_visibility="collapsed",
+        )
+    with j2:
+        if st.button("单股分析", type="primary", key="ind_v51_jump_btn", use_container_width=True):
+            _open_stock(jump)
 
 
 def render_tab_earnings(watch: List[str]) -> None:
@@ -186,28 +255,25 @@ def render_tab_earnings(watch: List[str]) -> None:
     c = resolve_company(choice)
     earn = latest_earnings(choice)
     if not c:
-        st.warning("暂无产业分类数据")
+        st.caption("暂无产业分类数据")
     if not earn:
         st.info("暂无季度财报快照。")
         return
 
-    st.markdown(f"**{choice}** · {earn.get('fiscal_period')} · 披露日 {earn.get('report_date')}")
+    st.caption(f"{choice} · {earn.get('fiscal_period')} · {earn.get('report_date')}")
     m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("Revenue", _money(earn.get("total_revenue")), _pct(earn.get("revenue_growth_yoy"), signed=True))
-    m2.metric("Op. income", _money(earn.get("operating_income")))
-    m3.metric("Op. margin", _pct(earn.get("operating_margin")))
+    m1.metric("Revenue", _money(earn.get("total_revenue")))
+    m2.metric("YoY", _pct(earn.get("revenue_growth_yoy"), signed=True))
+    m3.metric("Operating Margin", _pct(earn.get("operating_margin")))
     m4.metric("FCF", _money(earn.get("free_cash_flow")))
-    m5.metric("CapEx", _money(earn.get("capex")))
-    if earn.get("capex_as_pct_revenue") is not None:
-        st.caption(
-            f"CapEx / Revenue：{_pct(earn.get('capex_as_pct_revenue'))}"
-            + (f" · CapEx YoY：{_pct(earn.get('capex_yoy'), signed=True)}" if earn.get("capex_yoy") is not None else "")
-            + " · 用于观察 AI 基础设施投入强度，不代表投入回报。"
-        )
+    capex_rev = earn.get("capex_as_pct_revenue")
+    if capex_rev is not None:
+        m5.metric("CapEx / Revenue", _pct(capex_rev))
+    else:
+        m5.metric("CapEx / Revenue", "—")
 
     segs = earn.get("segments") or []
     if segs:
-        st.markdown("**收入构成**")
         st.dataframe(
             pd.DataFrame(
                 [
@@ -224,19 +290,20 @@ def render_tab_earnings(watch: List[str]) -> None:
             hide_index=True,
         )
 
-    st.markdown("**当前主要赚钱来源**")
-    st.write((c or {}).get("main_revenue_engine") or "—")
-    st.markdown("**未来新增收入方向**")
-    st.write((c or {}).get("next_expansion") or "—")
-    # Explicit separation
-    cur = (c or {}).get("current_profit_layers") or []
-    fut = (c or {}).get("future_expansion_layers") or []
-    st.caption(
-        "当前利润层："
-        + ("、".join(LAYER_SHORT.get(x, x) for x in cur) or "—")
-        + " ｜ 未来扩张层："
-        + ("、".join(LAYER_SHORT.get(x, x) for x in fut) or "—")
-    )
+    e1, e2 = st.columns(2)
+    with e1:
+        st.caption("主要利润引擎")
+        st.write((c or {}).get("main_revenue_engine") or "—")
+    with e2:
+        st.caption("未来扩张")
+        st.write((c or {}).get("next_expansion") or "—")
+
+    # CapEx detail lives here (not in core watchlist table)
+    if earn.get("capex") is not None:
+        st.caption(
+            f"CapEx：{_money(earn.get('capex'))}"
+            + (f" · CapEx YoY：{_pct(earn.get('capex_yoy'), signed=True)}" if earn.get("capex_yoy") is not None else "")
+        )
 
 
 def _share_block(market: str, title: str) -> None:
@@ -245,7 +312,6 @@ def _share_block(market: str, title: str) -> None:
     if not rows:
         st.caption("暂无数据")
         return
-    st.caption(f"Period：{rows[0].get('period')}")
     out = []
     for r in rows:
         share = r.get("share_pct")
@@ -260,7 +326,6 @@ def _share_block(market: str, title: str) -> None:
                 "Previous": f"{float(r['previous_share_pct']):.1f}%" if r.get("previous_share_pct") is not None else "—",
                 "Change": _pp(r.get("change_pp")) if r.get("change_pp") is not None else "—",
                 "Rank": r.get("rank") if r.get("rank") is not None else "—",
-                "Period": r.get("period"),
             }
         )
     st.dataframe(pd.DataFrame(out), use_container_width=True, hide_index=True)
@@ -273,16 +338,15 @@ def render_tab_position(watch: List[str]) -> None:
     any_mod = False
     if show_cloud_module(watch):
         any_mod = True
-        _share_block("cloud_infrastructure", "Cloud Market Share")
+        _share_block("cloud_infrastructure", "Cloud")
     if show_memory_module(watch):
         any_mod = True
-        _share_block("dram", "DRAM Market Share")
-        _share_block("hbm", "HBM Ranking（无可靠百分比则不展示假份额）")
+        _share_block("dram", "Memory · DRAM")
+        _share_block("hbm", "Memory · HBM")
     if show_compute_module(watch):
         any_mod = True
-        st.markdown("**AI Compute / Networking Ecosystem**")
+        st.markdown("**Compute**")
         eco = load_accelerator_ecosystem()
-        # Always include ANET as networking if relevant — from companies note via eco + AVGO/NVDA
         rows = []
         for row in eco:
             rows.append(
@@ -290,15 +354,18 @@ def render_tab_position(watch: List[str]) -> None:
                     "Name": row.get("name"),
                     "Role": row.get("product"),
                     "External / Internal": (
-                        "External" if row.get("external_market") else ("Internal" if row.get("internal_only") else "Cloud-specific")
+                        "External"
+                        if row.get("external_market")
+                        else ("Internal" if row.get("internal_only") else "Cloud-specific")
                     ),
                     "Revenue status": row.get("current_revenue_status"),
                     "Ecosystem position": (
-                        "Merchant" if row.get("merchant_chip") else ("Cloud-specific" if row.get("cloud_specific") else "Internal")
+                        "Merchant"
+                        if row.get("merchant_chip")
+                        else ("Cloud-specific" if row.get("cloud_specific") else "Internal")
                     ),
                 }
             )
-        # ANET networking row (not in accelerator list)
         if any(t in {"ANET", "AVGO", "NVDA"} for t in watch):
             rows.append(
                 {
@@ -310,9 +377,8 @@ def render_tab_position(watch: List[str]) -> None:
                 }
             )
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-        st.caption("不提供无来源的精确 accelerator 市场份额。")
     if not any_mod:
-        st.info("当前自选股暂无关联的 Cloud / Memory / AI Compute 模块。")
+        st.info("当前自选股暂无关联的 Cloud / Memory / Compute 模块。")
 
 
 def render_tab_changes(watch: List[str]) -> None:
@@ -324,36 +390,36 @@ def render_tab_changes(watch: List[str]) -> None:
     rk = key_map[range_label]
 
     event_rows = []
-    insight_rows = []
     for t in watch:
         for ev in events_for(t, limit=3, range_key=rk):
             event_rows.append(
                 {
-                    "Date": ev.get("event_date"),
                     "Ticker": t,
+                    "Date": ev.get("event_date"),
                     "Event": ev.get("headline"),
                     "Impact": ev.get("impact_label") or "Neutral",
                 }
             )
-        ins = insight_for(t)
-        insight_rows.append(
-            {
-                "Ticker": t,
-                "Quarter trend": trend_label(ins.get("quarter_trend")),
-                "原因": ins.get("quarter_reason"),
-                "Catalyst": ins.get("catalyst"),
-                "Risk": ins.get("risk"),
-            }
-        )
 
-    st.markdown("**最新事件（仅自选股）**")
     if event_rows:
         st.dataframe(pd.DataFrame(event_rows), use_container_width=True, hide_index=True)
     else:
         st.caption("所选范围内暂无事件。")
 
-    st.markdown("**Catalyst / Risk / 季度变化**")
-    st.dataframe(pd.DataFrame(insight_rows), use_container_width=True, hide_index=True)
+    with st.expander("Catalyst / Risk", expanded=False):
+        insight_rows = []
+        for t in watch:
+            ins = insight_for(t)
+            insight_rows.append(
+                {
+                    "Ticker": t,
+                    "季度变化": trend_label(ins.get("quarter_trend")),
+                    "原因": ins.get("quarter_reason"),
+                    "Catalyst": ins.get("catalyst"),
+                    "Risk": ins.get("risk"),
+                }
+            )
+        st.dataframe(pd.DataFrame(insight_rows), use_container_width=True, hide_index=True)
 
 
 def render_industry_page(
@@ -362,15 +428,26 @@ def render_industry_page(
 ) -> None:
     watch = normalize_watchlist_tickers(watchlist_tickers)
 
-    st.subheader("我的 AI 产业链情报")
-    st.caption("基于当前自选股，查看产业位置、收入结构、市场份额与最新变化")
-    _freshness_line()
-
     tabs = ["我的产业链", "我的自选股", "收入与盈利", "行业地位", "最新变化"]
     if hasattr(st, "segmented_control"):
-        tab = st.segmented_control("产业页签", tabs, default=tabs[0], key="ind_v51_tabs") or tabs[0]
+        tab = (
+            st.segmented_control(
+                "产业页签",
+                tabs,
+                default=tabs[0],
+                key="ind_v51_tabs",
+                label_visibility="collapsed",
+            )
+            or tabs[0]
+        )
     else:
-        tab = st.radio("产业页签", tabs, horizontal=True, key="ind_v51_tabs")
+        tab = st.radio(
+            "产业页签",
+            tabs,
+            horizontal=True,
+            key="ind_v51_tabs",
+            label_visibility="collapsed",
+        )
 
     if tab == "我的产业链":
         render_tab_map(watch)
@@ -382,3 +459,8 @@ def render_industry_page(
         render_tab_position(watch)
     else:
         render_tab_changes(watch)
+
+    with st.expander("高级工具", expanded=False):
+        st.caption("Export / PPT JSON / 公司卡片导出 — 暂未启用")
+
+    _footer_meta()

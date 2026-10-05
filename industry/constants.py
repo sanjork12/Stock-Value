@@ -32,11 +32,24 @@ LAYER_MAP_ORDER = (
 MONETIZATION_STATUS = ("DIRECT", "INDIRECT", "EMERGING", "OPTIONALITY")
 
 CAPEX_INTENSITY_LABEL = {
-    "very_low": "Low",
-    "low": "Low",
-    "medium": "Medium",
-    "high": "High",
-    "very_high": "Very High",
+    "very_low": "低",
+    "low": "低",
+    "medium": "中",
+    "high": "高",
+    "very_high": "极高",
+}
+
+MONETIZATION_ZH = {
+    "DIRECT": "直接",
+    "INDIRECT": "间接",
+    "EMERGING": "起步",
+    "OPTIONALITY": "期权",
+}
+
+TREND_LABEL = {
+    "improving": "↑ 改善",
+    "stable": "→ 稳定",
+    "weakening": "↓ 转弱",
 }
 
 EVENT_IMPACT_LABELS = ("Positive", "Neutral", "Risk", "Strategic")
@@ -173,10 +186,4 @@ COMPANY_INSIGHTS = {
         "quarter_trend": "stable",
         "quarter_reason": "Security cloud subscriptions dominate",
     },
-}
-
-TREND_LABEL = {
-    "improving": "↑ Improving",
-    "stable": "→ Stable",
-    "weakening": "↓ Weakening",
 }
