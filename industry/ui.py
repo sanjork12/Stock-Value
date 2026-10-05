@@ -142,12 +142,6 @@ def _overview_row(
     }
 
 
-def render_tab_map(watch: List[str]) -> None:
-    if not watch:
-        _empty_watchlist_message()
-    _render_layer_map(watch)
-
-
 def render_tab_watchlist(
     watch: List[str],
     valuation_loader: Optional[Callable[[str], Dict[str, Any]]],
