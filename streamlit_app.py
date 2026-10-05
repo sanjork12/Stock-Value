@@ -30,11 +30,9 @@ try:
         build_snapshot_record,
         fetch_historical_snapshot,
         format_fair_value,
-        industry_valuation_snapshot,
         is_schema_cache_error,
         legacy_snapshot_record,
     )
-    from industry.ui import render_industry_page
     from remember_session import seal_remember_payload, unseal_remember_payload
     from valuation_engine import (
         MODEL_DISPLAY_NAMES,
@@ -47,6 +45,19 @@ except Exception as _boot_exc:
     st.error(f"App boot import failed: {type(_boot_exc).__name__}: {_boot_exc}")
     st.code(traceback.format_exc())
     st.stop()
+
+# V5 industry layer — optional so core Stock Analysis still boots if deploy is mid-update.
+try:
+    from analysis_service import industry_valuation_snapshot
+    from industry.ui import render_industry_page
+
+    _INDUSTRY_MAP_AVAILABLE = True
+    _INDUSTRY_IMPORT_ERROR = None
+except Exception as _industry_exc:
+    industry_valuation_snapshot = None  # type: ignore[assignment]
+    render_industry_page = None  # type: ignore[assignment]
+    _INDUSTRY_MAP_AVAILABLE = False
+    _INDUSTRY_IMPORT_ERROR = _industry_exc
 
 logger = logging.getLogger("stock_fair_value_monitor")
 
@@ -1715,6 +1726,15 @@ elif page == "单股分析":
                 st.error(public_db_error("upsert", "valuation_snapshots", e, client=db))
 
 elif page == "AI Industry Map":
+    if not _INDUSTRY_MAP_AVAILABLE or render_industry_page is None or industry_valuation_snapshot is None:
+        st.error("AI Industry Map 模块尚未加载完成。请确认部署已包含 V5（analysis_service.industry_valuation_snapshot + industry/）。")
+        if _INDUSTRY_IMPORT_ERROR is not None:
+            st.code(
+                f"{type(_INDUSTRY_IMPORT_ERROR).__name__}: {_INDUSTRY_IMPORT_ERROR}\n\n"
+                + "".join(traceback.format_exception(type(_INDUSTRY_IMPORT_ERROR), _INDUSTRY_IMPORT_ERROR, _INDUSTRY_IMPORT_ERROR.__traceback__))
+            )
+        st.stop()
+
     def _industry_val_loader(ticker: str):
         # Cached live summary; Industry Map never reimplements valuation math.
         return industry_valuation_snapshot(
