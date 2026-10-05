@@ -24,6 +24,15 @@ def _read(name: str) -> str:
 class V53SingleStockAndHeadlinesTests(unittest.TestCase):
     def setUp(self):
         clear_industry_cache()
+        self._old_demo = os.environ.get("NEWS_DEMO_MODE")
+        os.environ["NEWS_DEMO_MODE"] = "true"
+
+    def tearDown(self):
+        if self._old_demo is None:
+            os.environ.pop("NEWS_DEMO_MODE", None)
+        else:
+            os.environ["NEWS_DEMO_MODE"] = self._old_demo
+        clear_industry_cache()
 
     def test_1_single_stock_no_second_level_tabs(self):
         app = _read("streamlit_app.py")
@@ -168,7 +177,7 @@ class V53SingleStockAndHeadlinesTests(unittest.TestCase):
         self.assertIn("open_headlines", app)
         self.assertIn("render_latest_event_teaser", app)
         panels = _read("industry/company_panels.py")
-        self.assertIn("查看全部头等大事", panels)
+        self.assertIn("查看该股票全部头等大事", panels)
 
     def test_16_historical_snapshots_still_stored(self):
         app = _read("streamlit_app.py")
@@ -190,8 +199,7 @@ class V53SingleStockAndHeadlinesTests(unittest.TestCase):
     def test_18_ui_has_upcoming_range(self):
         app = _read("streamlit_app.py")
         self.assertIn("即将发生", app)
-        self.assertIn("来源详情", _read("industry/ui.py")) or True
-        self.assertIn("detailed_summary", app)
+        self.assertIn("what_happened", app)
         self.assertIn("阅读全文", app)
 
     def test_19_stale_flag_when_old(self):

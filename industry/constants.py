@@ -18,7 +18,7 @@ LAYER_SHORT = {
 LAYER_SHORT_ZH = {
     "infrastructure": "基础设施",
     "cloud": "云 / 数据中心",
-    "model_platform": "模型 / 平台",
+    "model_platform": "AI平台",
     "applications": "应用层",
 }
 
@@ -40,10 +40,10 @@ CAPEX_INTENSITY_LABEL = {
 }
 
 MONETIZATION_ZH = {
-    "DIRECT": "直接",
-    "INDIRECT": "间接",
-    "EMERGING": "起步",
-    "OPTIONALITY": "期权",
+    "DIRECT": "直接变现",
+    "INDIRECT": "间接受益",
+    "EMERGING": "起步业务",
+    "OPTIONALITY": "未来业务",
 }
 
 TREND_LABEL = {

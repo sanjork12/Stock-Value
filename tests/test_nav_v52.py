@@ -92,17 +92,18 @@ class NavV52Tests(unittest.TestCase):
         head = app.split('page == "头等大事"', 1)[1]
         self.assertIn("open_single_stock", head)
         self.assertIn("影响", head)
-        self.assertIn("detailed_summary", head)
+        self.assertIn("what_happened", head)
         self.assertNotIn("headline_jump", head)
 
     def test_12_headline_filters_watchlist_events(self):
         app = _read("streamlit_app.py")
         self.assertIn("get_company_events", app)
-        self.assertIn("目前没有发现影响投资逻辑的重大事件", app)
+        self.assertIn("本周期没有发现明显改变投资逻辑的重大事件", app)
 
     def test_13_headline_empty_state(self):
         app = _read("streamlit_app.py")
-        self.assertIn("目前没有发现影响投资逻辑的重大事件。", app)
+        self.assertIn("本周期没有发现明显改变投资逻辑的重大事件。", app)
+        self.assertIn("当前未配置实时新闻源。", app)
 
     def test_16_watchlist_compact_controls(self):
         app = _read("streamlit_app.py")

@@ -1,301 +1,492 @@
 [
   {
-    "company_id": "NVDA",
-    "ticker": "NVDA",
-    "event_date": "2026-10-28",
-    "event_type": "product",
-    "headline": "面向数据中心客户的下一代 AI 平台路线图更新",
-    "summary": "公司重申多年期 AI 基础设施需求与软件附着叙事。",
-    "strategic_impact": "强化基础设施利润引擎；软件仍处起步阶段。",
-    "layer_impact": [
-      "infrastructure",
-      "model_platform"
-    ],
-    "financial_impact": "支撑数据中心业务集中叙事；不构成估值信号。",
-    "impact_label": "Strategic",
-    "source_url": "https://investor.nvidia.com/",
-    "source_name": "NVIDIA Investor Relations",
-    "event_time": "2026-10-28",
-    "published_at": "2026-10-28",
-    "event_status": "UPCOMING",
-    "detailed_summary": [
-      "公司重申多年期 AI 基础设施需求与软件附着叙事。",
-      "支撑数据中心业务集中叙事；不构成估值信号。",
-      "强化基础设施利润引擎；软件仍处起步阶段。"
-    ]
-  },
-  {
-    "company_id": "MSFT",
-    "ticker": "MSFT",
-    "event_date": "2026-10-20",
-    "event_type": "capex",
-    "headline": "云产能相关 AI 资本开支评述继续偏高",
-    "summary": "管理层强调 Azure AI 产能建设与 Copilot 分发。",
-    "strategic_impact": "云 + 平台扩张由高强度资本开支支撑。",
-    "layer_impact": [
-      "cloud",
-      "model_platform"
-    ],
-    "financial_impact": "近端自由现金流取舍 vs 长期云增长。",
-    "impact_label": "Strategic",
-    "source_url": "https://www.microsoft.com/en-us/investor",
-    "source_name": "Microsoft Investor Relations",
-    "event_time": "2026-10-20",
-    "published_at": "2026-10-20",
-    "event_status": "UPCOMING",
-    "detailed_summary": [
-      "管理层强调 Azure AI 产能建设与 Copilot 分发。",
-      "近端自由现金流取舍 vs 长期云增长。",
-      "云 + 平台扩张由高强度资本开支支撑。"
-    ]
-  },
-  {
-    "company_id": "GOOG",
-    "ticker": "GOOG",
-    "event_date": "2026-10-18",
-    "event_type": "AI infrastructure",
-    "headline": "投资者材料突出 Gemini + 云 AI 订单",
-    "summary": "广告仍是主要利润引擎；云/AI 产能投入保持高位。",
-    "strategic_impact": "应用层变现与云投资并行。",
-    "layer_impact": [
-      "applications",
-      "cloud",
-      "model_platform"
-    ],
-    "financial_impact": "资本开支/收入比偏高；广告现金流支撑基建。",
-    "impact_label": "Positive",
-    "source_url": "https://abc.xyz/investor/",
-    "source_name": "Alphabet Investor Relations",
-    "event_time": "2026-10-18",
-    "published_at": "2026-10-18",
-    "event_status": "UPCOMING",
-    "detailed_summary": [
-      "广告仍是主要利润引擎；云/AI 产能投入保持高位。",
-      "资本开支/收入比偏高；广告现金流支撑基建。",
-      "应用层变现与云投资并行。"
-    ]
-  },
-  {
-    "company_id": "AMZN",
-    "ticker": "AMZN",
-    "event_date": "2026-10-15",
-    "event_type": "cloud",
-    "headline": "AWS AI 服务与定制硅（Trainium）进展更新",
-    "summary": "AWS 仍是核心利润引擎；Trainium 不宜与商用 GPU 直接对标。",
-    "strategic_impact": "云直接变现；芯片主要服务 AWS 生态。",
-    "layer_impact": [
-      "cloud",
-      "infrastructure"
-    ],
-    "financial_impact": "支撑 AWS 增长叙事；资本开支仍高。",
-    "impact_label": "Positive",
-    "source_url": "https://ir.aboutamazon.com/",
-    "source_name": "Amazon Investor Relations",
-    "event_time": "2026-10-15",
-    "published_at": "2026-10-15",
-    "event_status": "UPCOMING",
-    "detailed_summary": [
-      "AWS 仍是核心利润引擎；Trainium 不宜与商用 GPU 直接对标。",
-      "支撑 AWS 增长叙事；资本开支仍高。",
-      "云直接变现；芯片主要服务 AWS 生态。"
-    ]
-  },
-  {
-    "company_id": "META",
-    "ticker": "META",
-    "event_date": "2026-10-12",
-    "event_type": "AI infrastructure",
-    "headline": "AI 资本开支与 Llama 生态投资更新",
-    "summary": "广告效率仍是间接 AI 变现；Reality Labs 仍属投入期。",
-    "strategic_impact": "基础设施支出=投入；应用层=当前利润。",
-    "layer_impact": [
-      "infrastructure",
-      "applications",
-      "model_platform"
-    ],
-    "financial_impact": "高资本开支强度 vs 广告现金创造。",
-    "impact_label": "Strategic",
-    "source_url": "https://investor.atmeta.com/",
-    "source_name": "Meta Investor Relations",
-    "event_time": "2026-10-12",
-    "published_at": "2026-10-12",
-    "event_status": "UPCOMING",
-    "detailed_summary": [
-      "广告效率仍是间接 AI 变现；Reality Labs 仍属投入期。",
-      "高资本开支强度 vs 广告现金创造。",
-      "基础设施支出=投入；应用层=当前利润。"
-    ]
-  },
-  {
-    "company_id": "AAPL",
-    "ticker": "AAPL",
-    "event_date": "2026-10-10",
-    "event_type": "product",
-    "headline": "端侧 Apple Intelligence 功能节奏更新",
-    "summary": "AI 定位为服务/设备附着；未单独披露 AI 收入线。",
-    "strategic_impact": "通过生态实现间接 / 起步变现。",
-    "layer_impact": [
-      "applications",
-      "model_platform"
-    ],
-    "financial_impact": "支撑服务叙事；非独立 AI 损益表。",
-    "impact_label": "Neutral",
-    "source_url": "https://investor.apple.com/",
-    "source_name": "Apple Investor Relations",
-    "event_time": "2026-10-10",
-    "published_at": "2026-10-10",
-    "event_status": "UPCOMING",
-    "detailed_summary": [
-      "AI 定位为服务/设备附着；未单独披露 AI 收入线。",
-      "支撑服务叙事；非独立 AI 损益表。",
-      "通过生态实现间接 / 起步变现。"
-    ]
-  },
-  {
+    "event_id": "tsla-2026-10-05-robotaxi",
     "company_id": "TSLA",
     "ticker": "TSLA",
     "event_date": "2026-10-05",
-    "event_type": "autonomy",
-    "headline": "自动驾驶 / Robotaxi 期权评述",
-    "summary": "汽车仍是当前收入；Robotaxi 按期权叙事定价。",
-    "strategic_impact": "勿把自动驾驶故事与当前汽车利润引擎混为一谈。",
-    "layer_impact": [
-      "applications",
-      "model_platform"
-    ],
-    "financial_impact": "可选上行；非当前分部收入。",
-    "impact_label": "Strategic",
-    "source_url": "https://ir.tesla.com/",
-    "source_name": "Tesla Investor Relations",
     "event_time": "2026-10-05",
     "published_at": "2026-10-05",
     "event_status": "PAST",
-    "detailed_summary": [
-      "汽车仍是当前收入；Robotaxi 按期权叙事定价。",
-      "可选上行；非当前分部收入。",
-      "勿把自动驾驶故事与当前汽车利润引擎混为一谈。"
-    ]
-  },
-  {
-    "company_id": "ORCL",
-    "ticker": "ORCL",
-    "event_date": "2026-10-09",
-    "event_type": "earnings",
-    "headline": "最新财报材料中的 OCI 产能与资本开支爬坡",
-    "summary": "云增长与 AI 基础设施合同仍是战略焦点。",
-    "strategic_impact": "云扩张伴随极高资本开支强度。",
-    "layer_impact": [
-      "cloud"
+    "event_type": "autonomy",
+    "importance": "重大",
+    "headline": "Robotaxi推进速度低于此前预期",
+    "what_happened": "公司最新投资者沟通显示，无人驾驶出租车业务的监管审批与大规模落地节奏，比市场此前乐观预期更慢。汽车销售仍是当前主要收入来源。",
+    "why_it_matters": "若 Robotaxi 商业化推迟，市场可能下调长期增长溢价，使估值更多回到汽车与能源业务基本面。这会影响收入预期路径，但不改变当前汽车毛利短期结构。",
+    "impact_summary": {
+      "收入": "中性偏负面",
+      "利润率": "中性",
+      "CapEx": "中性",
+      "竞争格局": "中性",
+      "长期估值": "负面"
+    },
+    "impact_areas": ["自动驾驶", "收入", "产品"],
+    "watch_next": [
+      "下一季 Robotaxi / FSD 监管进展说明",
+      "汽车交付量与ASP走势",
+      "自动驾驶相关资本开支指引"
     ],
-    "financial_impact": "近端资本开支压力 vs 订单叙事。",
+    "source_name": "Tesla Investor Relations",
+    "source_url": "https://ir.tesla.com/",
+    "source_type": "demo_static",
     "impact_label": "Strategic",
-    "source_url": "https://investor.oracle.com/",
-    "source_name": "Oracle Investor Relations",
-    "event_time": "2026-10-09",
-    "published_at": "2026-10-09",
-    "event_status": "UPCOMING",
-    "detailed_summary": [
-      "云增长与 AI 基础设施合同仍是战略焦点。",
-      "近端资本开支压力 vs 订单叙事。",
-      "云扩张伴随极高资本开支强度。"
-    ]
+    "layer_impact": ["applications", "model_platform"]
   },
   {
-    "company_id": "MU",
-    "ticker": "MU",
-    "event_date": "2026-10-24",
-    "event_type": "chip",
-    "headline": "财报中的 HBM / 云内存需求评述",
-    "summary": "存储周期 + HBM AI 需求仍是主要 AI 敞口。",
-    "strategic_impact": "基础设施通过存储实现直接变现。",
-    "layer_impact": [
-      "infrastructure"
-    ],
-    "financial_impact": "结构向云内存 / HBM 倾斜。",
-    "impact_label": "Positive",
-    "source_url": "https://investors.micron.com/",
-    "source_name": "Micron Investor Relations",
-    "event_time": "2026-10-24",
-    "published_at": "2026-10-24",
-    "event_status": "UPCOMING",
-    "detailed_summary": [
-      "存储周期 + HBM AI 需求仍是主要 AI 敞口。",
-      "结构向云内存 / HBM 倾斜。",
-      "基础设施通过存储实现直接变现。"
-    ]
-  },
-  {
-    "company_id": "PLTR",
-    "ticker": "PLTR",
-    "event_date": "2026-08-04",
-    "event_type": "earnings",
-    "headline": "突出美国商业 AIP 增长",
-    "summary": "商业加速与政府业务并行。",
-    "strategic_impact": "应用层 AI 平台变现。",
-    "layer_impact": [
-      "applications",
-      "model_platform"
-    ],
-    "financial_impact": "支撑商业业务占比扩张叙事。",
-    "impact_label": "Positive",
-    "source_url": "https://investors.palantir.com/",
-    "source_name": "Palantir Investor Relations",
-    "event_time": "2026-08-04",
-    "published_at": "2026-08-04",
-    "event_status": "PAST",
-    "detailed_summary": [
-      "商业加速与政府业务并行。",
-      "支撑商业业务占比扩张叙事。",
-      "应用层 AI 平台变现。"
-    ]
-  },
-  {
+    "event_id": "avgo-2026-10-04-ai-semi",
     "company_id": "AVGO",
     "ticker": "AVGO",
     "event_date": "2026-10-04",
-    "event_type": "earnings",
-    "headline": "AI 半导体与网络需求更新",
-    "summary": "定制加速器 / 网络仍是基础设施现金引擎。",
-    "strategic_impact": "基础设施直接变现；软件分部单独看。",
-    "layer_impact": [
-      "infrastructure"
-    ],
-    "financial_impact": "半导体解决方案中的 AI 半导体评述。",
-    "impact_label": "Positive",
-    "source_url": "https://investors.broadcom.com/",
-    "source_name": "Broadcom Investor Relations",
     "event_time": "2026-10-04",
     "published_at": "2026-10-04",
     "event_status": "PAST",
-    "detailed_summary": [
-      "定制加速器 / 网络仍是基础设施现金引擎。",
-      "半导体解决方案中的 AI 半导体评述。",
-      "基础设施直接变现；软件分部单独看。"
-    ]
+    "event_type": "earnings",
+    "importance": "重要",
+    "headline": "AI半导体与网络需求继续偏强",
+    "what_happened": "最新业绩沟通重申，云厂商对定制加速器与数据中心网络设备的需求仍然旺盛，AI相关订单可见度较高。",
+    "why_it_matters": "AI半导体是公司当前核心现金引擎之一。需求维持强劲有助于支撑收入增长与毛利率预期，也巩固其在云基础设施供应链中的位置。",
+    "impact_summary": {
+      "收入": "正面",
+      "利润率": "正面",
+      "竞争格局": "正面",
+      "长期估值": "正面"
+    },
+    "impact_areas": ["收入", "产品", "竞争"],
+    "watch_next": [
+      "下一季 AI 半导体收入指引",
+      "大客户订单集中度变化",
+      "网络芯片交付节奏"
+    ],
+    "source_name": "Broadcom Investor Relations",
+    "source_url": "https://investors.broadcom.com/",
+    "source_type": "demo_static",
+    "impact_label": "Positive",
+    "layer_impact": ["infrastructure"]
   },
   {
+    "event_id": "nvda-2026-10-03-rubin",
+    "company_id": "NVDA",
+    "ticker": "NVDA",
+    "event_date": "2026-10-03",
+    "event_time": "2026-10-03",
+    "published_at": "2026-10-03",
+    "event_status": "PAST",
+    "event_type": "product",
+    "importance": "重大",
+    "headline": "下一代数据中心AI平台路线图更新",
+    "what_happened": "公司向数据中心客户更新了下一代AI加速平台的产品节奏，并强调多年期基础设施需求与软件生态附着仍在延续。",
+    "why_it_matters": "路线图可见度直接影响云厂商采购规划与市场对公司中期收入的信心。软件附着若提升，还可能改善长期利润结构，但短期仍以硬件销售为主。",
+    "impact_summary": {
+      "收入": "正面",
+      "利润率": "中性偏正面",
+      "竞争格局": "正面",
+      "长期估值": "正面"
+    },
+    "impact_areas": ["产品", "收入", "竞争"],
+    "watch_next": [
+      "下一代平台出货时间表",
+      "数据中心收入占比",
+      "云厂商自研芯片进展"
+    ],
+    "source_name": "NVIDIA Investor Relations",
+    "source_url": "https://investor.nvidia.com/",
+    "source_type": "demo_static",
+    "impact_label": "Strategic",
+    "layer_impact": ["infrastructure", "model_platform"]
+  },
+  {
+    "event_id": "msft-2026-10-02-capex",
+    "company_id": "MSFT",
+    "ticker": "MSFT",
+    "event_date": "2026-10-02",
+    "event_time": "2026-10-02",
+    "published_at": "2026-10-02",
+    "event_status": "PAST",
+    "event_type": "capex",
+    "importance": "重大",
+    "headline": "云与AI相关资本开支继续维持高位",
+    "what_happened": "管理层在最新沟通中再次强调，Azure AI产能建设与Copilot分发仍需高强度资本开支支撑，短期不会明显放缓。",
+    "why_it_matters": "高资本开支会压制近端自由现金流，但如果云AI用量跟上，可转化为更高的长期经常性收入。投资者需权衡短期现金取舍与长期云增长。",
+    "impact_summary": {
+      "收入": "正面",
+      "CapEx": "负面（开支上升）",
+      "利润率": "中性偏负面",
+      "长期估值": "中性偏正面"
+    },
+    "impact_areas": ["资本开支", "收入"],
+    "watch_next": [
+      "下一季资本开支指引",
+      "Azure AI 收入增速",
+      "自由现金流变化"
+    ],
+    "source_name": "Microsoft Investor Relations",
+    "source_url": "https://www.microsoft.com/en-us/investor",
+    "source_type": "demo_static",
+    "impact_label": "Strategic",
+    "layer_impact": ["cloud", "model_platform"]
+  },
+  {
+    "event_id": "meta-2026-10-01-ai-spend",
+    "company_id": "META",
+    "ticker": "META",
+    "event_date": "2026-10-01",
+    "event_time": "2026-10-01",
+    "published_at": "2026-10-01",
+    "event_status": "PAST",
+    "event_type": "capex",
+    "importance": "重要",
+    "headline": "AI基础设施投入与广告效率并行推进",
+    "what_happened": "公司更新了AI算力与Llama生态投入计划，同时强调广告业务仍是当前主要现金来源，Reality Labs继续处于投入期。",
+    "why_it_matters": "广告效率提升可支撑短期利润，但高资本开支与元宇宙业务亏损会拖累自由现金流。市场会关注AI投入能否转化为可持续的广告或平台回报。",
+    "impact_summary": {
+      "收入": "正面",
+      "利润率": "中性",
+      "CapEx": "负面（开支上升）",
+      "长期估值": "中性"
+    },
+    "impact_areas": ["资本开支", "收入"],
+    "watch_next": [
+      "广告收入增速",
+      "资本开支占收入比",
+      "Reality Labs 亏损幅度"
+    ],
+    "source_name": "Meta Investor Relations",
+    "source_url": "https://investor.atmeta.com/",
+    "source_type": "demo_static",
+    "impact_label": "Strategic",
+    "layer_impact": ["infrastructure", "applications"]
+  },
+  {
+    "event_id": "amzn-2026-10-05-aws",
+    "company_id": "AMZN",
+    "ticker": "AMZN",
+    "event_date": "2026-10-05",
+    "event_time": "2026-10-05",
+    "published_at": "2026-10-05",
+    "event_status": "PAST",
+    "event_type": "cloud",
+    "importance": "重要",
+    "headline": "AWS AI服务与自研芯片进展更新",
+    "what_happened": "公司披露了AWS AI相关服务进展，并提及Trainium等自研芯片在部分工作负载中的采用情况。AWS仍是集团核心利润引擎。",
+    "why_it_matters": "AWS增长直接关系到集团营业利润与估值中枢。自研芯片若降低云成本，可能改善长期利润率，但短期内资本开支仍会保持高位。",
+    "impact_summary": {
+      "收入": "正面",
+      "利润率": "中性偏正面",
+      "CapEx": "中性偏负面",
+      "竞争格局": "正面"
+    },
+    "impact_areas": ["收入", "资本开支", "竞争"],
+    "watch_next": [
+      "AWS 收入增速",
+      "AI 服务占比",
+      "资本开支指引"
+    ],
+    "source_name": "Amazon Investor Relations",
+    "source_url": "https://ir.aboutamazon.com/",
+    "source_type": "demo_static",
+    "impact_label": "Positive",
+    "layer_impact": ["cloud", "infrastructure"]
+  },
+  {
+    "event_id": "goog-2026-10-01-gemini",
+    "company_id": "GOOG",
+    "ticker": "GOOG",
+    "event_date": "2026-10-01",
+    "event_time": "2026-10-01",
+    "published_at": "2026-10-01",
+    "event_status": "PAST",
+    "event_type": "AI infrastructure",
+    "importance": "重要",
+    "headline": "Gemini与云AI订单成为投资者关注焦点",
+    "what_happened": "最新投资者材料突出Gemini产品分发与云AI订单进展。广告业务仍贡献主要利润，同时云与AI基础设施投入维持高位。",
+    "why_it_matters": "广告现金流转强可支撑AI投入，但若搜索或广告受AI形态变化扰动，将影响利润质量。云AI订单则关系到中期收入多元化。",
+    "impact_summary": {
+      "收入": "正面",
+      "利润率": "中性",
+      "CapEx": "负面（开支上升）",
+      "长期估值": "中性偏正面"
+    },
+    "impact_areas": ["收入", "资本开支", "产品"],
+    "watch_next": [
+      "广告收入增速",
+      "Google Cloud 增长率",
+      "资本开支/收入比"
+    ],
+    "source_name": "Alphabet Investor Relations",
+    "source_url": "https://abc.xyz/investor/",
+    "source_type": "demo_static",
+    "impact_label": "Positive",
+    "layer_impact": ["applications", "cloud", "model_platform"]
+  },
+  {
+    "event_id": "aapl-2026-09-28-intelligence",
+    "company_id": "AAPL",
+    "ticker": "AAPL",
+    "event_date": "2026-09-28",
+    "event_time": "2026-09-28",
+    "published_at": "2026-09-28",
+    "event_status": "PAST",
+    "event_type": "product",
+    "importance": "重要",
+    "headline": "端侧Apple Intelligence功能节奏更新",
+    "what_happened": "公司更新了设备端AI功能的推出节奏，强调AI主要用于提升服务与设备体验，尚未单独披露独立的AI收入线。",
+    "why_it_matters": "AI若提升换机与服务订阅意愿，可间接支撑收入；但缺乏独立AI收入披露，意味着短期估值仍主要看iPhone周期与服务占比。",
+    "impact_summary": {
+      "收入": "中性偏正面",
+      "利润率": "中性",
+      "长期估值": "中性"
+    },
+    "impact_areas": ["产品", "收入"],
+    "watch_next": [
+      "服务收入占比",
+      "iPhone 销量与ASP",
+      "Apple Intelligence 功能落地国家/机型"
+    ],
+    "source_name": "Apple Investor Relations",
+    "source_url": "https://investor.apple.com/",
+    "source_type": "demo_static",
+    "impact_label": "Neutral",
+    "layer_impact": ["applications", "model_platform"]
+  },
+  {
+    "event_id": "pltr-2026-10-03-aip",
+    "company_id": "PLTR",
+    "ticker": "PLTR",
+    "event_date": "2026-10-03",
+    "event_time": "2026-10-03",
+    "published_at": "2026-10-03",
+    "event_status": "PAST",
+    "event_type": "earnings",
+    "importance": "重要",
+    "headline": "美国商业AIP业务增长继续加速",
+    "what_happened": "最新业务更新显示，美国商业客户对AIP平台的采用继续加速，商业收入占比相对政府业务进一步提升。",
+    "why_it_matters": "商业扩张改善收入结构与增长可持续性叙事，但也使估值对商业获客与续约更敏感。需关注客户集中度与竞争加剧风险。",
+    "impact_summary": {
+      "收入": "正面",
+      "利润率": "中性偏正面",
+      "竞争格局": "中性",
+      "长期估值": "正面"
+    },
+    "impact_areas": ["收入", "产品"],
+    "watch_next": [
+      "美国商业收入增速",
+      "剩余履约义务（RPO）",
+      "大客户续约情况"
+    ],
+    "source_name": "Palantir Investor Relations",
+    "source_url": "https://investors.palantir.com/",
+    "source_type": "demo_static",
+    "impact_label": "Positive",
+    "layer_impact": ["applications", "model_platform"]
+  },
+  {
+    "event_id": "mu-2026-10-02-hbm",
+    "company_id": "MU",
+    "ticker": "MU",
+    "event_date": "2026-10-02",
+    "event_time": "2026-10-02",
+    "published_at": "2026-10-02",
+    "event_status": "PAST",
+    "event_type": "chip",
+    "importance": "重要",
+    "headline": "HBM与云内存需求评述偏强",
+    "what_happened": "公司在最新沟通中指出，高带宽内存（HBM）与云服务器内存需求持续旺盛，产品结构继续向AI相关存储倾斜。",
+    "why_it_matters": "HBM占比上升可改善产品组合与利润率，但也提高对少数云/AI客户的依赖。存储周期波动仍是主要风险。",
+    "impact_summary": {
+      "收入": "正面",
+      "利润率": "正面",
+      "竞争格局": "中性偏正面",
+      "长期估值": "正面"
+    },
+    "impact_areas": ["收入", "产品", "竞争"],
+    "watch_next": [
+      "HBM 出货量与ASP",
+      "云内存收入占比",
+      "下一季毛利率指引"
+    ],
+    "source_name": "Micron Investor Relations",
+    "source_url": "https://investors.micron.com/",
+    "source_type": "demo_static",
+    "impact_label": "Positive",
+    "layer_impact": ["infrastructure"]
+  },
+  {
+    "event_id": "orcl-2026-10-04-oci",
+    "company_id": "ORCL",
+    "ticker": "ORCL",
+    "event_date": "2026-10-04",
+    "event_time": "2026-10-04",
+    "published_at": "2026-10-04",
+    "event_status": "PAST",
+    "event_type": "capex",
+    "importance": "重大",
+    "headline": "OCI产能扩张与资本开支爬坡持续",
+    "what_happened": "最新材料显示，Oracle Cloud Infrastructure为承接AI相关合同继续扩容，资本开支强度维持在高位。",
+    "why_it_matters": "云订单叙事支撑中期收入预期，但极高资本开支会压制近端自由现金流，并放大执行与回报节奏风险。",
+    "impact_summary": {
+      "收入": "正面",
+      "CapEx": "负面（开支上升）",
+      "利润率": "中性偏负面",
+      "长期估值": "中性偏正面"
+    },
+    "impact_areas": ["资本开支", "收入"],
+    "watch_next": [
+      "OCI 收入增速",
+      "剩余履约合同金额",
+      "资本开支指引"
+    ],
+    "source_name": "Oracle Investor Relations",
+    "source_url": "https://investor.oracle.com/",
+    "source_type": "demo_static",
+    "impact_label": "Strategic",
+    "layer_impact": ["cloud"]
+  },
+  {
+    "event_id": "anet-2026-10-01-network",
     "company_id": "ANET",
     "ticker": "ANET",
-    "event_date": "2026-08-05",
-    "event_type": "earnings",
-    "headline": "AI 集群网络需求评述",
-    "summary": "以太网交换需求与 AI 集群建设绑定。",
-    "strategic_impact": "基础设施网络地位。",
-    "layer_impact": [
-      "infrastructure",
-      "cloud"
-    ],
-    "financial_impact": "支撑产品增长叙事。",
-    "impact_label": "Positive",
-    "source_url": "https://investors.arista.com/",
-    "source_name": "Arista Investor Relations",
-    "event_time": "2026-08-05",
-    "published_at": "2026-08-05",
+    "event_date": "2026-10-01",
+    "event_time": "2026-10-01",
+    "published_at": "2026-10-01",
     "event_status": "PAST",
-    "detailed_summary": [
-      "以太网交换需求与 AI 集群建设绑定。",
-      "支撑产品增长叙事。",
-      "基础设施网络地位。"
-    ]
+    "event_type": "earnings",
+    "importance": "重要",
+    "headline": "AI集群以太网需求保持稳健",
+    "what_happened": "公司表示，面向AI训练与推理集群的以太网交换需求仍与云厂商资本开支计划紧密相关，产品增长叙事延续。",
+    "why_it_matters": "AI网络是公司差异化看点。若云资本开支放缓，订单可能同步降温；反之则可继续支撑收入与份额预期。",
+    "impact_summary": {
+      "收入": "正面",
+      "竞争格局": "正面",
+      "长期估值": "正面"
+    },
+    "impact_areas": ["收入", "产品", "竞争"],
+    "watch_next": [
+      "校园/数据中心交换机订单",
+      "云厂商资本开支信号",
+      "毛利率变化"
+    ],
+    "source_name": "Arista Investor Relations",
+    "source_url": "https://investors.arista.com/",
+    "source_type": "demo_static",
+    "impact_label": "Positive",
+    "layer_impact": ["infrastructure", "cloud"]
+  },
+  {
+    "event_id": "nvda-2026-10-28-roadmap",
+    "company_id": "NVDA",
+    "ticker": "NVDA",
+    "event_date": "2026-10-28",
+    "event_time": "2026-10-28",
+    "published_at": "2026-10-28",
+    "event_status": "UPCOMING",
+    "event_type": "product",
+    "importance": "重大",
+    "headline": "预定：下一代AI平台客户沟通会",
+    "what_happened": "公司计划在后续投资者活动中进一步沟通下一代数据中心AI平台的客户导入进展。",
+    "why_it_matters": "正式沟通可能更新出货节奏与需求可见度，进而影响市场对中期收入与竞争格局的判断。",
+    "impact_summary": {
+      "收入": "待观察",
+      "竞争格局": "待观察",
+      "长期估值": "待观察"
+    },
+    "impact_areas": ["产品", "收入"],
+    "watch_next": [
+      "沟通会日期与材料",
+      "大客户导入进度",
+      "竞品平台对比"
+    ],
+    "source_name": "NVIDIA Investor Relations",
+    "source_url": "https://investor.nvidia.com/",
+    "source_type": "demo_static",
+    "impact_label": "Strategic",
+    "layer_impact": ["infrastructure", "model_platform"]
+  },
+  {
+    "event_id": "msft-2026-10-20-capex-update",
+    "company_id": "MSFT",
+    "ticker": "MSFT",
+    "event_date": "2026-10-20",
+    "event_time": "2026-10-20",
+    "published_at": "2026-10-20",
+    "event_status": "UPCOMING",
+    "event_type": "capex",
+    "importance": "重要",
+    "headline": "预定：云AI资本开支与产能更新",
+    "what_happened": "市场预期公司将在后续财报或投资者材料中，更新Azure AI产能与资本开支节奏。",
+    "why_it_matters": "资本开支指引变化会直接影响近端现金流预期，以及市场对云AI回报周期的判断。",
+    "impact_summary": {
+      "CapEx": "待观察",
+      "收入": "待观察",
+      "长期估值": "待观察"
+    },
+    "impact_areas": ["资本开支", "收入"],
+    "watch_next": [
+      "资本开支指引区间",
+      "Azure 增长率",
+      "自由现金流指引"
+    ],
+    "source_name": "Microsoft Investor Relations",
+    "source_url": "https://www.microsoft.com/en-us/investor",
+    "source_type": "demo_static",
+    "impact_label": "Strategic",
+    "layer_impact": ["cloud", "model_platform"]
+  },
+  {
+    "event_id": "mu-2026-10-24-hbm-update",
+    "company_id": "MU",
+    "ticker": "MU",
+    "event_date": "2026-10-24",
+    "event_time": "2026-10-24",
+    "published_at": "2026-10-24",
+    "event_status": "UPCOMING",
+    "event_type": "chip",
+    "importance": "重要",
+    "headline": "预定：HBM供给与云内存展望更新",
+    "what_happened": "下一阶段业绩沟通预计将更新HBM产能爬坡与云内存需求展望。",
+    "why_it_matters": "供给节奏与价格走势会直接影响收入与毛利率预期，是存储周期判断的关键观察点。",
+    "impact_summary": {
+      "收入": "待观察",
+      "利润率": "待观察"
+    },
+    "impact_areas": ["收入", "产品"],
+    "watch_next": [
+      "HBM 产能指引",
+      "ASP 趋势",
+      "云客户订单能见度"
+    ],
+    "source_name": "Micron Investor Relations",
+    "source_url": "https://investors.micron.com/",
+    "source_type": "demo_static",
+    "impact_label": "Positive",
+    "layer_impact": ["infrastructure"]
+  },
+  {
+    "event_id": "orcl-2026-10-09-earnings",
+    "company_id": "ORCL",
+    "ticker": "ORCL",
+    "event_date": "2026-10-09",
+    "event_time": "2026-10-09",
+    "published_at": "2026-10-09",
+    "event_status": "UPCOMING",
+    "event_type": "earnings",
+    "importance": "重大",
+    "headline": "预定：OCI产能与资本开支财报沟通",
+    "what_happened": "即将到来的财报沟通预计聚焦OCI产能交付、AI相关合同与资本开支爬坡。",
+    "why_it_matters": "订单兑现与开支节奏的匹配，决定市场对云扩张叙事的可信度，并影响估值中的成长溢价。",
+    "impact_summary": {
+      "收入": "待观察",
+      "CapEx": "待观察",
+      "长期估值": "待观察"
+    },
+    "impact_areas": ["资本开支", "收入"],
+    "watch_next": [
+      "OCI 增长率",
+      "剩余履约合同",
+      "资本开支指引"
+    ],
+    "source_name": "Oracle Investor Relations",
+    "source_url": "https://investor.oracle.com/",
+    "source_type": "demo_static",
+    "impact_label": "Strategic",
+    "layer_impact": ["cloud"]
   }
 ]

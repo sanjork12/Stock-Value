@@ -1,4 +1,4 @@
-"""单股分析内嵌面板：财报与业务（V5.3，无二级 Tab）。"""
+"""单股分析内嵌面板：财报与业务 + 最新事件 teaser（V5.4）。"""
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
@@ -100,7 +100,7 @@ def render_earnings_inline(ticker: str) -> None:
 
 
 def render_latest_event_teaser(ticker: str, *, open_headlines_cb=None) -> None:
-    """最多 1 条最新重大事件 + 跳转头等大事。"""
+    """最多 1 条最新重大事件标题 + 跳转头等大事（不复制全文）。"""
     st.markdown("#### 最新重大事件")
     bounds = range_bounds("本季度")
     rows = get_company_events(
@@ -108,23 +108,21 @@ def render_latest_event_teaser(ticker: str, *, open_headlines_cb=None) -> None:
         start_time=bounds["start_time"],
         end_time=bounds["end_time"],
         include_upcoming=False,
+        range_key="本季度",
     )
-    material = [e for e in rows if e.get("importance") in {"重大", "重要"}]
-    if not material:
+    if not rows:
         st.caption("本季度暂无重大事件。")
     else:
-        ev = material[0]
+        ev = rows[0]
         st.write(
             f"**{ev.get('ticker')}** · {ev.get('event_date')} · {ev.get('importance')} · "
             f"{ev.get('headline')}"
         )
-        if ev.get("short_summary"):
-            st.caption(ev.get("short_summary"))
     if open_headlines_cb is not None:
-        if st.button("查看全部头等大事 →", key=f"ss_to_headlines_{ticker}"):
+        if st.button("查看该股票全部头等大事", key=f"ss_to_headlines_{ticker}"):
             open_headlines_cb(ticker)
     else:
-        st.caption("查看全部头等大事 → 一级导航「头等大事」")
+        st.caption("查看该股票全部头等大事 → 一级导航「头等大事」")
 
 
 # Backward-compatible names for any residual imports

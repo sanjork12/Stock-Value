@@ -584,12 +584,17 @@ def open_single_stock(ticker: str, *, tab: str | None = None) -> None:
 
 
 def open_headlines(ticker: str | None = None) -> None:
-    """Jump to 头等大事, optionally pre-filter by ticker."""
+    """Jump to 头等大事. Only pass ticker from single-stock deep link."""
     st.session_state._pending_nav_page = "头等大事"
     if ticker:
         t = normalize_ticker(ticker)
         if t:
             st.session_state.headline_filter_ticker = t
+            st.session_state._headline_deep_link = True
+    else:
+        st.session_state.pop("headline_filter_ticker", None)
+        st.session_state.pop("headline_ticker_filter", None)
+        st.session_state._headline_deep_link = False
     st.rerun()
 
 
@@ -1433,6 +1438,11 @@ if hasattr(st, "segmented_control"):
 else:
     page = st.radio("页面", NAV_PAGES, horizontal=True, key="nav_page", label_visibility="collapsed")
 
+# Track previous page for headline filter reset (V5.4)
+_prev_nav_page = st.session_state.get("_prev_nav_page")
+st.session_state._prev_nav_for_headlines = _prev_nav_page
+st.session_state._prev_nav_page = page
+
 if st.session_state.get("account_open"):
     render_account_panel(user_email, db)
     st.divider()
@@ -2000,9 +2010,14 @@ elif page == "头等大事":
         st.info("请先添加自选股。")
         st.stop()
 
-    filter_ticker = st.session_state.pop("headline_filter_ticker", None)
-    if filter_ticker:
-        st.session_state["headline_ticker_filter"] = filter_ticker
+    # V5.4: direct top-nav → all watchlist; sticky ticker only via single-stock deep link
+    _arrived_from = st.session_state.get("_prev_nav_for_headlines")
+    if _arrived_from != "头等大事":
+        filter_ticker = st.session_state.pop("headline_filter_ticker", None)
+        if filter_ticker:
+            st.session_state["headline_ticker_filter"] = filter_ticker
+        else:
+            st.session_state.pop("headline_ticker_filter", None)
 
     range_opt = st.radio(
         "时间范围",
@@ -2013,7 +2028,7 @@ elif page == "头等大事":
     )
     try:
         from industry.events_provider import get_company_events, range_bounds
-        from industry.loader import get_watchlist_events
+        from industry.news import news_source_status, translate_ui_term
 
         bounds = range_bounds(range_opt)
         events = get_company_events(
@@ -2021,61 +2036,77 @@ elif page == "头等大事":
             start_time=bounds["start_time"],
             end_time=bounds["end_time"],
             include_upcoming=bounds["include_upcoming"],
+            range_key=range_opt,
         )
-        # keep get_watchlist_events import/usage for compatibility
-        _ = get_watchlist_events
+        src_status = news_source_status()
     except Exception as exc:
         st.warning(f"事件数据暂不可用：{type(exc).__name__}")
         events = []
+        src_status = {"message_if_empty": "当前未配置实时新闻源。"}
 
     ticker_filter = st.session_state.get("headline_ticker_filter")
     if ticker_filter:
         events = [e for e in events if str(e.get("ticker") or "").upper() == str(ticker_filter).upper()]
-        st.caption(f"已筛选：{ticker_filter}")
-        if st.button("清除筛选", key="clear_headline_filter"):
-            st.session_state.pop("headline_ticker_filter", None)
-            st.rerun()
+        c1, c2 = st.columns([4, 1])
+        with c1:
+            st.caption(f"已筛选：{ticker_filter}")
+        with c2:
+            if st.button("清除筛选", key="clear_headline_filter"):
+                st.session_state.pop("headline_ticker_filter", None)
+                st.session_state.pop("headline_filter_ticker", None)
+                st.rerun()
 
-    material = [e for e in events if e.get("importance") in {"重大", "重要"}]
-    show_rows = material
+    show_rows = events
     if not show_rows:
-        if range_opt == "即将发生":
-            st.info("目前没有即将发生的重大事件。")
+        empty_msg = src_status.get("message_if_empty")
+        if empty_msg and not src_status.get("demo_mode") and not src_status.get("live_configured"):
+            st.info(empty_msg)
+        elif range_opt == "即将发生":
+            st.info("本周期没有发现明显改变投资逻辑的重大事件。")
         else:
-            st.info("目前没有发现影响投资逻辑的重大事件。")
+            st.info("本周期没有发现明显改变投资逻辑的重大事件。")
     else:
         for i, e in enumerate(show_rows):
             t = e.get("ticker") or "—"
             headline = e.get("headline") or "（无标题）"
             imp = e.get("importance") or "一般"
-            area = e.get("impact_area") or "、".join(e.get("impact_areas") or []) or "产品"
+            areas = e.get("impact_areas") or []
+            area = " / ".join(translate_ui_term(a) for a in areas) if areas else translate_ui_term(e.get("impact_area") or "产品")
             ed = e.get("event_date") or e.get("event_time") or "—"
-            label = f"{t} · {imp} · {headline} · {area}"
+            # Compact collapsed row: Ticker · Headline · Date · Importance · Impact
+            label = f"{t} · {headline}  ·  {ed} · {imp} · {area}"
             with st.expander(label, expanded=False):
-                st.markdown(f"**{headline}**")
+                st.markdown(f"**{t} · {headline}**")
                 st.caption(f"日期：{ed}　重要性：{imp}　影响：{area}")
-                st.write("**摘要**")
-                details = e.get("detailed_summary") or []
-                if details:
-                    for bullet in details:
-                        st.markdown(f"- {bullet}")
-                else:
-                    st.write(e.get("short_summary") or e.get("summary") or "—")
-                st.write("**为什么重要**")
+
+                st.markdown("**【发生了什么】**")
+                st.write(e.get("what_happened") or e.get("short_summary") or "—")
+
+                st.markdown("**【为什么重要】**")
                 st.write(e.get("why_it_matters") or "—")
-                st.write("**对投资逻辑的影响**")
-                st.caption(f"影响标签：{e.get('sentiment_or_impact') or '—'}")
-                layers = e.get("layer_impact") or []
-                if layers:
-                    st.caption("产业层级：" + "、".join(str(x) for x in layers))
-                src = e.get("source_name") or e.get("source") or "—"
+
+                impact = e.get("impact_summary") or {}
+                if isinstance(impact, dict) and impact:
+                    st.markdown("**【可能影响】**")
+                    for k, v in impact.items():
+                        st.markdown(f"- {translate_ui_term(k)}：{translate_ui_term(v)}")
+
+                watch_next = e.get("watch_next") or []
+                if watch_next:
+                    st.markdown("**【接下来关注】**")
+                    for w in watch_next:
+                        st.markdown(f"- {w}")
+
+                src = e.get("source_name") or "—"
                 url = e.get("source_url") or ""
                 pub = e.get("published_at") or ed
-                st.caption(f"来源：{src} · 发布：{pub}")
+                st.markdown("**【来源】**")
+                st.caption(f"{src} · 发布：{pub}")
                 if url:
-                    st.markdown(f"[阅读全文]({url})")
-                if st.button(f"打开 {t} 单股分析", key=f"headline_open_{t}_{i}"):
-                    open_single_stock(t)
+                    st.markdown(f"[阅读全文 →]({url})")
+                if t and t != "—":
+                    if st.button(t, key=f"headline_open_{t}_{i}", help=f"打开 {t} 单股分析"):
+                        open_single_stock(t)
 
 
 else:
