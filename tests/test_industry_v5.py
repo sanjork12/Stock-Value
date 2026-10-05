@@ -11,14 +11,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from industry.constants import MAG7
 from industry.loader import (
     clear_industry_cache,
-    company_in_watchlist,
-    layer_map_labels,
     normalize_watchlist_tickers,
     resolve_company,
     show_cloud_module,
     show_compute_module,
     show_memory_module,
-    watchlist_keys,
 )
 from industry import ui as industry_ui
 
@@ -43,20 +40,17 @@ class IndustryV51Tests(unittest.TestCase):
         self.assertEqual(normalize_watchlist_tickers([]), [])
         self.assertEqual(normalize_watchlist_tickers(None), [])
 
-    def test_3_map_highlight_keys_include_watchlist(self):
-        keys = watchlist_keys(["AMZN", "NVDA", "MU"])
-        self.assertIn("AMZN", keys)
-        self.assertIn("NVDA", keys)
-        amzn = resolve_company("AMZN")
-        self.assertTrue(company_in_watchlist(amzn, keys))
-        msft = resolve_company("MSFT")
-        self.assertFalse(company_in_watchlist(msft, keys))
+    def test_3_map_uses_panorama_image(self):
+        src = _read("industry/ui.py")
+        self.assertIn("ai_industry_panorama.jpg", src)
+        self.assertIn("st.image", src)
+        img = os.path.join(ROOT, "assets", "ai_industry_panorama.jpg")
+        self.assertTrue(os.path.exists(img))
 
-    def test_4_non_watchlist_references_still_on_map(self):
-        labels = layer_map_labels("infrastructure")
-        self.assertTrue(any("NVDA" in x or x == "NVDA" for x in labels))
-        # reference names remain available even if not in a sample watchlist
-        self.assertTrue(any("Samsung" == x or "MU" == x for x in labels))
+    def test_4_layer_list_map_removed_from_tab(self):
+        src = _read("industry/ui.py")
+        self.assertNotIn("_render_layer_map", src)
+        self.assertNotIn("高亮 = 你的自选股", src)
 
     def test_5_no_stars_in_ui_source(self):
         src = _read("industry/ui.py")

@@ -1,6 +1,7 @@
 """V5.1 Watchlist-driven Industry Intelligence UI."""
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import pandas as pd
@@ -8,33 +9,27 @@ import streamlit as st
 
 from industry.constants import (
     CAPEX_INTENSITY_LABEL,
-    LAYER_MAP_ORDER,
     LAYER_SHORT,
-    LAYER_SHORT_ZH,
     MAG7,
 )
 from industry.loader import (
-    company_in_watchlist,
-    display_ticker_for_company,
     events_for,
     insight_for,
     latest_earnings,
     layer_label_for_profile,
-    layer_map_labels,
     load_accelerator_ecosystem,
     load_meta,
-    mag7_companies,
     market_share_rows,
     normalize_watchlist_tickers,
     resolve_company,
     show_cloud_module,
     show_compute_module,
     show_memory_module,
-    ticker_in_watchlist,
     trend_label,
     valuation_ticker_for,
-    watchlist_keys,
 )
+
+_PANORAMA = Path(__file__).resolve().parent.parent / "assets" / "ai_industry_panorama.jpg"
 
 
 def _money(v: Any) -> str:
@@ -96,34 +91,14 @@ def _empty_watchlist_message() -> None:
     st.info("你的自选股目前为空。添加股票后，这里会自动生成产业链与基本面视图。")
 
 
-def _render_layer_map(watch: Sequence[str]) -> None:
-    keys = watchlist_keys(list(watch))
-    st.markdown("##### 我的产业链")
-    st.caption("高亮 = 你的自选股；浅灰 = 产业参照。仅表示所在层级，不是投资评分。")
-    for layer in LAYER_MAP_ORDER:
-        labels = layer_map_labels(layer)
-        if not labels:
-            continue
-        with st.container(border=True):
-            st.markdown(f"**{LAYER_SHORT_ZH.get(layer, layer)} · {LAYER_SHORT.get(layer, layer)}**")
-            chips = []
-            for lab in labels:
-                c = resolve_company(lab) or resolve_company(lab.replace(" ", ""))
-                # Samsung / SK hynix special
-                if lab == "Samsung":
-                    c = resolve_company("SAMSUNG")
-                elif lab == "SK hynix":
-                    c = resolve_company("SKHYNIX")
-                on = False
-                if c:
-                    on = company_in_watchlist(c, keys)
-                else:
-                    on = lab.upper() in keys
-                if on:
-                    chips.append(f"<span style='color:#111;font-weight:700;margin-right:0.75rem'>{lab}</span>")
-                else:
-                    chips.append(f"<span style='color:#9aa0a6;margin-right:0.75rem'>{lab}</span>")
-            st.markdown("".join(chips), unsafe_allow_html=True)
+def render_tab_map(watch: List[str]) -> None:
+    """「我的产业链」：仅展示用户提供的 AI 产业链全景图。"""
+    if not watch:
+        _empty_watchlist_message()
+    if not _PANORAMA.exists():
+        st.error(f"未找到全景图：`{_PANORAMA}`")
+        return
+    st.image(str(_PANORAMA), use_container_width=True)
 
 
 def _valuation_status(ticker: str, valuation_loader: Optional[Callable[[str], Dict[str, Any]]]) -> str:
