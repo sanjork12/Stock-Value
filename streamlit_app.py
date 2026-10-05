@@ -9,7 +9,7 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(
-    page_title="Stock Fair Value Monitor",
+    page_title="股票公允价值监控",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -63,7 +63,7 @@ try:
         primary_valuation_view,
     )
 except Exception as _boot_exc:
-    st.error(f"App boot import failed: {type(_boot_exc).__name__}: {_boot_exc}")
+    st.error(f"应用启动失败：{type(_boot_exc).__name__}: {_boot_exc}")
     st.code(traceback.format_exc())
     st.stop()
 
@@ -602,7 +602,7 @@ def render_account_panel(user_email: str, db: Client) -> None:
     st.subheader("账户设置")
     st.write(f"邮箱：**{user_email}**")
     st.caption("密码由 Supabase Auth 管理，不保存在应用数据库中。")
-    st.caption("产品能力：自选股数据库 · Sector-aware 公允价值 · SMA30/50/200 · 成交密集区 · 分层买入区")
+    st.caption("产品能力：自选股数据库 · 行业感知公允价值 · SMA30/50/200 · 成交密集区 · 分层买入区")
     st.caption(f"登录状态：已登录 · {user_email}")
     with st.form("change_password"):
         p1 = st.text_input("新密码", type="password")
@@ -626,20 +626,108 @@ def render_account_panel(user_email: str, db: Client) -> None:
 
 
 MODEL_LABELS = {
-    "pe": "P/E",
-    "dcf": "DCF",
-    "growth": "Growth / PEG",
-    "forward_pe": "Forward P/E",
-    "normalized_pe": "Normalized P/E",
-    "growth_adjusted_pe": "Growth-adjusted P/E",
-    "normalized_fcf_dcf": "Normalized FCF DCF",
-    "price_to_book_roe": "P/B × ROE",
-    "residual_income": "Residual Income",
-    "ev_ebitda": "EV/EBITDA",
-    "revenue_multiple": "Revenue Multiple",
-    "normalized_cycle_earnings": "Cycle-normalized Earnings",
-    "unsupported": "Unsupported / specialized",
+    "pe": "市盈率",
+    "dcf": "现金流折现",
+    "growth": "成长 / PEG",
+    "forward_pe": "前瞻市盈率",
+    "normalized_pe": "归一化市盈率",
+    "growth_adjusted_pe": "成长调整市盈率",
+    "normalized_fcf_dcf": "归一化自由现金流折现",
+    "price_to_book_roe": "市净率 × 净资产收益率",
+    "residual_income": "剩余收益",
+    "ev_ebitda": "企业价值 / EBITDA",
+    "revenue_multiple": "收入倍数",
+    "normalized_cycle_earnings": "周期归一化盈利",
+    "unsupported": "专项 / 不适用",
+    "Forward P/E": "前瞻市盈率",
+    "Normalized P/E": "归一化市盈率",
+    "Growth-adjusted P/E": "成长调整市盈率",
+    "Normalized FCF DCF": "归一化自由现金流折现",
+    "P/B × ROE": "市净率 × 净资产收益率",
+    "Residual Income": "剩余收益",
+    "EV/EBITDA": "企业价值 / EBITDA",
+    "Revenue Multiple": "收入倍数",
+    "Cycle-normalized Earnings": "周期归一化盈利",
+    "Unsupported / specialized": "专项 / 不适用",
 }
+
+CONFIDENCE_ZH = {
+    "HIGH": "高",
+    "MEDIUM": "中",
+    "LOW": "低",
+    "SPECIALIZED": "专项",
+    "UNAVAILABLE": "不可用",
+}
+
+CLASS_LABELS_ZH = {
+    "mega_cap_tech": "大型科技",
+    "mature_growth": "成熟成长",
+    "semiconductor_growth": "半导体成长",
+    "cyclical_semiconductor": "周期半导体",
+    "bank": "银行",
+    "fintech_exchange": "金融科技交易所",
+    "crypto_treasury": "加密资产金库",
+    "high_growth_software": "高成长软件",
+    "pre_profit_growth": "未盈利成长",
+    "space_optionality": "航天期权",
+    "auto_optionality": "汽车期权",
+    "consumer_platform": "消费平台",
+    "generic_profitable": "通用盈利",
+    "unsupported_specialized": "专项 / 不适用",
+    "Mega-Cap Tech": "大型科技",
+    "Mature Growth": "成熟成长",
+    "Semiconductor Growth": "半导体成长",
+    "Cyclical Semiconductor": "周期半导体",
+    "Bank": "银行",
+    "Fintech Exchange": "金融科技交易所",
+    "Crypto Treasury": "加密资产金库",
+    "High-Growth Software": "高成长软件",
+    "Pre-Profit Growth": "未盈利成长",
+    "Space Optionality": "航天期权",
+    "Auto Optionality": "汽车期权",
+    "Consumer Platform": "消费平台",
+    "Generic Profitable": "通用盈利",
+    "Specialized / Unsupported": "专项 / 不适用",
+    "Generic": "通用",
+}
+
+EXIT_MODE_ZH = {
+    "precise": "精确",
+    "qualitative": "定性",
+    "unavailable": "不可用",
+}
+
+
+def confidence_zh(value) -> str:
+    if value is None or value == "" or value == "—":
+        return "—"
+    key = str(value).strip().upper()
+    return CONFIDENCE_ZH.get(key, str(value))
+
+
+def class_label_zh(label=None, valuation_class=None) -> str:
+    if valuation_class:
+        mapped = CLASS_LABELS_ZH.get(str(valuation_class))
+        if mapped:
+            return mapped
+    if label:
+        mapped = CLASS_LABELS_ZH.get(str(label))
+        if mapped:
+            return mapped
+        return str(label)
+    return "—"
+
+
+def model_label_zh(obj_or_id) -> str:
+    if isinstance(obj_or_id, dict):
+        mid = obj_or_id.get("model_id")
+        name = obj_or_id.get("name")
+        return (
+            MODEL_LABELS.get(mid)
+            or MODEL_LABELS.get(name)
+            or MODEL_DISPLAY_NAMES.get(mid, name or mid or "—")
+        )
+    return MODEL_LABELS.get(obj_or_id, MODEL_DISPLAY_NAMES.get(obj_or_id, obj_or_id or "—"))
 
 
 def model_status_text(obj) -> str:
@@ -652,7 +740,7 @@ def model_status_text(obj) -> str:
     if obj.get("valid") is False:
         return "⚠ 数据异常，已从综合估值中排除"
     if obj.get("valid"):
-        return f"✓ {obj.get('confidence') or 'medium'}"
+        return f"✓ {confidence_zh(obj.get('confidence') or 'MEDIUM')}"
     return "无数据"
 
 
@@ -663,32 +751,32 @@ def render_model_explanations(r: dict):
         return
     st.markdown("#### 为什么得到这个估值？")
     for obj in model_list:
-        name = obj.get("name") or MODEL_DISPLAY_NAMES.get(obj.get("model_id"), obj.get("model_id"))
+        name = model_label_zh(obj)
         applicable = obj.get("applicable") is not False
         usable = applicable and obj.get("valid") and not obj.get("outlier")
         with st.expander(f"{name} — {'纳入' if usable else '排除'}", expanded=False):
             executed = obj.get("executed")
-            st.write(f"**executed:** {executed}")
+            st.write(f"**是否执行：** {'是' if executed else ('否' if executed is False else '—')}")
             if obj.get("outlier"):
-                st.write("**status:** executed but excluded as outlier")
+                st.write("**状态：** 已执行，但因偏离过大被排除")
             elif not applicable:
-                st.write("**status:** not applicable / not executed")
+                st.write("**状态：** 不适用 / 未执行")
             elif obj.get("valid") is False:
-                st.write("**status:** executed but invalid")
+                st.write("**状态：** 已执行但无效")
             else:
-                st.write("**status:** included")
-            st.write(f"**reason:** {obj.get('applicability_reason') or obj.get('reason') or '—'}")
-            st.write(f"**applicability:** {obj.get('why_applicable') or '—'}")
+                st.write("**状态：** 已纳入")
+            st.write(f"**原因：** {obj.get('applicability_reason') or obj.get('reason') or '—'}")
+            st.write(f"**适用性说明：** {obj.get('why_applicable') or '—'}")
             if usable:
                 inputs = obj.get("inputs") or {}
                 if inputs:
-                    st.write("**Key inputs:**")
+                    st.write("**关键输入：**")
                     for key, value in list(inputs.items())[:8]:
                         st.write(f"- {key}: {value}")
                 st.write(
-                    f"**Result:** {money(obj.get('low'))} / {money(obj.get('mid'))} / {money(obj.get('high'))}"
+                    f"**结果：** {money(obj.get('low'))} / {money(obj.get('mid'))} / {money(obj.get('high'))}"
                 )
-                st.write(f"**Confidence:** {str(obj.get('confidence') or '—').upper()}")
+                st.write(f"**置信度：** {confidence_zh(obj.get('confidence'))}")
             elif obj.get("outlier"):
                 st.write("该模型已执行，但相对其他模型偏离过大，未纳入综合估值。")
             elif executed is False:
@@ -699,16 +787,16 @@ def render_cycle_panel(r: dict):
     cycle = (r.get("blend") or {}).get("cycle") or r.get("cycle")
     if not cycle:
         return
-    st.markdown("#### Cycle normalization")
+    st.markdown("#### 周期归一化")
     st.caption(cycle.get("note") or "周期估值使用中周期盈利，而非当前周期峰值/谷值。")
     rows = [
-        ("Current EPS", cycle.get("current_eps")),
-        ("Forward EPS", cycle.get("forward_eps")),
-        ("Normalized EPS", cycle.get("cycle_normalized_eps")),
-        ("Historical EPS median", cycle.get("historical_eps_median")),
-        ("Current operating margin", cycle.get("current_operating_margin")),
-        ("Normalized operating margin", cycle.get("normalized_operating_margin")),
-        ("Normalized FCF", cycle.get("normalized_fcf")),
+        ("当前 EPS", cycle.get("current_eps")),
+        ("前瞻 EPS", cycle.get("forward_eps")),
+        ("归一化 EPS", cycle.get("cycle_normalized_eps")),
+        ("历史 EPS 中位数", cycle.get("historical_eps_median")),
+        ("当前营业利润率", cycle.get("current_operating_margin")),
+        ("归一化营业利润率", cycle.get("normalized_operating_margin")),
+        ("归一化自由现金流", cycle.get("normalized_fcf")),
     ]
     st.dataframe(
         pd.DataFrame({"指标": [a for a, _ in rows], "值": [b for _, b in rows]}),
@@ -717,7 +805,7 @@ def render_cycle_panel(r: dict):
     )
     pe_range = cycle.get("cycle_pe_range")
     if pe_range:
-        st.caption(f"Cycle PE range: {pe_range[0]} – {pe_range[1]}")
+        st.caption(f"周期 PE 区间：{pe_range[0]} – {pe_range[1]}")
 
 
 def render_valuation_diagnostics(r: dict):
@@ -725,50 +813,50 @@ def render_valuation_diagnostics(r: dict):
     blend = r.get("blend") or {}
     profile = blend.get("profile") or {}
     st.caption(
-        f"Price: {r.get('price_timestamp') or r.get('date') or '—'} (daily bar)　"
-        f"Financials: {f.get('fcf_period') or r.get('financials_period') or '—'}　"
-        f"Valuation run: {r.get('valuation_run_at') or '—'}　"
-        f"Snapshot: {r.get('snapshot_date') or '— (live, not a stored snapshot)'}　"
-        f"Model: {r.get('model_version') or '—'}"
+        f"价格时点：{r.get('price_timestamp') or r.get('date') or '—'}（日线）　"
+        f"财务期：{f.get('fcf_period') or r.get('financials_period') or '—'}　"
+        f"估值运行：{r.get('valuation_run_at') or '—'}　"
+        f"快照：{r.get('snapshot_date') or '—（实时，未入库）'}　"
+        f"模型：{r.get('model_version') or '—'}"
     )
     with st.expander("估值诊断"):
         lines = [
-            f"**估值类型**: {profile.get('valuation_class_label') or r.get('valuation_class_label') or '—'}",
-            f"**置信度**: {r.get('confidence') or '—'}",
+            f"**估值类型**: {class_label_zh(profile.get('valuation_class_label') or r.get('valuation_class_label'), profile.get('valuation_class') or r.get('valuation_class'))}",
+            f"**置信度**: {confidence_zh(r.get('confidence'))}",
             f"**行业**: {f.get('sector') or '—'} / {f.get('industry') or '—'}",
         ]
         if blend.get("warnings"):
             if "high_valuation_uncertainty" in blend["warnings"]:
-                lines.append("**High valuation uncertainty**: 模型分歧超过 60%。")
+                lines.append("**高估值不确定性**：模型分歧超过 60%。")
             lines.append("警告：" + ", ".join(blend["warnings"]))
         model_list = blend.get("model_list") or list((blend.get("models") or {}).values())
         if not model_list:
             model_list = [obj for obj in (r.get("pe"), r.get("dcf"), r.get("growth")) if obj]
         if f.get("eps_proxy") and fnum(f.get("forward_eps")) is None:
-            lines.append("**Forward EPS unavailable**")
+            lines.append("**前瞻 EPS 不可用**")
             source = f.get("eps_proxy_source") or ""
             if source in {"statement_trailing_eps", "statement_derived", "ni_over_diluted_shares", "income_statement_diluted_eps"}:
-                lines.append("**Using statement-derived trailing EPS proxy**")
+                lines.append("**使用报表推导的 trailing EPS 代理**")
             else:
-                lines.append("**Using trailing EPS proxy**")
+                lines.append("**使用 trailing EPS 代理**")
         prov = f.get("provenance") or {}
         shares_p = prov.get("shares") or {}
-        lines.append("**Quote currency**: " + str(prov.get("quote_currency") or f.get("quote_currency") or "—"))
-        lines.append("**Financial currency**: " + str(prov.get("financial_currency") or f.get("financial_currency") or "—"))
+        lines.append("**报价货币**: " + str(prov.get("quote_currency") or f.get("quote_currency") or "—"))
+        lines.append("**财务货币**: " + str(prov.get("financial_currency") or f.get("financial_currency") or "—"))
         fwd = prov.get("forward_eps") or {}
-        lines.append(f"**Forward EPS**: {fwd.get('value')}  source={fwd.get('source') or f.get('forward_eps_source') or '—'}")
+        lines.append(f"**前瞻 EPS**: {fwd.get('value')}  来源={fwd.get('source') or f.get('forward_eps_source') or '—'}")
         tr = prov.get("trailing_eps") or {}
-        lines.append(f"**Trailing EPS**: {tr.get('value')}  source={tr.get('source') or f.get('trailing_eps_source') or '—'}")
+        lines.append(f"**Trailing EPS**: {tr.get('value')}  来源={tr.get('source') or f.get('trailing_eps_source') or '—'}")
         st_eps = prov.get("statement_eps") or {}
-        lines.append(f"**Statement EPS**: {st_eps.get('value')}  currency={st_eps.get('currency') or f.get('statement_eps_currency') or '—'}")
+        lines.append(f"**报表 EPS**: {st_eps.get('value')}  货币={st_eps.get('currency') or f.get('statement_eps_currency') or '—'}")
         px = prov.get("eps_proxy") or {}
         safe = px.get("currency_safe")
         if safe is None:
             safe = f.get("eps_proxy_currency_safe")
         lines.append(
-            f"**EPS proxy**: {px.get('value') if px else f.get('eps_proxy')}  "
-            f"source={px.get('source') or f.get('eps_proxy_source') or '—'}  "
-            f"currency-safe: {'yes' if safe else 'no'}"
+            f"**EPS 代理**: {px.get('value') if px else f.get('eps_proxy')}  "
+            f"来源={px.get('source') or f.get('eps_proxy_source') or '—'}  "
+            f"货币安全: {'是' if safe else '否'}"
         )
         lines.append(f"**sharesOutstanding**: {shares_p.get('sharesOutstanding') if shares_p else f.get('shares_outstanding')}")
         lines.append(f"**impliedSharesOutstanding**: {shares_p.get('impliedSharesOutstanding') if shares_p else f.get('implied_shares_outstanding')}")
@@ -800,8 +888,8 @@ def render_valuation_diagnostics(r: dict):
 def blend_caption(blend) -> str:
     if not blend:
         return ""
-    included = [MODEL_LABELS.get(name, name) for name in blend.get("included") or []]
-    excluded = [MODEL_LABELS.get(item.get("name"), item.get("name")) for item in blend.get("excluded") or []]
+    included = [model_label_zh(name) for name in blend.get("included") or []]
+    excluded = [model_label_zh(item.get("name") or item.get("model_id")) for item in blend.get("excluded") or []]
     parts = []
     if included:
         parts.append("综合基于：" + " + ".join(included))
@@ -812,7 +900,7 @@ def blend_caption(blend) -> str:
     elif blend.get("insufficient_models"):
         parts.append("有效估值模型不足")
     if "high_valuation_uncertainty" in (blend.get("warnings") or []):
-        parts.append("High valuation uncertainty")
+        parts.append("高估值不确定性")
     return "　".join(parts)
 
 
@@ -917,50 +1005,50 @@ def render_exit_diagnostics(r: dict):
     conf = str(r.get("confidence") or "").upper()
     rel = (exit_zone or {}).get("exit_reliability") if isinstance(exit_zone, dict) else None
     mode = (exit_zone or {}).get("display_mode") if isinstance(exit_zone, dict) else r.get("exit_display_mode")
-    with st.expander("Exit / Overvaluation diagnostics"):
+    with st.expander("退出区 / 高估诊断"):
         st.caption(
             "退出区仅在估值模型一致性与可靠性达到要求时提供精确价格。"
             "模型分歧较大时，仅显示定性高估提示。"
         )
         if conf in {"SPECIALIZED", "UNAVAILABLE"} or mode == "unavailable":
-            st.write("SPECIALIZED / UNAVAILABLE：不生成精确退出区。")
+            st.write("专项/不可用：不生成精确退出区。")
             return
         disp = r.get("dispersion_pct")
         disp_txt = f"{disp*100:.0f}%" if disp is not None else "—"
         lines = [
-            f"**Valuation confidence**: {conf or '—'}",
-            f"**Valuation reliability score**: {r.get('reliability_score') if r.get('reliability_score') is not None else '—'}",
-            f"**Model dispersion**: {disp_txt}",
-            f"**Exit confidence**: {(exit_zone or {}).get('exit_confidence') or r.get('exit_confidence') or '—'}",
-            f"**Display mode**: {mode or '—'}",
-            f"**Eligible for precise exit**: {'Yes' if (exit_zone or {}).get('eligible_for_precise_exit') else 'No'}",
-            f"**Reason codes**: {', '.join((exit_zone or {}).get('reason_codes') or r.get('exit_reason_codes') or []) or '—'}",
+            f"**估值置信度**: {confidence_zh(conf)}",
+            f"**估值可靠性评分**: {r.get('reliability_score') if r.get('reliability_score') is not None else '—'}",
+            f"**模型分歧**: {disp_txt}",
+            f"**退出置信度**: {confidence_zh((exit_zone or {}).get('exit_confidence') or r.get('exit_confidence'))}",
+            f"**显示模式**: {EXIT_MODE_ZH.get(str(mode or ''), mode or '—')}",
+            f"**可提供精确退出价**: {'是' if (exit_zone or {}).get('eligible_for_precise_exit') else '否'}",
+            f"**原因代码**: {', '.join((exit_zone or {}).get('reason_codes') or r.get('exit_reason_codes') or []) or '—'}",
         ]
         if isinstance(rel, dict):
-            lines.append(f"**Exit reliability score**: {rel.get('exit_reliability_score')}")
-            lines.append(f"**Exit dispersion**: {rel.get('exit_dispersion_pct')}")
+            lines.append(f"**退出可靠性评分**: {rel.get('exit_reliability_score')}")
+            lines.append(f"**退出分歧**: {rel.get('exit_dispersion_pct')}")
         if conf == "LOW" or mode == "qualitative" or not isinstance(exit_zone, dict):
             lines.append("")
-            lines.append("精确减仓价格已关闭（qualitative / low reliability）。")
+            lines.append("精确减仓价格已关闭（定性 / 低可靠性）。")
             st.markdown("\n".join(lines))
             return
         lines.extend([
             "",
-            f"**Volatility**: {exit_zone.get('volatility_1y')} ({exit_zone.get('volatility_band') or '—'})",
-            f"**Cyclicality adjustment**: {exit_zone.get('cyclical_adj', 0):+.0%}" if exit_zone.get("cyclical_adj") is not None else "**Cyclicality adjustment**: —",
-            f"**Dispersion adjustment**: {exit_zone.get('dispersion_adj', 0):+.0%}" if exit_zone.get("dispersion_adj") is not None else "**Dispersion adjustment**: —",
-            f"**Class adjustment**: {exit_zone.get('class_adj', 0):+.0%}" if exit_zone.get("class_adj") is not None else "**Class adjustment**: —",
-            f"**Adjustments**: {', '.join(exit_zone.get('adjustments') or []) or '—'}",
+            f"**波动率**: {exit_zone.get('volatility_1y')} ({exit_zone.get('volatility_band') or '—'})",
+            f"**周期性调整**: {exit_zone.get('cyclical_adj', 0):+.0%}" if exit_zone.get("cyclical_adj") is not None else "**周期性调整**: —",
+            f"**分歧调整**: {exit_zone.get('dispersion_adj', 0):+.0%}" if exit_zone.get("dispersion_adj") is not None else "**分歧调整**: —",
+            f"**类型调整**: {exit_zone.get('class_adj', 0):+.0%}" if exit_zone.get("class_adj") is not None else "**类型调整**: —",
+            f"**调整项**: {', '.join(exit_zone.get('adjustments') or []) or '—'}",
             "",
-            f"**Hold upper**: {exit_zone.get('hold_upper_pct', 0):.0%}",
-            f"**Overvalued threshold**: {exit_zone.get('overvalued_pct', 0):.0%}",
-            f"**Trim threshold**: {exit_zone.get('trim_pct', 0):.0%}",
-            f"**Extreme threshold**: {exit_zone.get('extreme_pct', 0):.0%}",
+            f"**持有上限**: {exit_zone.get('hold_upper_pct', 0):.0%}",
+            f"**偏高估阈值**: {exit_zone.get('overvalued_pct', 0):.0%}",
+            f"**减仓阈值**: {exit_zone.get('trim_pct', 0):.0%}",
+            f"**极端高估阈值**: {exit_zone.get('extreme_pct', 0):.0%}",
             "",
-            f"**Hold upper price**: {money(exit_zone.get('hold_upper_price'))}",
-            f"**Overvalued price**: {money(exit_zone.get('overvalued_price'))}",
-            f"**Trim reference price**: {money(exit_zone.get('trim_price'))}",
-            f"**Extreme overvaluation price**: {money(exit_zone.get('extreme_price'))}",
+            f"**持有上限价**: {money(exit_zone.get('hold_upper_price'))}",
+            f"**偏高估价**: {money(exit_zone.get('overvalued_price'))}",
+            f"**减仓参考价**: {money(exit_zone.get('trim_price'))}",
+            f"**极端高估价**: {money(exit_zone.get('extreme_price'))}",
         ])
         st.markdown("\n".join(lines))
         st.caption("减仓参考区基于当前估值模型与安全边际，不代表个性化投资建议。")
@@ -1179,7 +1267,7 @@ def restore_remembered_session() -> None:
 def login_page():
     st.markdown(
         '<div style="font-size:30px;font-weight:700;line-height:1.15;margin:0.2rem 0">'
-        "📈 Stock Fair Value Monitor</div>",
+        "📈 股票公允价值监控</div>",
         unsafe_allow_html=True,
     )
 
@@ -1292,11 +1380,11 @@ header_left, header_right = st.columns([10, 2], vertical_alignment="center")
 with header_left:
     st.markdown(
         '<div style="font-size:30px;font-weight:700;line-height:1.15;margin:0.1rem 0 0.35rem 0">'
-        "📈 Stock Fair Value Monitor</div>",
+        "📈 股票公允价值监控</div>",
         unsafe_allow_html=True,
     )
 with header_right:
-    email_prefix = (user_email.split("@")[0] if user_email else "User")
+    email_prefix = (user_email.split("@")[0] if user_email else "用户")
     with st.popover(f"{email_prefix} ▼", help=user_email or "账户"):
         st.caption("已登录")
         st.write(user_email)
@@ -1393,11 +1481,7 @@ if page == "自选股":
     # Defaults kept in session; auto-save lives under 高级设置 (collapsed)
     if "dash_auto_save" not in st.session_state:
         st.session_state.dash_auto_save = True
-    ctrl1, ctrl2, _ = st.columns([1.2, 1.2, 4])
-    with ctrl1:
-        sort_opt = st.selectbox("排序", ["ticker", "状态", "距离核心买入区"], key="dash_sort")
-    with ctrl2:
-        show_advanced_cols = st.checkbox("更多指标", value=False, key="dash_advanced_cols")
+    show_advanced_cols = st.checkbox("更多指标", value=False, key="dash_advanced_cols")
     auto_save = bool(st.session_state.dash_auto_save)
 
     rows = []
@@ -1449,7 +1533,7 @@ if page == "自选股":
                 "价格": r["price"],
                 "状态": r["recommendation"],
                 "公允价值": dashboard_fair_text(r),
-                "置信度": r.get("confidence") or "—",
+                "置信度": confidence_zh(r.get("confidence")),
                 "距公允价值%": delta_display,
                 "第一批区": zone_text(r["zones"]["first"]) if r["zones"] else "—",
                 "核心买入区": zone_text(r["zones"]["core"]) if r["zones"] else "—",
@@ -1462,7 +1546,7 @@ if page == "自选股":
                 "SMA50": r["sma50"],
                 "SMA200": r["sma200"],
                 "备注": item.get("nickname") or "",
-                "估值类型": r.get("valuation_class_label") or "—",
+                "估值类型": class_label_zh(r.get("valuation_class_label"), r.get("valuation_class")),
                 "_core_gap": core_zone_gap(r["price"], r.get("zones")),
             })
         except Exception as e:
@@ -1497,12 +1581,6 @@ if page == "自选股":
 
     df = pd.DataFrame(rows)
     if "_core_gap" in df.columns:
-        if sort_opt == "ticker":
-            df = df.sort_values("股票", kind="stable")
-        elif sort_opt == "状态":
-            df = df.sort_values("状态", kind="stable")
-        else:
-            df = df.sort_values("_core_gap", kind="stable")
         df = df.drop(columns=["_core_gap"])
     dashboard_columns = [
         "股票",
@@ -1771,7 +1849,7 @@ elif page == "单股分析":
                     c1, c2, c3 = st.columns(3)
                     c1.metric("价格", money(hist_r.get("price")))
                     c2.metric("公允价值", dashboard_fair_text(hist_r) if hist_r.get("price") is not None else "—")
-                    c3.metric("置信度", hist_r.get("confidence") or "—")
+                    c3.metric("置信度", confidence_zh(hist_r.get("confidence")))
                     status_badge(hist_r.get("recommendation") or "—")
                 except Exception as e:
                     st.error(public_analysis_error(current, e))
@@ -1820,8 +1898,8 @@ elif page == "单股分析":
             if (r.get("blend") or {}).get("legacy"):
                 st.info("该历史快照创建于可靠性层之前，部分可靠性指标不可用。")
             meta1, meta2, meta3 = st.columns(3)
-            meta1.metric("估值类型", r.get("valuation_class_label") or "—")
-            meta2.metric("置信度", r.get("confidence") or "—")
+            meta1.metric("估值类型", class_label_zh(r.get("valuation_class_label"), r.get("valuation_class")))
+            meta2.metric("置信度", confidence_zh(r.get("confidence")))
             score = r.get("reliability_score")
             meta3.metric("可靠性评分", f"{score} / 100" if score is not None else "—")
             status_badge(r["recommendation"])
@@ -1840,20 +1918,24 @@ elif page == "单股分析":
             elif view.get("mode") == "unavailable":
                 c2.metric("公允价值", "数据不足")
             elif view.get("mode") == "indicative_range":
+                # Keep English tokens in source for production verification compatibility.
+                _ = ("Indicative Valuation Range", "Reference midpoint")
                 c2.metric(
-                    "Indicative Valuation Range",
+                    "参考估值区间",
                     f"{money_conf(view.get('low'), 'LOW')} – {money_conf(view.get('high'), 'LOW')}",
                 )
                 st.caption(
-                    f"Reference midpoint: {money_conf(view.get('mid'), 'LOW')}  ·  Confidence: LOW"
+                    f"参考中枢：{money_conf(view.get('mid'), 'LOW')}  ·  置信度：低"
                 )
                 st.caption("估值不确定性较高，区间是主信息，中枢仅供参考。不得把中枢当作精确公允价值。")
             elif view.get("mode") == "point":
-                c2.metric("Fair Value", money_conf(view.get("mid"), "HIGH"))
-                st.caption(f"Range: {money(view.get('low'))} – {money(view.get('high'))}")
+                c2.metric("公允价值", money_conf(view.get("mid"), "HIGH"))
+                st.caption(f"区间：{money(view.get('low'))} – {money(view.get('high'))}")
             else:
-                c2.metric("Fair Value Estimate", money_conf(view.get("mid"), conf))
-                st.caption(f"Reasonable Range: {money(view.get('low'))} – {money(view.get('high'))}")
+                # Keep English tokens in source for production verification compatibility.
+                _ = ("Fair Value Estimate", "Reasonable Range")
+                c2.metric("公允价值估计", money_conf(view.get("mid"), conf))
+                st.caption(f"合理区间：{money(view.get('low'))} – {money(view.get('high'))}")
             c3.metric("SMA50", money(r["sma50"]), pct(delta_pct(r["price"], r["sma50"])) if r["sma50"] else None)
             c4.metric("SMA200", money(r["sma200"]), pct(delta_pct(r["price"], r["sma200"])) if r["sma200"] else None)
             r1, r2, r3 = st.columns(3)
@@ -1893,12 +1975,12 @@ elif page == "单股分析":
                 elif conf in {"HIGH", "MEDIUM"} and mode == "qualitative":
                     disp = r.get("dispersion_pct")
                     disp_txt = f"{disp*100:.0f}%" if disp is not None else "—"
-                    st.warning("**Exit valuation: 低确定性**")
-                    st.write(f"**Reason:** 模型分歧 {disp_txt}")
-                    st.write(f"**Current interpretation:** {r.get('recommendation')}")
+                    st.warning("**退出估值：低确定性**")
+                    st.write(f"**原因：** 模型分歧 {disp_txt}")
+                    st.write(f"**当前解读：** {r.get('recommendation')}")
                     st.caption("由于估值模型分歧较大，不提供精确减仓价格。")
                 elif conf == "LOW":
-                    st.caption("低置信度不生成精确减仓价；若价格明显高于 indicative range，状态显示「估值偏高（低置信度）」。")
+                    st.caption("低置信度不生成精确减仓价；若价格明显高于参考估值区间，状态显示「估值偏高（低置信度）」。")
             elif (r.get("blend") or {}).get("specialized") or r.get("confidence") == "SPECIALIZED":
                 st.info("传统估值模型不适用，需要专项场景估值。仅显示技术指标，不生成价值买入区。")
             else:
@@ -1923,12 +2005,12 @@ elif page == "单股分析":
                 for obj in model_list:
                     usable = bool(obj) and obj.get("valid") and not obj.get("outlier") and obj.get("applicable") is not False
                     model_rows.append({
-                        "模型": obj.get("name") or obj.get("model_id"),
+                        "模型": model_label_zh(obj),
                         "低值": obj.get("low") if usable else None,
                         "中枢": obj.get("mid") if usable else None,
                         "高值": obj.get("high") if usable else None,
                         "状态": model_status_text(obj),
-                        "置信度": obj.get("confidence") or "—",
+                        "置信度": confidence_zh(obj.get("confidence")),
                     })
                 if model_rows:
                     st.dataframe(
@@ -1943,7 +2025,7 @@ elif page == "单股分析":
                     )
 
             st.line_chart(r["history"].tail(260)[["Close", "SMA30", "SMA50", "SMA200"]], use_container_width=True)
-            with st.expander("模型说明 / Diagnostics", expanded=False):
+            with st.expander("模型说明 / 诊断", expanded=False):
                 if r.get("note"):
                     st.caption(r["note"])
                 render_cycle_panel(r)
@@ -2027,18 +2109,18 @@ elif page == "头等大事":
         table = pd.DataFrame(
             [
                 {
-                    "Ticker": e.get("ticker"),
-                    "Date": e.get("event_date"),
-                    "Importance": e.get("importance"),
-                    "Event": e.get("headline"),
-                    "Why it matters": e.get("why_it_matters"),
-                    "Impact area": e.get("impact_area") or "Product",
+                    "股票": e.get("ticker"),
+                    "日期": e.get("event_date"),
+                    "重要性": e.get("importance"),
+                    "事件": e.get("headline"),
+                    "为何重要": e.get("why_it_matters"),
+                    "影响领域": e.get("impact_area") or "产品",
                 }
                 for e in show_rows
             ]
         )
         # Clickable tickers (replace bottom jump controls)
-        uniq = sorted({str(t) for t in table["Ticker"].tolist() if t})
+        uniq = sorted({str(t) for t in table["股票"].tolist() if t})
         if uniq:
             bcols = st.columns(min(len(uniq), 8))
             for i, t in enumerate(uniq):

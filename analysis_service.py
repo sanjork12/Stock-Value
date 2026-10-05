@@ -220,25 +220,45 @@ def analyze_ticker(
         dcf = models.get("normalized_fcf_dcf") or models.get("residual_income")
         growth = models.get("growth_adjusted_pe") or models.get("revenue_multiple")
         fair = _mid(blend)
-        class_label = (blend.get("profile") or {}).get("valuation_class_label") or "Generic"
+        _class_zh = {
+            "mega_cap_tech": "大型科技",
+            "mature_growth": "成熟成长",
+            "semiconductor_growth": "半导体成长",
+            "cyclical_semiconductor": "周期半导体",
+            "bank": "银行",
+            "fintech_exchange": "金融科技交易所",
+            "crypto_treasury": "加密资产金库",
+            "high_growth_software": "高成长软件",
+            "pre_profit_growth": "未盈利成长",
+            "space_optionality": "航天期权",
+            "auto_optionality": "汽车期权",
+            "consumer_platform": "消费平台",
+            "generic_profitable": "通用盈利",
+            "unsupported_specialized": "专项 / 不适用",
+        }
+        vclass = (blend.get("profile") or {}).get("valuation_class")
+        class_label = _class_zh.get(
+            str(vclass or ""),
+            (blend.get("profile") or {}).get("valuation_class_label") or "通用",
+        )
         if blend.get("specialized") or blend.get("confidence") == "SPECIALIZED":
             note = f"估值类型：{class_label}。传统估值模型不适用，需要专项场景估值。"
         elif blend.get("confidence") == "UNAVAILABLE":
             note = f"估值类型：{class_label}。有效估值模型不足。"
         else:
-            note = f"估值类型：{class_label}。使用 V4.2.1 exit reliability guard。"
+            note = f"估值类型：{class_label}。使用 V4.2.1 退出可靠性护栏。"
         if blend.get("excluded"):
             note += " 部分模型已排除。"
         if "high_valuation_uncertainty" in (blend.get("warnings") or []):
-            note += " High valuation uncertainty。"
+            note += " 高估值不确定性。"
         if errors:
             note += " 部分数据源失败，已保留可用的行情/估值结果。"
         if (financials or {}).get("eps_proxy") and fnum((financials or {}).get("forward_eps")) is None:
             source = (financials or {}).get("eps_proxy_source") or "trailing_eps"
             if source in {"statement_trailing_eps", "statement_derived", "ni_over_diluted_shares", "income_statement_diluted_eps"}:
-                note += " Forward EPS unavailable. Using statement-derived trailing EPS proxy."
+                note += " 前瞻每股收益不可用，已使用报表推导的滚动每股收益代理。"
             else:
-                note += " Forward EPS unavailable. Using trailing EPS proxy."
+                note += " 前瞻每股收益不可用，已使用滚动每股收益代理。"
 
     exit_zone = None
     if historical:

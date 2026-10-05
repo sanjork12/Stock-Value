@@ -91,7 +91,8 @@ class ArchitectureCleanupTests(unittest.TestCase):
         src = _read("streamlit_app.py")
         # Nickname / valuation_class still computed in row payload for notes / edit flows
         self.assertIn('"备注": item.get("nickname") or ""', src)
-        self.assertIn('"估值类型": r.get("valuation_class_label") or "—"', src)
+        self.assertIn("估值类型", src)
+        self.assertIn("class_label_zh", src)
         dash_block = src.split("if page == \"自选股\":", 1)[1].split("elif page ==", 1)[0]
         self.assertIn('show_advanced_cols', dash_block)
         self.assertIn('更多指标', dash_block)

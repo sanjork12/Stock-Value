@@ -92,7 +92,7 @@ class IndustryV52Tests(unittest.TestCase):
             self.assertIn("why_it_matters", r)
             self.assertIn(
                 r.get("impact_area"),
-                {"Revenue", "Margin", "CapEx", "Competition", "Regulation", "Product"},
+                {"收入", "利润率", "资本开支", "竞争", "监管", "产品"},
             )
 
     def test_12_get_watchlist_events_empty_watchlist(self):

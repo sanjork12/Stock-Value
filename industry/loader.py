@@ -12,6 +12,7 @@ from industry.constants import (
     COMPUTE_TICKERS,
     LAYER_MAP_ORDER,
     LAYER_SHORT,
+    LAYER_SHORT_ZH,
     MAG7,
     MEMORY_TICKERS,
     REQUIRED_PUBLIC_UNIVERSE,
@@ -456,15 +457,15 @@ def trend_label(trend_key: str) -> str:
 
 def layer_label_for_profile(company: Optional[Dict[str, Any]]) -> str:
     if not company:
-        return "Other / Unclassified"
+        return "其他 / 未分类"
     primary = company.get("primary_layer")
     secondary = list(company.get("secondary_layers") or [])
-    parts = [LAYER_SHORT.get(primary, primary)] if primary else []
+    parts = [LAYER_SHORT_ZH.get(primary, primary)] if primary else []
     for s in secondary:
-        lab = LAYER_SHORT.get(s, s)
+        lab = LAYER_SHORT_ZH.get(s, s)
         if lab and lab not in parts:
             parts.append(lab)
-    return " + ".join(str(p) for p in parts if p) or "Other / Unclassified"
+    return " + ".join(str(p) for p in parts if p) or "其他 / 未分类"
 
 
 def show_cloud_module(watchlist_tickers: List[str]) -> bool:
@@ -497,8 +498,8 @@ def impact_to_importance(impact_label: Any) -> str:
 
 def derive_impact_area(ev: Dict[str, Any]) -> str:
     """
-    Map existing event fields → Impact area label (UI only; does not mutate source JSON).
-    One of: Revenue / Margin / CapEx / Competition / Regulation / Product
+    Map existing event fields → 影响领域（仅 UI 展示，不改源 JSON）。
+    之一：收入 / 利润率 / 资本开支 / 竞争 / 监管 / 产品
     """
     et = str(ev.get("event_type") or "").lower()
     blob = " ".join(
@@ -513,25 +514,24 @@ def derive_impact_area(ev: Dict[str, Any]) -> str:
     layers = [str(x).lower() for x in (ev.get("layer_impact") or [])]
 
     if "regulat" in blob or "antitrust" in blob or "sec " in blob:
-        return "Regulation"
+        return "监管"
     if "capex" in et or "capex" in blob or "capacity" in blob:
-        return "CapEx"
+        return "资本开支"
     if "margin" in blob or "operating margin" in blob:
-        return "Margin"
+        return "利润率"
     if "compet" in blob or "rival" in blob or "share" in blob:
-        return "Competition"
+        return "竞争"
     if et in {"product", "ai infrastructure"} or "roadmap" in blob or "feature" in blob:
-        # AI infrastructure spend is usually CapEx; product roadmap stays Product
         if "infrastructure" in et or "capex" in blob or "capacity" in blob:
-            return "CapEx"
-        return "Product"
+            return "资本开支"
+        return "产品"
     if "revenue" in blob or "growth" in blob or "demand" in blob or "monetiz" in blob:
-        return "Revenue"
+        return "收入"
     if "infrastructure" in layers or "cloud" in layers:
-        return "CapEx"
+        return "资本开支"
     if "applications" in layers:
-        return "Revenue"
-    return "Product"
+        return "收入"
+    return "产品"
 
 
 def get_watchlist_events(

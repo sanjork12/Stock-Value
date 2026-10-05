@@ -1,10 +1,10 @@
 {
   "schema_version": "v5.1",
-  "dataset_name": "AI Industry Intelligence Map",
-  "data_through": "FY2025 Q2 / CY2025 Q2 (company-specific fiscal calendars)",
+  "dataset_name": "AI 产业情报地图",
+  "data_through": "2025财年Q2 / 2025自然年Q2（各公司财年口径不同）",
   "last_refreshed_at": "2025-10-03T00:00:00Z",
   "events_default_range": "current_quarter",
-  "market_share_note": "Latest available disclosed period per market; not same-day synced with earnings.",
-  "update_policy": "Manual curated JSON V1; future API/scheduled updater allowed.",
-  "disclaimer": "Industry research layer only. Not investment advice. Valuation BUY/HOLD/EXIT comes from Stock Analysis."
+  "market_share_note": "各市场取最近可得披露期，未必与财报同日同步。",
+  "update_policy": "V1 为人工整理的 JSON；后续可接 API / 定时更新。",
+  "disclaimer": "仅供产业研究参考，不构成投资建议。买入/持有/减仓判断以单股分析估值为准。"
 }

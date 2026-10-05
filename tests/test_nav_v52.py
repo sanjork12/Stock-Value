@@ -88,7 +88,7 @@ class NavV52Tests(unittest.TestCase):
         head = app.split('page == "头等大事"', 1)[1]
         self.assertIn("open_single_stock", head)
         self.assertIn('tab="重大事件"', head)
-        self.assertIn("Impact area", head)
+        self.assertIn("影响领域", head)
         self.assertNotIn("headline_jump", head)
 
     def test_12_headline_filters_watchlist_events(self):
@@ -109,6 +109,9 @@ class NavV52Tests(unittest.TestCase):
         # Auto-save not a top-level always-visible control before the table loop setup
         before_progress = dash.split("progress = st.progress", 1)[0]
         self.assertNotIn("自动保存今天的估值快照", before_progress)
+        self.assertNotIn("排序", dash)
+        self.assertNotIn("sort_by", dash)
+        self.assertIn("股票公允价值监控", app)
 
     def test_17_valuation_tab_no_date_controls(self):
         app = _read("streamlit_app.py")
@@ -123,8 +126,17 @@ class NavV52Tests(unittest.TestCase):
         self.assertIn("st.bar_chart", src)
         self.assertIn("_hbm_role_list", src)
         self.assertIn("_compute_role_list", src)
-        self.assertIn("Leader", src)
+        self.assertIn("领先者", src)
         self.assertNotIn("load_accelerator_ecosystem", src)
+        self.assertIn("云计算", src)
+        self.assertIn('"公司"', src)
+        self.assertIn('"份额"', src)
+        self.assertIn('"变化"', src)
+        self.assertIn('"排名"', src)
+        self.assertNotIn('"Company"', src)
+        self.assertNotIn('"Share"', src)
+        self.assertIn("数据说明", src)
+        self.assertIn("仅供产业研究参考", src)
 
     def test_14_valuation_uses_analysis_service(self):
         app = _read("streamlit_app.py")

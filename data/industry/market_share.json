@@ -8,9 +8,9 @@
     "previous_share_pct": 31.0,
     "change_pp": -1.0,
     "rank": 1,
-    "source": "Synergy Research Group / Canalys industry reports (curated)",
+    "source": "Synergy / Canalys 行业报告（整理）",
     "source_url": "https://www.srgresearch.com/",
-    "notes": "Approximate worldwide cloud infrastructure services share. Refresh from latest Synergy/Canalys release.",
+    "notes": "全球云计算基础设施服务份额近似值。请按最新 Synergy/Canalys 发布更新。",
     "data_quality": "industry_research_curated"
   },
   {
@@ -22,9 +22,9 @@
     "previous_share_pct": 20.0,
     "change_pp": 1.0,
     "rank": 2,
-    "source": "Synergy Research Group / Canalys industry reports (curated)",
+    "source": "Synergy / Canalys 行业报告（整理）",
     "source_url": "https://www.srgresearch.com/",
-    "notes": "Approximate share.",
+    "notes": "份额近似值。",
     "data_quality": "industry_research_curated"
   },
   {
@@ -36,9 +36,9 @@
     "previous_share_pct": 11.0,
     "change_pp": 1.0,
     "rank": 3,
-    "source": "Synergy Research Group / Canalys industry reports (curated)",
+    "source": "Synergy / Canalys 行业报告（整理）",
     "source_url": "https://www.srgresearch.com/",
-    "notes": "Approximate share.",
+    "notes": "份额近似值。",
     "data_quality": "industry_research_curated"
   },
   {
@@ -50,24 +50,24 @@
     "previous_share_pct": null,
     "change_pp": null,
     "rank": null,
-    "tier": "Tier 2 / not separately disclosed in many public share tables",
-    "source": "Industry reports often fold Oracle into Others; do not invent precise %",
+    "tier": "第二梯队 / 多数公开份额表未单独披露",
+    "source": "行业报告常将 Oracle 并入「其他」；不编造精确份额",
     "source_url": "https://www.srgresearch.com/",
-    "notes": "Show as Tier 2 / not separately disclosed when precise public share unavailable.",
+    "notes": "公开精确份额不可得时，显示为第二梯队 / 未单独披露。",
     "data_quality": "not_separately_disclosed"
   },
   {
     "market": "cloud_infrastructure",
     "period": "CY2025 Q2",
-    "company": "Others",
+    "company": "其他",
     "company_id": null,
     "share_pct": 37.0,
     "previous_share_pct": 38.0,
     "change_pp": -1.0,
     "rank": null,
-    "source": "Residual after AWS/Azure/GCP curated shares",
+    "source": "AWS/Azure/GCP 整理份额后的残差",
     "source_url": "https://www.srgresearch.com/",
-    "notes": "Residual includes Oracle and other providers when Oracle not broken out.",
+    "notes": "残差含 Oracle 及其他未拆分厂商。",
     "data_quality": "industry_research_curated"
   },
   {
@@ -79,9 +79,9 @@
     "previous_share_pct": 35.0,
     "change_pp": -1.0,
     "rank": 1,
-    "source": "TrendForce DRAM supplier revenue share (curated)",
+    "source": "TrendForce DRAM 供应商收入份额（整理）",
     "source_url": "https://www.trendforce.com/",
-    "notes": "Approximate DRAM revenue share.",
+    "notes": "DRAM 收入份额近似值。",
     "data_quality": "industry_research_curated"
   },
   {
@@ -93,9 +93,9 @@
     "previous_share_pct": 31.0,
     "change_pp": 2.0,
     "rank": 2,
-    "source": "TrendForce DRAM supplier revenue share (curated)",
+    "source": "TrendForce DRAM 供应商收入份额（整理）",
     "source_url": "https://www.trendforce.com/",
-    "notes": "Approximate DRAM revenue share.",
+    "notes": "DRAM 收入份额近似值。",
     "data_quality": "industry_research_curated"
   },
   {
@@ -107,23 +107,23 @@
     "previous_share_pct": 22.0,
     "change_pp": 1.0,
     "rank": 3,
-    "source": "TrendForce DRAM supplier revenue share (curated)",
+    "source": "TrendForce DRAM 供应商收入份额（整理）",
     "source_url": "https://www.trendforce.com/",
-    "notes": "Approximate DRAM revenue share.",
+    "notes": "DRAM 收入份额近似值。",
     "data_quality": "industry_research_curated"
   },
   {
     "market": "dram",
     "period": "CY2025 Q2",
-    "company": "Others",
+    "company": "其他",
     "company_id": null,
     "share_pct": 10.0,
     "previous_share_pct": 12.0,
     "change_pp": -2.0,
     "rank": null,
-    "source": "Residual after top-3 curated shares",
+    "source": "前三名整理份额后的残差",
     "source_url": "https://www.trendforce.com/",
-    "notes": "Residual.",
+    "notes": "残差。",
     "data_quality": "industry_research_curated"
   },
   {
@@ -135,10 +135,10 @@
     "previous_share_pct": null,
     "change_pp": null,
     "rank": 1,
-    "leader_status": "Leader / #1 (widely cited in industry commentary)",
-    "source": "Industry commentary / company disclosures (rank-level; no precise % invented)",
+    "leader_status": "领先者 / 第一",
+    "source": "行业评述 / 公司披露（仅排名，不编造精确份额）",
     "source_url": "https://news.skhynix.com/",
-    "notes": "Reliable public precise HBM % often unavailable; show rank/leader only.",
+    "notes": "公开精确 HBM 份额常不可得；仅显示排名/角色。",
     "data_quality": "rank_only"
   },
   {
@@ -150,10 +150,10 @@
     "previous_share_pct": null,
     "change_pp": null,
     "rank": 2,
-    "leader_status": "Major supplier",
-    "source": "Industry commentary (rank-level)",
+    "leader_status": "主要供应商",
+    "source": "行业评述（仅排名）",
     "source_url": "https://www.samsung.com/semiconductor/",
-    "notes": "No invented precise share.",
+    "notes": "不编造精确份额。",
     "data_quality": "rank_only"
   },
   {
@@ -165,10 +165,10 @@
     "previous_share_pct": null,
     "change_pp": null,
     "rank": 3,
-    "leader_status": "Growing challenger",
-    "source": "Micron IR HBM commentary + industry notes (rank-level)",
+    "leader_status": "成长挑战者",
+    "source": "美光投资者关系 HBM 评述 + 行业笔记（仅排名）",
     "source_url": "https://investors.micron.com/",
-    "notes": "No invented precise share.",
+    "notes": "不编造精确份额。",
     "data_quality": "rank_only"
   },
   {
@@ -180,10 +180,10 @@
     "previous_share_pct": null,
     "change_pp": null,
     "rank": 1,
-    "leader_status": "Dominant merchant AI accelerator supplier",
-    "source": "Company disclosures + industry commentary — precise merchant share % not asserted without primary source table",
+    "leader_status": "主导商用 AI 加速芯片供应商",
+    "source": "公司披露 + 行业评述（无一手份额表时不给出精确商用份额）",
     "source_url": "https://investor.nvidia.com/",
-    "notes": "Do not display invented NVDA/AMD %.",
+    "notes": "不展示编造的 NVDA/AMD 份额。",
     "data_quality": "qualitative_leader"
   },
   {
@@ -195,10 +195,10 @@
     "previous_share_pct": null,
     "change_pp": null,
     "rank": null,
-    "leader_status": "Notable US commercial / gov platform; market not standardized",
-    "source": "Company IR (no standardized industry share table used)",
+    "leader_status": "美国商业/政府平台代表；市场口径未标准化",
+    "source": "公司投资者关系（无标准化行业份额表）",
     "source_url": "https://investors.palantir.com/",
-    "notes": "Optional market — qualitative only in V1.",
+    "notes": "可选市场 — V1 仅定性展示。",
     "data_quality": "qualitative_only"
   }
 ]

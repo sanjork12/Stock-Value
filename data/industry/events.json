@@ -4,14 +4,14 @@
     "ticker": "NVDA",
     "event_date": "2026-10-28",
     "event_type": "product",
-    "headline": "Next-gen AI platform roadmap update for data-center customers",
-    "summary": "Company reiterated multi-year AI infrastructure demand and software attach narrative.",
-    "strategic_impact": "Reinforces infrastructure profit engine; software still emerging.",
+    "headline": "面向数据中心客户的下一代 AI 平台路线图更新",
+    "summary": "公司重申多年期 AI 基础设施需求与软件附着叙事。",
+    "strategic_impact": "强化基础设施利润引擎；软件仍处起步阶段。",
     "layer_impact": [
       "infrastructure",
       "model_platform"
     ],
-    "financial_impact": "Supports Data Center mix concentration narrative; not a valuation signal.",
+    "financial_impact": "支撑数据中心业务集中叙事；不构成估值信号。",
     "impact_label": "Strategic",
     "source_url": "https://investor.nvidia.com/",
     "source_name": "NVIDIA Investor Relations"
@@ -21,14 +21,14 @@
     "ticker": "MSFT",
     "event_date": "2026-10-20",
     "event_type": "capex",
-    "headline": "Continued elevated AI CapEx commentary for cloud capacity",
-    "summary": "Management emphasized Azure AI capacity buildout and Copilot distribution.",
-    "strategic_impact": "Cloud + platform expansion funded by high CapEx intensity.",
+    "headline": "云产能相关 AI 资本开支评述继续偏高",
+    "summary": "管理层强调 Azure AI 产能建设与 Copilot 分发。",
+    "strategic_impact": "云 + 平台扩张由高强度资本开支支撑。",
     "layer_impact": [
       "cloud",
       "model_platform"
     ],
-    "financial_impact": "Near-term FCF trade-off vs long-duration cloud growth.",
+    "financial_impact": "近端自由现金流取舍 vs 长期云增长。",
     "impact_label": "Strategic",
     "source_url": "https://www.microsoft.com/en-us/investor",
     "source_name": "Microsoft Investor Relations"
@@ -38,15 +38,15 @@
     "ticker": "GOOG",
     "event_date": "2026-10-18",
     "event_type": "AI infrastructure",
-    "headline": "Gemini + Cloud AI backlog highlighted in investor materials",
-    "summary": "Ads remain primary profit engine; Cloud/AI capacity spend stays elevated.",
-    "strategic_impact": "Applications monetization + Cloud investment coexistence.",
+    "headline": "投资者材料突出 Gemini + 云 AI 订单",
+    "summary": "广告仍是主要利润引擎；云/AI 产能投入保持高位。",
+    "strategic_impact": "应用层变现与云投资并行。",
     "layer_impact": [
       "applications",
       "cloud",
       "model_platform"
     ],
-    "financial_impact": "CapEx/revenue elevated; ads cash flow funds infra.",
+    "financial_impact": "资本开支/收入比偏高；广告现金流支撑基建。",
     "impact_label": "Positive",
     "source_url": "https://abc.xyz/investor/",
     "source_name": "Alphabet Investor Relations"
@@ -56,14 +56,14 @@
     "ticker": "AMZN",
     "event_date": "2026-10-15",
     "event_type": "cloud",
-    "headline": "AWS AI services and custom silicon (Trainium) progress update",
-    "summary": "AWS remains core profit engine; merchant GPU peer comparison not applicable for Trainium.",
-    "strategic_impact": "Cloud DIRECT monetization; chips mostly AWS-ecosystem.",
+    "headline": "AWS AI 服务与定制硅（Trainium）进展更新",
+    "summary": "AWS 仍是核心利润引擎；Trainium 不宜与商用 GPU 直接对标。",
+    "strategic_impact": "云直接变现；芯片主要服务 AWS 生态。",
     "layer_impact": [
       "cloud",
       "infrastructure"
     ],
-    "financial_impact": "Supports AWS growth narrative; CapEx remains high.",
+    "financial_impact": "支撑 AWS 增长叙事；资本开支仍高。",
     "impact_label": "Positive",
     "source_url": "https://ir.aboutamazon.com/",
     "source_name": "Amazon Investor Relations"
@@ -73,15 +73,15 @@
     "ticker": "META",
     "event_date": "2026-10-12",
     "event_type": "AI infrastructure",
-    "headline": "AI CapEx and Llama ecosystem investment update",
-    "summary": "Ads efficiency remains INDIRECT AI monetization; Reality Labs still investment.",
-    "strategic_impact": "Infrastructure spend = investment; Applications = current profit.",
+    "headline": "AI 资本开支与 Llama 生态投资更新",
+    "summary": "广告效率仍是间接 AI 变现；Reality Labs 仍属投入期。",
+    "strategic_impact": "基础设施支出=投入；应用层=当前利润。",
     "layer_impact": [
       "infrastructure",
       "applications",
       "model_platform"
     ],
-    "financial_impact": "High CapEx intensity vs ad cash generation.",
+    "financial_impact": "高资本开支强度 vs 广告现金创造。",
     "impact_label": "Strategic",
     "source_url": "https://investor.atmeta.com/",
     "source_name": "Meta Investor Relations"
@@ -91,14 +91,14 @@
     "ticker": "AAPL",
     "event_date": "2026-10-10",
     "event_type": "product",
-    "headline": "On-device Apple Intelligence feature cadence update",
-    "summary": "AI positioned as Services/device attach; no separate AI revenue line disclosed.",
-    "strategic_impact": "INDIRECT / EMERGING monetization via ecosystem.",
+    "headline": "端侧 Apple Intelligence 功能节奏更新",
+    "summary": "AI 定位为服务/设备附着；未单独披露 AI 收入线。",
+    "strategic_impact": "通过生态实现间接 / 起步变现。",
     "layer_impact": [
       "applications",
       "model_platform"
     ],
-    "financial_impact": "Supports Services narrative; not a discrete AI P&L.",
+    "financial_impact": "支撑服务叙事；非独立 AI 损益表。",
     "impact_label": "Neutral",
     "source_url": "https://investor.apple.com/",
     "source_name": "Apple Investor Relations"
@@ -108,14 +108,14 @@
     "ticker": "TSLA",
     "event_date": "2026-10-05",
     "event_type": "autonomy",
-    "headline": "Autonomy / robotaxi optionality commentary",
-    "summary": "Automotive remains current revenue; robotaxi treated as OPTIONALLY priced narrative.",
-    "strategic_impact": "Do not conflate autonomy story with current Automotive profit engine.",
+    "headline": "自动驾驶 / Robotaxi 期权评述",
+    "summary": "汽车仍是当前收入；Robotaxi 按期权叙事定价。",
+    "strategic_impact": "勿把自动驾驶故事与当前汽车利润引擎混为一谈。",
     "layer_impact": [
       "applications",
       "model_platform"
     ],
-    "financial_impact": "Optional upside; not current segment revenue.",
+    "financial_impact": "可选上行；非当前分部收入。",
     "impact_label": "Strategic",
     "source_url": "https://ir.tesla.com/",
     "source_name": "Tesla Investor Relations"
@@ -125,13 +125,13 @@
     "ticker": "ORCL",
     "event_date": "2026-10-09",
     "event_type": "earnings",
-    "headline": "OCI capacity and CapEx ramp in latest earnings materials",
-    "summary": "Cloud growth and AI infrastructure contracts remain the strategic focus.",
-    "strategic_impact": "Cloud expansion with very high CapEx intensity.",
+    "headline": "最新财报材料中的 OCI 产能与资本开支爬坡",
+    "summary": "云增长与 AI 基础设施合同仍是战略焦点。",
+    "strategic_impact": "云扩张伴随极高资本开支强度。",
     "layer_impact": [
       "cloud"
     ],
-    "financial_impact": "Near-term CapEx pressure vs backlog narrative.",
+    "financial_impact": "近端资本开支压力 vs 订单叙事。",
     "impact_label": "Strategic",
     "source_url": "https://investor.oracle.com/",
     "source_name": "Oracle Investor Relations"
@@ -141,13 +141,13 @@
     "ticker": "MU",
     "event_date": "2026-10-24",
     "event_type": "chip",
-    "headline": "HBM / cloud memory demand commentary with earnings",
-    "summary": "Memory cycle + HBM AI demand remain primary AI exposure.",
-    "strategic_impact": "Infrastructure DIRECT monetization via memory.",
+    "headline": "财报中的 HBM / 云内存需求评述",
+    "summary": "存储周期 + HBM AI 需求仍是主要 AI 敞口。",
+    "strategic_impact": "基础设施通过存储实现直接变现。",
     "layer_impact": [
       "infrastructure"
     ],
-    "financial_impact": "Mix shift toward cloud memory / HBM.",
+    "financial_impact": "结构向云内存 / HBM 倾斜。",
     "impact_label": "Positive",
     "source_url": "https://investors.micron.com/",
     "source_name": "Micron Investor Relations"
@@ -157,14 +157,14 @@
     "ticker": "PLTR",
     "event_date": "2026-08-04",
     "event_type": "earnings",
-    "headline": "US Commercial AIP growth highlighted",
-    "summary": "Commercial acceleration continues alongside government franchise.",
-    "strategic_impact": "Application-layer AI platform monetization.",
+    "headline": "突出美国商业 AIP 增长",
+    "summary": "商业加速与政府业务并行。",
+    "strategic_impact": "应用层 AI 平台变现。",
     "layer_impact": [
       "applications",
       "model_platform"
     ],
-    "financial_impact": "Supports commercial mix expansion narrative.",
+    "financial_impact": "支撑商业业务占比扩张叙事。",
     "impact_label": "Positive",
     "source_url": "https://investors.palantir.com/",
     "source_name": "Palantir Investor Relations"
@@ -174,13 +174,13 @@
     "ticker": "AVGO",
     "event_date": "2026-10-04",
     "event_type": "earnings",
-    "headline": "AI semiconductor and networking demand update",
-    "summary": "Custom accelerators / networking remain infrastructure cash engine.",
-    "strategic_impact": "Infrastructure DIRECT; software segment separate.",
+    "headline": "AI 半导体与网络需求更新",
+    "summary": "定制加速器 / 网络仍是基础设施现金引擎。",
+    "strategic_impact": "基础设施直接变现；软件分部单独看。",
     "layer_impact": [
       "infrastructure"
     ],
-    "financial_impact": "AI semi commentary within Semiconductor solutions.",
+    "financial_impact": "半导体解决方案中的 AI 半导体评述。",
     "impact_label": "Positive",
     "source_url": "https://investors.broadcom.com/",
     "source_name": "Broadcom Investor Relations"
@@ -190,14 +190,14 @@
     "ticker": "ANET",
     "event_date": "2026-08-05",
     "event_type": "earnings",
-    "headline": "AI cluster networking demand commentary",
-    "summary": "Ethernet switching demand tied to AI cluster buildouts.",
-    "strategic_impact": "Infrastructure networking presence.",
+    "headline": "AI 集群网络需求评述",
+    "summary": "以太网交换需求与 AI 集群建设绑定。",
+    "strategic_impact": "基础设施网络地位。",
     "layer_impact": [
       "infrastructure",
       "cloud"
     ],
-    "financial_impact": "Supports product growth narrative.",
+    "financial_impact": "支撑产品增长叙事。",
     "impact_label": "Positive",
     "source_url": "https://investors.arista.com/",
     "source_name": "Arista Investor Relations"
