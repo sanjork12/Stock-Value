@@ -14,7 +14,15 @@
     "financial_impact": "支撑数据中心业务集中叙事；不构成估值信号。",
     "impact_label": "Strategic",
     "source_url": "https://investor.nvidia.com/",
-    "source_name": "NVIDIA Investor Relations"
+    "source_name": "NVIDIA Investor Relations",
+    "event_time": "2026-10-28",
+    "published_at": "2026-10-28",
+    "event_status": "UPCOMING",
+    "detailed_summary": [
+      "公司重申多年期 AI 基础设施需求与软件附着叙事。",
+      "支撑数据中心业务集中叙事；不构成估值信号。",
+      "强化基础设施利润引擎；软件仍处起步阶段。"
+    ]
   },
   {
     "company_id": "MSFT",
@@ -31,7 +39,15 @@
     "financial_impact": "近端自由现金流取舍 vs 长期云增长。",
     "impact_label": "Strategic",
     "source_url": "https://www.microsoft.com/en-us/investor",
-    "source_name": "Microsoft Investor Relations"
+    "source_name": "Microsoft Investor Relations",
+    "event_time": "2026-10-20",
+    "published_at": "2026-10-20",
+    "event_status": "UPCOMING",
+    "detailed_summary": [
+      "管理层强调 Azure AI 产能建设与 Copilot 分发。",
+      "近端自由现金流取舍 vs 长期云增长。",
+      "云 + 平台扩张由高强度资本开支支撑。"
+    ]
   },
   {
     "company_id": "GOOG",
@@ -49,7 +65,15 @@
     "financial_impact": "资本开支/收入比偏高；广告现金流支撑基建。",
     "impact_label": "Positive",
     "source_url": "https://abc.xyz/investor/",
-    "source_name": "Alphabet Investor Relations"
+    "source_name": "Alphabet Investor Relations",
+    "event_time": "2026-10-18",
+    "published_at": "2026-10-18",
+    "event_status": "UPCOMING",
+    "detailed_summary": [
+      "广告仍是主要利润引擎；云/AI 产能投入保持高位。",
+      "资本开支/收入比偏高；广告现金流支撑基建。",
+      "应用层变现与云投资并行。"
+    ]
   },
   {
     "company_id": "AMZN",
@@ -66,7 +90,15 @@
     "financial_impact": "支撑 AWS 增长叙事；资本开支仍高。",
     "impact_label": "Positive",
     "source_url": "https://ir.aboutamazon.com/",
-    "source_name": "Amazon Investor Relations"
+    "source_name": "Amazon Investor Relations",
+    "event_time": "2026-10-15",
+    "published_at": "2026-10-15",
+    "event_status": "UPCOMING",
+    "detailed_summary": [
+      "AWS 仍是核心利润引擎；Trainium 不宜与商用 GPU 直接对标。",
+      "支撑 AWS 增长叙事；资本开支仍高。",
+      "云直接变现；芯片主要服务 AWS 生态。"
+    ]
   },
   {
     "company_id": "META",
@@ -84,7 +116,15 @@
     "financial_impact": "高资本开支强度 vs 广告现金创造。",
     "impact_label": "Strategic",
     "source_url": "https://investor.atmeta.com/",
-    "source_name": "Meta Investor Relations"
+    "source_name": "Meta Investor Relations",
+    "event_time": "2026-10-12",
+    "published_at": "2026-10-12",
+    "event_status": "UPCOMING",
+    "detailed_summary": [
+      "广告效率仍是间接 AI 变现；Reality Labs 仍属投入期。",
+      "高资本开支强度 vs 广告现金创造。",
+      "基础设施支出=投入；应用层=当前利润。"
+    ]
   },
   {
     "company_id": "AAPL",
@@ -101,7 +141,15 @@
     "financial_impact": "支撑服务叙事；非独立 AI 损益表。",
     "impact_label": "Neutral",
     "source_url": "https://investor.apple.com/",
-    "source_name": "Apple Investor Relations"
+    "source_name": "Apple Investor Relations",
+    "event_time": "2026-10-10",
+    "published_at": "2026-10-10",
+    "event_status": "UPCOMING",
+    "detailed_summary": [
+      "AI 定位为服务/设备附着；未单独披露 AI 收入线。",
+      "支撑服务叙事；非独立 AI 损益表。",
+      "通过生态实现间接 / 起步变现。"
+    ]
   },
   {
     "company_id": "TSLA",
@@ -118,7 +166,15 @@
     "financial_impact": "可选上行；非当前分部收入。",
     "impact_label": "Strategic",
     "source_url": "https://ir.tesla.com/",
-    "source_name": "Tesla Investor Relations"
+    "source_name": "Tesla Investor Relations",
+    "event_time": "2026-10-05",
+    "published_at": "2026-10-05",
+    "event_status": "PAST",
+    "detailed_summary": [
+      "汽车仍是当前收入；Robotaxi 按期权叙事定价。",
+      "可选上行；非当前分部收入。",
+      "勿把自动驾驶故事与当前汽车利润引擎混为一谈。"
+    ]
   },
   {
     "company_id": "ORCL",
@@ -134,7 +190,15 @@
     "financial_impact": "近端资本开支压力 vs 订单叙事。",
     "impact_label": "Strategic",
     "source_url": "https://investor.oracle.com/",
-    "source_name": "Oracle Investor Relations"
+    "source_name": "Oracle Investor Relations",
+    "event_time": "2026-10-09",
+    "published_at": "2026-10-09",
+    "event_status": "UPCOMING",
+    "detailed_summary": [
+      "云增长与 AI 基础设施合同仍是战略焦点。",
+      "近端资本开支压力 vs 订单叙事。",
+      "云扩张伴随极高资本开支强度。"
+    ]
   },
   {
     "company_id": "MU",
@@ -150,7 +214,15 @@
     "financial_impact": "结构向云内存 / HBM 倾斜。",
     "impact_label": "Positive",
     "source_url": "https://investors.micron.com/",
-    "source_name": "Micron Investor Relations"
+    "source_name": "Micron Investor Relations",
+    "event_time": "2026-10-24",
+    "published_at": "2026-10-24",
+    "event_status": "UPCOMING",
+    "detailed_summary": [
+      "存储周期 + HBM AI 需求仍是主要 AI 敞口。",
+      "结构向云内存 / HBM 倾斜。",
+      "基础设施通过存储实现直接变现。"
+    ]
   },
   {
     "company_id": "PLTR",
@@ -167,7 +239,15 @@
     "financial_impact": "支撑商业业务占比扩张叙事。",
     "impact_label": "Positive",
     "source_url": "https://investors.palantir.com/",
-    "source_name": "Palantir Investor Relations"
+    "source_name": "Palantir Investor Relations",
+    "event_time": "2026-08-04",
+    "published_at": "2026-08-04",
+    "event_status": "PAST",
+    "detailed_summary": [
+      "商业加速与政府业务并行。",
+      "支撑商业业务占比扩张叙事。",
+      "应用层 AI 平台变现。"
+    ]
   },
   {
     "company_id": "AVGO",
@@ -183,7 +263,15 @@
     "financial_impact": "半导体解决方案中的 AI 半导体评述。",
     "impact_label": "Positive",
     "source_url": "https://investors.broadcom.com/",
-    "source_name": "Broadcom Investor Relations"
+    "source_name": "Broadcom Investor Relations",
+    "event_time": "2026-10-04",
+    "published_at": "2026-10-04",
+    "event_status": "PAST",
+    "detailed_summary": [
+      "定制加速器 / 网络仍是基础设施现金引擎。",
+      "半导体解决方案中的 AI 半导体评述。",
+      "基础设施直接变现；软件分部单独看。"
+    ]
   },
   {
     "company_id": "ANET",
@@ -200,6 +288,14 @@
     "financial_impact": "支撑产品增长叙事。",
     "impact_label": "Positive",
     "source_url": "https://investors.arista.com/",
-    "source_name": "Arista Investor Relations"
+    "source_name": "Arista Investor Relations",
+    "event_time": "2026-08-05",
+    "published_at": "2026-08-05",
+    "event_status": "PAST",
+    "detailed_summary": [
+      "以太网交换需求与 AI 集群建设绑定。",
+      "支撑产品增长叙事。",
+      "基础设施网络地位。"
+    ]
   }
 ]

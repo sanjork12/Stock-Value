@@ -160,19 +160,10 @@ def companies_touching_layer(layer: str) -> List[Dict[str, Any]]:
 
 
 def latest_earnings(company_id: str) -> Optional[Dict[str, Any]]:
-    cid = str(company_id or "").upper()
-    c = resolve_company(cid)
-    keys = set(_aliases(c)) if c else {cid}
-    matches = [
-        e
-        for e in load_earnings()
-        if str(e.get("company_id") or "").upper() in keys
-        or str(e.get("ticker") or "").upper() in keys
-    ]
-    if not matches:
-        return None
-    matches.sort(key=lambda r: str(r.get("report_date") or r.get("fiscal_period") or ""), reverse=True)
-    return dict(matches[0])
+    """Backward-compatible alias → newest officially reported quarter."""
+    from industry.earnings_helpers import get_latest_company_quarter
+
+    return get_latest_company_quarter(company_id)
 
 
 def events_for(
@@ -637,70 +628,26 @@ def get_watchlist_events(
     tickers: Sequence[Any],
     start_date: Optional[str] = None,
     importance: Optional[str] = None,
+    *,
+    end_date: Optional[str] = None,
+    include_upcoming: bool = False,
+    now=None,
 ) -> List[Dict[str, Any]]:
     """
     Watchlist-scoped events for 头等大事 / single-stock.
 
-    Returns dicts with:
-      ticker, event_date, headline, summary, importance,
-      why_it_matters, impact_area, source, source_url
+    Past ranges never include future event_date (> now).
+    Set include_upcoming=True for the 即将发生 bucket.
     """
-    from datetime import date
+    from industry.events_provider import get_company_events
 
-    tick_list = normalize_watchlist_tickers(tickers)
-    if not tick_list:
-        return []
-
-    start = None
-    if start_date:
-        try:
-            start = date.fromisoformat(str(start_date)[:10])
-        except ValueError:
-            start = None
-
-    keys = watchlist_keys(tick_list)
-    # Map each alias key back to a display ticker from the watchlist
-    alias_to_display: Dict[str, str] = {}
-    for t in tick_list:
-        alias_to_display[t] = t
-        c = resolve_company(t)
-        if c:
-            for a in _aliases(c):
-                alias_to_display[a] = t
-
-    out: List[Dict[str, Any]] = []
-    for ev in load_events():
-        ek = str(ev.get("company_id") or ev.get("ticker") or "").upper()
-        tk = str(ev.get("ticker") or "").upper()
-        match_key = ek if ek in keys else (tk if tk in keys else None)
-        if not match_key:
-            continue
-        ed = str(ev.get("event_date") or "")[:10]
-        try:
-            d = date.fromisoformat(ed)
-        except ValueError:
-            continue
-        if start is not None and d < start:
-            continue
-        imp = impact_to_importance(ev.get("impact_label"))
-        if importance and imp != importance:
-            continue
-        display = alias_to_display.get(match_key) or alias_to_display.get(tk) or match_key
-        out.append(
-            {
-                "ticker": display,
-                "event_date": ed,
-                "headline": ev.get("headline") or "",
-                "summary": ev.get("summary") or ev.get("financial_impact") or "",
-                "importance": imp,
-                "why_it_matters": ev.get("strategic_impact")
-                or ev.get("financial_impact")
-                or ev.get("summary")
-                or "",
-                "impact_area": derive_impact_area(ev),
-                "source": ev.get("source") or ev.get("source_name") or "",
-                "source_url": ev.get("source_url") or "",
-            }
-        )
-    out.sort(key=lambda r: str(r.get("event_date") or ""), reverse=True)
-    return out
+    rows = get_company_events(
+        tickers,
+        start_time=start_date,
+        end_time=end_date,
+        include_upcoming=include_upcoming,
+        now=now,
+    )
+    if importance:
+        rows = [r for r in rows if r.get("importance") == importance]
+    return rows

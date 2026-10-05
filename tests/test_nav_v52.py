@@ -55,15 +55,19 @@ class NavV52Tests(unittest.TestCase):
 
     def test_6_single_stock_tabs(self):
         app = _read("streamlit_app.py")
-        self.assertIn(
-            'SINGLE_STOCK_TABS = ["估值", "财报与业务", "行业地位", "重大事件", "历史"]',
-            app,
-        )
+        # V5.3: no second-level single-stock tabs
+        self.assertIn("SINGLE_STOCK_TABS: list[str] = []", app)
+        self.assertIn("V5.3 单股连续页", app)
+        self.assertNotIn('ss_tab == "行业地位"', app)
+        self.assertNotIn('ss_tab == "重大事件"', app)
+        self.assertNotIn('ss_tab == "历史"', app)
 
     def test_7_historical_via_single_stock(self):
         app = _read("streamlit_app.py")
-        self.assertIn('ss_tab == "历史"', app)
+        # History UI tab removed; snapshot persistence retained
+        self.assertNotIn('ss_tab == "历史"', app)
         self.assertIn("list_snapshots", app)
+        self.assertIn("save_snapshot", app)
         self.assertNotIn('page == "历史快照"', app)
 
     def test_8_account_via_user_menu(self):
@@ -87,13 +91,13 @@ class NavV52Tests(unittest.TestCase):
         app = _read("streamlit_app.py")
         head = app.split('page == "头等大事"', 1)[1]
         self.assertIn("open_single_stock", head)
-        self.assertIn('tab="重大事件"', head)
-        self.assertIn("影响领域", head)
+        self.assertIn("影响", head)
+        self.assertIn("detailed_summary", head)
         self.assertNotIn("headline_jump", head)
 
     def test_12_headline_filters_watchlist_events(self):
         app = _read("streamlit_app.py")
-        self.assertIn("get_watchlist_events", app)
+        self.assertIn("get_company_events", app)
         self.assertIn("目前没有发现影响投资逻辑的重大事件", app)
 
     def test_13_headline_empty_state(self):
@@ -115,10 +119,9 @@ class NavV52Tests(unittest.TestCase):
 
     def test_17_valuation_tab_no_date_controls(self):
         app = _read("streamlit_app.py")
-        # Date controls only under 历史 tab key
-        self.assertIn("ss_hist_use_latest", app)
-        self.assertIn("ss_hist_date", app)
-        # Valuation branch uses as_of = None without the old checkbox label nearby
+        # V5.3: no history date controls on single-stock page
+        self.assertNotIn("ss_hist_use_latest", app)
+        self.assertNotIn("ss_hist_date", app)
         self.assertIn("估值 Tab：始终最新交易日", app)
 
     def test_18_landscape_uses_charts_not_only_tables(self):
