@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock,patch
+from unittest.mock import Mock,MagicMock,patch
 
 import pandas as pd
 from analysis_service import analyze_ticker
@@ -227,6 +227,44 @@ class ForensicsTests(unittest.TestCase):
         safe=json.loads(payload)
         self.assertEqual(safe['note'],'[REDACTED]')
         self.assertIsNone(safe['number'])
+
+    def test_streamlit_nested_secret_mapping_supported(self):
+        from streamlit.runtime.secrets import AttrDict
+        secrets=AttrDict({'ADMIN_EMAIL':'admin@example.test','nested':{'cookie_secret':'fixture-private-secret'}})
+        self.assertEqual(admin._secret_strings(secrets),['fixture-private-secret'])
+
+    def test_numpy_public_scalars_are_json_serializable(self):
+        import numpy as np
+        self.assertEqual(json.loads(snapshot_json({'boolean':np.bool_(True),'count':np.int64(2),
+            'value':np.float32(1.5)})),{'boolean':True,'count':2,'value':1.5})
+
+    def test_capture_failure_reports_stage_without_exception_message(self):
+        with patch.object(admin,'is_cloud_runtime',return_value=True),patch.object(admin,'capture_financial_diagnostic',side_effect=TypeError('fixture-private-token')):
+            with self.assertRaises(admin.FinancialDiagnosticFailure) as caught:
+                admin.run_cloud_financial_diagnostic(client(),'u1',{'ADMIN_EMAIL':'admin@example.test'},'NVDA')
+        self.assertEqual(caught.exception.public_error['stage'],'CAPTURE_INPUTS')
+        self.assertEqual(caught.exception.public_error['category'],'TYPE_ERROR')
+        self.assertNotIn('fixture-private-token',json.dumps(caught.exception.public_error))
+
+    def test_pre_valuation_error_is_not_lost_or_logged(self):
+        from financial_forensics import FinancialDiagnosticFailure
+        with patch('financial_forensics.build_input_snapshot',side_effect=KeyError('fixture-private-token')):
+            with self.assertRaises(FinancialDiagnosticFailure) as caught:self.capture()
+        self.assertEqual(caught.exception.public_error['stage'],'PRE_VALUATION_SNAPSHOT')
+        self.assertEqual(caught.exception.public_error['category'],'KEY_ERROR')
+        self.assertNotIn('fixture-private-token',json.dumps(caught.exception.public_error))
+
+    def test_admin_failure_can_download_sanitized_error_report(self):
+        st=Mock();st.secrets={'ADMIN_EMAIL':'admin@example.test'};st.session_state={}
+        st.button.side_effect=[False,True];st.selectbox.return_value='NVDA'
+        st.spinner.return_value=MagicMock()
+        failure=admin.FinancialDiagnosticFailure('SERIALIZE_REPORT',TypeError('fixture-private-token'))
+        with patch.object(admin,'is_cloud_runtime',return_value=True),patch.object(admin,'run_cloud_financial_diagnostic',side_effect=failure):
+            admin.render_financial_diagnostics(st,client(),'u1')
+        st.download_button.assert_called_once()
+        payload=st.download_button.call_args.args[1]
+        self.assertNotIn(b'fixture-private-token',payload)
+        self.assertEqual(json.loads(payload)['capture_error']['stage'],'SERIALIZE_REPORT')
 
 
 if __name__=='__main__':unittest.main()

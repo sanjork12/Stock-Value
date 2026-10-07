@@ -1101,18 +1101,43 @@ def analyze_one(ticker: str, as_of: str | None, sb: Client | None = None, user_i
             return None
         return get_cloud_snapshot(sb, user_id, t, d)
 
-    return analyze_ticker(
-        ticker,
-        as_of,
-        history_loader=history_cached,
-        fundamentals_loader=fundamentals_cached,
-        snapshot_loader=snapshot_loader,
-    )
+    def live_analysis():
+        return analyze_ticker(
+            ticker,
+            as_of,
+            history_loader=history_cached,
+            fundamentals_loader=fundamentals_cached,
+            snapshot_loader=snapshot_loader,
+        )
+
+    result = live_analysis()
+    if as_of or not sb or not user_id:
+        return result
+    from last_reliable_valuation import resolve_live_result
+    try:
+        return resolve_live_result(
+            result,
+            lambda: get_cloud_snapshot(sb, user_id, result['ticker'], date.today().isoformat()),
+            lambda live: save_snapshot(sb, user_id, live),
+        )
+    except Exception as exc:
+        if is_rls_or_auth_error(exc):
+            raise
+        # Storage failure must not suppress a successful live analysis.
+        result['source_status'] = 'live'
+        result['reliable_cache_status'] = 'storage_unavailable'
+        return result
 
 
 def save_snapshot(sb: Client, user_id: str, r: dict):
     current_user_id = assert_live_session(sb, user_id)
+    if r.get('source_status') == 'cached_last_reliable':
+        return  # Never renew the reliable timestamp from a cache hit.
     payload = build_snapshot_record(current_user_id, r)
+    if payload['raw'].get('last_reliable') is None:
+        # Preserve the reliable version when a same-day unavailable run upserts.
+        previous = fetch_historical_snapshot(sb, current_user_id, r['ticker'], date.today().isoformat())
+        payload['raw']['last_reliable'] = ((previous or {}).get('raw') or {}).get('last_reliable')
     try:
         sb.table("valuation_snapshots").upsert(
             payload, on_conflict="user_id,ticker,snapshot_date"
@@ -1574,6 +1599,8 @@ if page == "自选股":
                     "_core_gap": float("inf"),
                 })
                 continue
+            from last_reliable_valuation import render_cache_notice
+            render_cache_notice(st, r)
             if auto_save and r.get("price") is not None:
                 save_snapshot(db, user_id, r)
             conf_u = str(r.get("confidence") or "").upper()
@@ -1878,6 +1905,8 @@ elif page == "单股分析":
     r = st.session_state.get("last_analysis")
 
     if r:
+        from last_reliable_valuation import render_cache_notice
+        render_cache_notice(st, r)
         if r.get("snapshot_error"):
             st.error(r["snapshot_error"])
         elif r.get("analysis_error") and r.get("price") is None:

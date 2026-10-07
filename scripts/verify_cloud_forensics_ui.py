@@ -38,6 +38,17 @@ with patch.object(admin,'is_cloud_runtime',return_value=True),patch.object(admin
         assert len(app.get('file_uploader'))==1
         assert app.session_state['_financial_diagnostic_result']['owner']=='u1'
         print('PASS: actual admin widgets, allowed tickers, explicit failure trace, field/model tables and JSON download')
+        failure_path=Path(directory)/'failure.py'
+        failure_path.write_text(source.replace('return_value=report','side_effect=TypeError("fixture-private-token")'),encoding='utf-8')
+        failed=AppTest.from_file(str(failure_path),default_timeout=20)
+        failed.secrets['ADMIN_EMAIL']='admin@example.test'
+        failed.run()
+        next(button for button in failed.button if button.label=='Run diagnostic').click().run()
+        assert not failed.exception,str(failed.exception)
+        assert any('CAPTURE_INPUTS' in item.value and 'TYPE_ERROR' in item.value for item in failed.error)
+        assert all('fixture-private-token' not in item.value for item in failed.error)
+        assert len(failed.get('download_button'))==1
+        print('PASS: failed Cloud run renders sanitized stage/category and downloadable error JSON')
 
 
 if __name__=='__main__':verify()

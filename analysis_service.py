@@ -6,6 +6,7 @@ import logging
 
 import pandas as pd
 from market_reference import build_market_reference, apply_reference_display_policy
+from last_reliable_valuation import reliable_snapshot
 
 from mag7_monitor import (
     add_indicators,
@@ -128,6 +129,7 @@ def analyze_ticker(
     peer_provider=None,
     peer_mode=None,
     financial_diagnostic_sink=None,
+    financial_diagnostic_error_sink=None,
 ) -> dict:
     ticker = normalize_ticker(ticker) or str(ticker).upper().strip()
     history_loader = history_loader or (lambda t, d: add_indicators(get_history(t, d)))
@@ -256,9 +258,14 @@ def analyze_ticker(
                 try:
                     from financial_forensics import build_input_snapshot
                     financial_diagnostic_sink(build_input_snapshot(ticker, deepcopy(financials), price=price))
-                except Exception:
+                except Exception as exc:
                     # Optional administrator observation cannot change valuation.
-                    pass
+                    if financial_diagnostic_error_sink is not None:
+                        try:
+                            from financial_forensics import FinancialDiagnosticFailure
+                            financial_diagnostic_error_sink(FinancialDiagnosticFailure('PRE_VALUATION_SNAPSHOT',exc).public_error)
+                        except Exception:
+                            pass
             blend = valuate(ticker, financials, volatility=vol, **peer_kwargs)
         except Exception as exc:
             logger.warning(
@@ -726,6 +733,7 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
         "deep_high": _bound("deep", 1),
         "status": r.get("recommendation"),
         "raw": {
+            "last_reliable": reliable_snapshot(r),
             "note": r.get("note"),
             "valuation_class": r.get("valuation_class"),
             "confidence": r.get("confidence") or (r.get("blend") or {}).get("confidence"),

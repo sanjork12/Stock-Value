@@ -1,12 +1,13 @@
 """Temporary Cloud-only, ADMIN_EMAIL-only public financial input diagnostic."""
 from copy import deepcopy
+from collections.abc import Mapping
 import json
 import threading
 import time
 
 from finnhub_admin_diagnostics import is_cloud_runtime, verified_admin
 from financial_forensics import (TICKERS, capture_financial_diagnostic, snapshot_rows,
-                                  snapshot_json, compare_financial_snapshots, source_name)
+                                  snapshot_json, compare_financial_snapshots, source_name, FinancialDiagnosticFailure)
 
 _LOCK=threading.Lock()
 _LAST_RUN={}
@@ -18,7 +19,7 @@ def _secret_strings(secrets):
     def walk(value,hint=''):
         if isinstance(value,str):
             if len(value)>3 and any(word in hint.lower() for word in ('key','token','secret','password','cookie')):strings.append(value)
-        elif hasattr(value,'items'):
+        elif isinstance(value,Mapping):
             for key,item in value.items():walk(item,str(key))
     walk(secrets)
     return strings
@@ -34,9 +35,21 @@ def run_cloud_financial_diagnostic(client,user_id,secrets,ticker):
         if time.monotonic()-_LAST_RUN.get(identity,-1e12)<30:
             raise RuntimeError('同一股票诊断需间隔至少 30 秒。')
         _LAST_RUN[identity]=time.monotonic()
-        report=capture_financial_diagnostic(ticker)
+        try:
+            report=capture_financial_diagnostic(ticker)
+        except FinancialDiagnosticFailure:
+            raise
+        except Exception as exc:
+            raise FinancialDiagnosticFailure('CAPTURE_INPUTS',exc) from None
         # Only the redacted schema-projected report is retained in session state.
-        return json.loads(snapshot_json(report,_secret_strings(secrets)))
+        try:
+            redactions=_secret_strings(secrets)
+        except Exception as exc:
+            raise FinancialDiagnosticFailure('PREPARE_REDACTION',exc) from None
+        try:
+            return json.loads(snapshot_json(report,redactions))
+        except Exception as exc:
+            raise FinancialDiagnosticFailure('SERIALIZE_REPORT',exc) from None
     finally:_LOCK.release()
 
 
@@ -90,6 +103,9 @@ def render_financial_diagnostics(st,client,user_id):
             reports=deepcopy(saved.get('reports',{})) if saved and saved.get('owner')==str(user_id) else {}
             reports[ticker]=report
             st.session_state['_financial_diagnostic_result']={'owner':str(user_id),'reports':reports}
+        except FinancialDiagnosticFailure as exc:
+            st.session_state['_financial_diagnostic_result']={'owner':str(user_id),'reports':{
+                ticker:{'ticker':ticker,'capture_error':exc.public_error}}}
         except (PermissionError,ValueError,RuntimeError):
             st.warning('诊断未完成、正在执行或请求过于频繁，请稍后重试。')
         except Exception:
@@ -101,6 +117,13 @@ def render_financial_diagnostics(st,client,user_id):
         return
     report=saved.get('reports',{}).get(ticker)
     if not report:return
+    if report.get('capture_error'):
+        error=report['capture_error']
+        st.error(f"诊断失败阶段：{error['stage']} · 错误类别：{error['category']}。未输出凭据或异常原文。")
+        st.json(error)
+        st.download_button('下载脱敏失败报告 JSON',snapshot_json(report),
+                           f'cloud_financial_diagnostic_{ticker}.json','application/json',key='financial_diagnostic_error_json')
+        return
     st.caption(f"捕获时间：{report['run_timestamp']} · {report['environment']['runtime']} · BEFORE_VALUATE")
     rows=snapshot_rows(report)
     for row in rows:row['Value']=json.dumps(row['Value'],ensure_ascii=False)

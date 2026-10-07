@@ -13,6 +13,25 @@ import re
 from financial_forensics_observer import (numeric, currency, period, public_observations,
                                          observe_financial_inputs, INFO_NUMBERS, INFO_CURRENCIES)
 
+class FinancialDiagnosticFailure(RuntimeError):
+    def __init__(self,stage,exc=None,public_error=None):
+        categories={TypeError:'TYPE_ERROR',ValueError:'VALUE_ERROR',KeyError:'KEY_ERROR',
+                    ImportError:'IMPORT_ERROR',RuntimeError:'RUNTIME_ERROR',OSError:'IO_ERROR'}
+        category=next((code for kind,code in categories.items() if isinstance(exc,kind)),'UNEXPECTED_ERROR')
+        locations=[]
+        trace=exc.__traceback__ if exc is not None else None
+        allowed={'financial_forensics.py','financial_forensics_admin.py','financial_forensics_observer.py',
+                 'analysis_service.py','finnhub_service.py','mag7_monitor.py'}
+        while trace is not None:
+            # Only repository source basename + line, never message/locals/URL.
+            name=trace.tb_frame.f_code.co_filename.replace('\\','/').rsplit('/',1)[-1]
+            if name in allowed:locations.append({'module':name,'line':trace.tb_lineno})
+            trace=trace.tb_next
+        self.public_error=public_error or {'stage':stage,'category':category,'code_locations':locations[-4:]}
+        super().__init__('Financial diagnostic failed: '+stage+' / '+category)
+
+
+
 TICKERS=('AVGO','NVDA','MU','PLTR','COIN','CRCL','AMZN','MSFT')
 SOURCE_NAMES={'forwardEps','ticker.info.forwardEps','epsForward','earnings_estimate','price/forwardPE','forward_eps',
  'trailingEps','ticker.info.trailingEps','yahoo_trailing_eps','trailing_eps','statement_derived',
@@ -261,17 +280,26 @@ def capture_financial_diagnostic(ticker, *, history_loader=None, fundamentals_lo
     if ticker not in TICKERS:raise ValueError('Unsupported diagnostic ticker.')
     from analysis_service import analyze_ticker
     snapshots=[]
+    capture_errors=[]
     with observe_financial_inputs():
         result=analyze_ticker(ticker,history_loader=history_loader,fundamentals_loader=fundamentals_loader,
-                              peer_mode='diagnostic',financial_diagnostic_sink=lambda snapshot:snapshots.append(deepcopy(snapshot)))
-    if not snapshots:raise RuntimeError('No pre-valuation input snapshot; history or diagnostic capture failed.')
+                              peer_mode='diagnostic',financial_diagnostic_sink=lambda snapshot:snapshots.append(deepcopy(snapshot)),
+                              financial_diagnostic_error_sink=capture_errors.append)
+    if not snapshots:
+        if capture_errors:
+            raise FinancialDiagnosticFailure('PRE_VALUATION_SNAPSHOT',public_error=capture_errors[0])
+        stage='LOAD_HISTORY' if any(e.get('stage')=='history' for e in result.get('errors',[])) else 'PRE_VALUATION_SNAPSHOT'
+        raise FinancialDiagnosticFailure(stage,public_error={'stage':stage,'category':'NO_SNAPSHOT','code_locations':[]})
     try:
         from finnhub_service import get_finnhub_provider
         provider=finnhub_provider or get_finnhub_provider()
         finnhub=provider.get_diagnostic_basic_financials(ticker)
     except Exception:
         finnhub={'status':'NETWORK_ERROR','fields':{},'used_for_valuation':False}
-    return finalize_snapshot(snapshots[0],result,finnhub)
+    try:
+        return finalize_snapshot(snapshots[0],result,finnhub)
+    except Exception as exc:
+        raise FinancialDiagnosticFailure('FINALIZE_REPORT',exc) from None
 
 
 def snapshot_rows(snapshot):
@@ -280,12 +308,15 @@ def snapshot_rows(snapshot):
 
 
 def snapshot_json(snapshot,redactions=()):
+    from collections.abc import Mapping
+    import numpy as np
     secrets=[secret for secret in redactions if isinstance(secret,str) and len(secret)>3]
     def clean(value):
+        if isinstance(value,np.generic):return clean(value.item())
         if isinstance(value,str):
             for secret in secrets:value=value.replace(secret,'[REDACTED]')
             return value
-        if isinstance(value,dict):return {clean(key):clean(item) for key,item in value.items()}
+        if isinstance(value,Mapping):return {clean(key):clean(item) for key,item in value.items()}
         if isinstance(value,(list,tuple)):return [clean(item) for item in value]
         if isinstance(value,(int,float)) and str(value) in secrets:return None
         return value

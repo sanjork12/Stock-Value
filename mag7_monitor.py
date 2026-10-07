@@ -683,6 +683,10 @@ def get_live_fundamentals(ticker: str):
         "eps_proxy": None,
         "eps_proxy_source": None,
         "quote_currency": quote_currency,
+        # Public corporate-action context for display-cache validation only.
+        "split_context_known": "lastSplitDate" in info and "lastSplitFactor" in info,
+        "last_split_date": info.get("lastSplitDate"),
+        "last_split_factor": info.get("lastSplitFactor"),
         "financial_currency": financial_currency,
         "eps_currency": financial_currency,
         "shares": shares,
