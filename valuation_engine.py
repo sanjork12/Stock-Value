@@ -1893,7 +1893,7 @@ def check_valuation_invariants(blend: dict | None, *, strict: bool = False) -> l
     return problems
 
 
-def valuate(ticker: str, financials: dict, volatility: float | None = None) -> dict:
+def valuate(ticker: str, financials: dict, volatility: float | None = None, *, peer_result=None, peer_mode="diagnostic") -> dict:
     financials = normalize_financials(financials)
     profile = build_profile(ticker, financials)
     spec = profile.spec
@@ -1938,12 +1938,27 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None) -> d
             models[model_id] = _not_applicable(model_id, "excluded_by_valuation_class", "该估值类型默认排除此模型。")
 
     models = _flag_outliers(models)
+    # Optional independent model; diagnostic leaves the existing blend untouched.
+    peer_weight = 0.0
+    if peer_mode == "active" and peer_result is not None and peer_result.valid:
+        from peer_comparable import as_blend_model, canonical, WEIGHTS
+        if canonical(peer_result.target_ticker) == canonical(ticker) and peer_result.valuation_class == profile.valuation_class:
+            peer_weight = WEIGHTS.get(profile.valuation_class, 0.0)
+        if peer_weight:
+            models["peer_comparable"] = as_blend_model(peer_result)
     for obj in models.values():
         obj["valuation_class"] = profile.valuation_class
         obj["model_applicability"] = obj.get("applicable") is not False
     included = []
     excluded = []
-    weights = profile.model_weights or {}
+    weights = dict(profile.model_weights or {})
+    if peer_weight:
+        existing_weight = sum(float(weights.get(k) or 1.0) for k, obj in models.items()
+                              if k != "peer_comparable" and k not in profile.excluded_models and _usable(obj))
+        if existing_weight:
+            weights["peer_comparable"] = existing_weight * peer_weight / (1 - peer_weight)
+        else:
+            models["peer_comparable"]["applicable"] = False
     weight_total = 0.0
     for model_id, obj in models.items():
         if model_id in profile.excluded_models or obj.get("applicable") is False:

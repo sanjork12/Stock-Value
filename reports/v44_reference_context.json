@@ -1,0 +1,7 @@
+{
+  "NVDA": {"external_benchmark": 300, "internal_context": 372},
+  "ORCL": {"external_benchmark": 180, "internal_context": 238},
+  "MSFT": {"external_benchmark": 544, "internal_context": 656},
+  "GOOG": {"external_benchmark": 345, "internal_context": 253},
+  "AMZN": {"external_benchmark": 285, "internal_context": "285–290"}
+}

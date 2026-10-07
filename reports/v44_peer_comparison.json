@@ -1,0 +1,541 @@
+{
+  "generated_at": "2026-10-07T16:52:12.285149+00:00",
+  "mode": "diagnostic",
+  "live_finnhub_configured": false,
+  "caveat": "User-supplied internal context is not a current recalculation. Unavailable values are not inferred.",
+  "comparison": [
+    {
+      "ticker": "NVDA",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 300,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": 372,
+      "warnings": "target_reference_NOT_CONFIGURED"
+    },
+    {
+      "ticker": "ORCL",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 180,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": 238,
+      "warnings": "target_reference_NOT_CONFIGURED"
+    },
+    {
+      "ticker": "MSFT",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 544,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": 656,
+      "warnings": "target_reference_NOT_CONFIGURED"
+    },
+    {
+      "ticker": "GOOG",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 345,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": 253,
+      "warnings": "target_reference_NOT_CONFIGURED"
+    },
+    {
+      "ticker": "AMZN",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 285,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": "285–290",
+      "warnings": "target_reference_NOT_CONFIGURED"
+    }
+  ],
+  "peer_results": [
+    {
+      "target_ticker": "NVDA",
+      "valuation_class": "semiconductor_growth",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "semiconductor_growth",
+      "peers_considered": [
+        "AVGO",
+        "AMD",
+        "MRVL"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "AVGO",
+        "AMD",
+        "MRVL"
+      ],
+      "exclusion_reasons": {
+        "AVGO": "NOT_CONFIGURED",
+        "AMD": "NOT_CONFIGURED",
+        "MRVL": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T16:52:12.282375+00:00",
+        "NVDA": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.282469+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "AVGO": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.282616+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "AMD": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.282725+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "MRVL": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.282830+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      }
+    },
+    {
+      "target_ticker": "ORCL",
+      "valuation_class": "mature_growth",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "enterprise_software",
+      "peers_considered": [
+        "MSFT",
+        "CRM",
+        "NOW",
+        "SAP",
+        "IBM"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "MSFT",
+        "CRM",
+        "NOW",
+        "SAP",
+        "IBM"
+      ],
+      "exclusion_reasons": {
+        "MSFT": "NOT_CONFIGURED",
+        "CRM": "NOT_CONFIGURED",
+        "NOW": "NOT_CONFIGURED",
+        "SAP": "NOT_CONFIGURED",
+        "IBM": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T16:52:12.282968+00:00",
+        "ORCL": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.282981+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "MSFT": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283079+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "CRM": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283169+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "NOW": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283256+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "SAP": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283346+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "IBM": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283434+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      }
+    },
+    {
+      "target_ticker": "MSFT",
+      "valuation_class": "mega_cap_tech",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "enterprise_software",
+      "peers_considered": [
+        "ORCL",
+        "CRM",
+        "NOW",
+        "SAP",
+        "IBM"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "ORCL",
+        "CRM",
+        "NOW",
+        "SAP",
+        "IBM"
+      ],
+      "exclusion_reasons": {
+        "ORCL": "NOT_CONFIGURED",
+        "CRM": "NOT_CONFIGURED",
+        "NOW": "NOT_CONFIGURED",
+        "SAP": "NOT_CONFIGURED",
+        "IBM": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T16:52:12.283562+00:00",
+        "MSFT": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283573+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "ORCL": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283685+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "CRM": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283785+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "NOW": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283876+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "SAP": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.283963+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "IBM": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284051+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      }
+    },
+    {
+      "target_ticker": "GOOG",
+      "valuation_class": "mega_cap_tech",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "digital_advertising",
+      "peers_considered": [
+        "META",
+        "TTD",
+        "PINS",
+        "SNAP"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "META",
+        "TTD",
+        "PINS",
+        "SNAP"
+      ],
+      "exclusion_reasons": {
+        "META": "NOT_CONFIGURED",
+        "TTD": "NOT_CONFIGURED",
+        "PINS": "NOT_CONFIGURED",
+        "SNAP": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T16:52:12.284171+00:00",
+        "GOOG": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284180+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "META": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284273+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "TTD": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284362+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "PINS": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284449+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "SNAP": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284537+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      }
+    },
+    {
+      "target_ticker": "AMZN",
+      "valuation_class": "mega_cap_tech",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "commerce_platform",
+      "peers_considered": [
+        "BABA",
+        "JD",
+        "MELI",
+        "EBAY"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "BABA",
+        "JD",
+        "MELI",
+        "EBAY"
+      ],
+      "exclusion_reasons": {
+        "BABA": "NOT_CONFIGURED",
+        "JD": "NOT_CONFIGURED",
+        "MELI": "NOT_CONFIGURED",
+        "EBAY": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T16:52:12.284656+00:00",
+        "AMZN": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284666+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "BABA": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284762+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "JD": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284856+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "MELI": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.284945+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "EBAY": {
+          "source": "Finnhub",
+          "profile_fetched_at": "2026-10-07T16:52:12.285035+00:00",
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      }
+    }
+  ]
+}

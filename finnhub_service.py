@@ -14,6 +14,8 @@ from market_reference_provider import configured_api_key
 TTL = {'quote':600,'stock/profile2':86400,'company-news':1200,'stock/metric':28800,
        'calendar/earnings':28800,'stock/earnings':86400,'stock/recommendation':43200}
 METRICS = {'Forward PE':'forwardPE','TTM PE':'peTTM','P/B':'pbAnnual',
+           'Forward PEG':'forwardPEG','EV/EBITDA TTM':'evEbitdaTTM',
+           'EV/Revenue TTM':'evRevenueTTM','Market Capitalization':'marketCapitalization',
            'ROE TTM':'roeTTM','Operating Margin TTM':'operatingMarginTTM',
            'Revenue Growth TTM YoY':'revenueGrowthTTMYoy','EPS Growth TTM YoY':'epsGrowthTTMYoy',
            '52W High':'52WeekHigh','52W Low':'52WeekLow','Beta':'beta'}

@@ -85,6 +85,8 @@ def analyze_ticker(
     fundamentals_loader=None,
     snapshot_loader=None,
     market_reference_provider=None,
+    peer_provider=None,
+    peer_mode=None,
 ) -> dict:
     ticker = normalize_ticker(ticker) or str(ticker).upper().strip()
     history_loader = history_loader or (lambda t, d: add_indicators(get_history(t, d)))
@@ -93,6 +95,9 @@ def analyze_ticker(
     df = None
     financials = None
     blend = None
+    peer = None
+    from peer_comparable import peer_model_mode, calculate_peer_comparable, PeerComparableResult
+    resolved_peer_mode = peer_mode if peer_mode in ("active", "diagnostic") else peer_model_mode()
     snap = None
     snap_zones = None
     snapshot_date = None
@@ -198,7 +203,16 @@ def analyze_ticker(
         try:
             vol = annualized_volatility(df)
             financials = fill_fundamental_fallbacks(financials or {})
-            blend = valuate(ticker, financials, volatility=vol)
+            # Isolate external reference failures from the internal valuation.
+            from valuation_engine import infer_valuation_class
+            peer_class = infer_valuation_class(ticker, financials)
+            try:
+                peer = calculate_peer_comparable(ticker, financials, peer_class, provider=peer_provider)
+            except Exception:
+                peer = PeerComparableResult(ticker, peer_class)
+                peer.warnings.append("peer_reference_unavailable")
+            peer_kwargs = {"peer_result": peer, "peer_mode": "active"} if resolved_peer_mode == "active" and peer.valid else {}
+            blend = valuate(ticker, financials, volatility=vol, **peer_kwargs)
         except Exception as exc:
             logger.warning(
                 "analysis failed ticker=%s stage=valuation error_type=%s message=%s",
@@ -355,6 +369,8 @@ def analyze_ticker(
         "history": df,
         "blend": blend,
         "financials": financials,
+        "peer_comparable": peer.to_dict() if peer else None,
+        "peer_model_mode": resolved_peer_mode,
         "financials_period": (financials or {}).get("fcf_period"),
         "price_timestamp": trade_date,
         "snapshot_date": snapshot_date,

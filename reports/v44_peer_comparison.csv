@@ -1,0 +1,6 @@
+﻿ticker,target_data_status,current_internal_mid,peer_low,peer_mid,peer_high,confidence,selected_multiple,peers_included,external_benchmark,benchmark_direction,user_supplied_internal_context,warnings
+NVDA,NOT_CONFIGURED,,,,,UNAVAILABLE,,,300,UNAVAILABLE,372,target_reference_NOT_CONFIGURED
+ORCL,NOT_CONFIGURED,,,,,UNAVAILABLE,,,180,UNAVAILABLE,238,target_reference_NOT_CONFIGURED
+MSFT,NOT_CONFIGURED,,,,,UNAVAILABLE,,,544,UNAVAILABLE,656,target_reference_NOT_CONFIGURED
+GOOG,NOT_CONFIGURED,,,,,UNAVAILABLE,,,345,UNAVAILABLE,253,target_reference_NOT_CONFIGURED
+AMZN,NOT_CONFIGURED,,,,,UNAVAILABLE,,,285,UNAVAILABLE,285–290,target_reference_NOT_CONFIGURED

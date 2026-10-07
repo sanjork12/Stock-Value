@@ -851,6 +851,8 @@ def render_valuation_diagnostics(r: dict):
         f"模型：{r.get('model_version') or '—'}"
     )
     with st.expander("估值诊断"):
+        from peer_comparable_ui import render_peer_comparable
+        render_peer_comparable(r.get("peer_comparable"), r.get("peer_model_mode", "diagnostic"))
         lines = [
             f"**估值类型**: {class_label_zh(profile.get('valuation_class_label') or r.get('valuation_class_label'), profile.get('valuation_class') or r.get('valuation_class'))}",
             f"**置信度**: {confidence_zh(r.get('confidence'))}",
