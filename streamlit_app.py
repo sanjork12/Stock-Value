@@ -47,6 +47,7 @@ try:
         fnum,
     )
     from finnhub_admin_diagnostics import is_cloud_runtime, verified_admin, render_diagnostics
+    from financial_forensics_admin import render_financial_diagnostics
     from market_reference_provider import format_consensus_target
     from analysis_service import (
         analyze_ticker,
@@ -852,7 +853,9 @@ def render_valuation_diagnostics(r: dict):
     )
     with st.expander("估值诊断"):
         from peer_comparable_ui import render_peer_comparable
-        render_peer_comparable(r.get("peer_comparable"), r.get("peer_model_mode", "diagnostic"))
+        render_peer_comparable(r.get("peer_comparable_result"),
+                              (r.get("peer_diagnostics") or {}).get("mode", "diagnostic"),
+                              diagnostics=r.get("peer_diagnostics"))
         lines = [
             f"**估值类型**: {class_label_zh(profile.get('valuation_class_label') or r.get('valuation_class_label'), profile.get('valuation_class') or r.get('valuation_class'))}",
             f"**置信度**: {confidence_zh(r.get('confidence'))}",
@@ -1412,6 +1415,8 @@ audit_admin = is_cloud_runtime() and verified_admin(db, user_id, st.secrets.get(
 if not audit_admin:
     st.session_state.pop("_finnhub_audit_open", None)
     st.session_state.pop("_finnhub_audit_result", None)
+    st.session_state.pop("_financial_diagnostic_open", None)
+    st.session_state.pop("_financial_diagnostic_result", None)
 
 # ---------------- Main app ----------------
 
@@ -1429,6 +1434,9 @@ with header_right:
         st.write(user_email)
         if audit_admin and st.button("Finnhub 能力诊断", use_container_width=True, key="menu_finnhub_audit"):
             st.session_state._finnhub_audit_open = True
+            st.rerun()
+        if audit_admin and st.button("财务输入诊断", use_container_width=True, key="menu_financial_diagnostic"):
+            st.session_state._financial_diagnostic_open = True
             st.rerun()
         if st.button("账户设置", use_container_width=True, key="menu_account_settings"):
             st.session_state.account_open = True
@@ -1448,6 +1456,10 @@ with header_right:
 
 if st.session_state.get("_finnhub_audit_open"):
     render_diagnostics(st, db, user_id)
+    st.stop()
+
+if st.session_state.get("_financial_diagnostic_open"):
+    render_financial_diagnostics(st, db, user_id)
     st.stop()
 
 if "nav_initialized" not in st.session_state:

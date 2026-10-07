@@ -375,19 +375,24 @@ def _fast_info_get(fast, *names):
 
 
 def _merge_ticker_info(ticker: str, t) -> dict:
+    from financial_forensics_observer import observe_info
     info = {}
     try:
         raw = t.get_info() if hasattr(t, "get_info") else None
+        observe_info("ticker.get_info", raw)
         if isinstance(raw, dict) and raw:
             info.update(raw)
     except Exception as exc:
+        observe_info("ticker.get_info", None, "ERROR")
         logger.warning("fundamentals stage=get_info ticker=%s error_type=%s", ticker, type(exc).__name__)
     if not info:
         try:
             raw = t.info or {}
+            observe_info("ticker.info", raw)
             if isinstance(raw, dict) and raw:
                 info.update(raw)
         except Exception as exc:
+            observe_info("ticker.info", None, "ERROR")
             logger.warning("fundamentals stage=info ticker=%s error_type=%s", ticker, type(exc).__name__)
     try:
         fast = t.fast_info if hasattr(t, "fast_info") else None
@@ -395,46 +400,57 @@ def _merge_ticker_info(ticker: str, t) -> dict:
             shares = _fast_info_get(fast, "shares", "sharesOutstanding")
             if shares is not None and fnum(info.get("sharesOutstanding")) is None:
                 info["sharesOutstanding"] = shares
+                observe_info("ticker.fast_info", {"sharesOutstanding":shares})
             market_cap = _fast_info_get(fast, "market_cap", "marketCap")
             if market_cap is not None and fnum(info.get("marketCap")) is None:
                 info["marketCap"] = market_cap
+                observe_info("ticker.fast_info", {"marketCap":market_cap})
             last = _fast_info_get(fast, "last_price", "lastPrice", "regularMarketPrice")
             if last is not None and fnum(info.get("currentPrice")) is None:
                 info["currentPrice"] = last
+                observe_info("ticker.fast_info", {"currentPrice":last})
     except Exception as exc:
         logger.warning("fundamentals stage=fast_info ticker=%s error_type=%s", ticker, type(exc).__name__)
     return info
 
 
 def _forward_eps_from_estimates(ticker: str, t):
+    from financial_forensics_observer import observe_estimate
     try:
         getter = getattr(t, "get_earnings_estimate", None)
         df = getter() if callable(getter) else None
         if df is None or getattr(df, "empty", True):
+            observe_estimate("NOT_AVAILABLE", None)
             return None
         for idx in ("0y", "+1y", "0q", "+1q"):
             if idx in df.index and "avg" in df.columns:
                 value = fnum(df.loc[idx, "avg"])
+                observe_estimate(idx, value)
                 if value is not None and value > 0:
                     return value
         if "avg" in df.columns:
             series = df["avg"].dropna()
             if len(series):
                 value = fnum(series.iloc[0])
+                observe_estimate("FIRST_AVAILABLE_AVG", value)
                 if value is not None and value > 0:
                     return value
     except Exception as exc:
+        observe_estimate("ERROR", None)
         logger.warning("fundamentals stage=earnings_estimate ticker=%s error_type=%s", ticker, type(exc).__name__)
     return None
 
 
 def _load_statement(ticker: str, t, stage: str, attrs: tuple[str, ...], methods: tuple[str, ...]):
+    from financial_forensics_observer import observe_statement
     for attr in attrs:
         try:
             df = getattr(t, attr, None)
+            observe_statement(stage, "ticker."+attr, df)
             if df is not None and hasattr(df, "empty") and not df.empty:
                 return df
         except Exception as exc:
+            observe_statement(stage, "ticker."+attr, None, "ERROR")
             logger.warning("fundamentals stage=%s ticker=%s error_type=%s", stage, ticker, type(exc).__name__)
     for name in methods:
         fn = getattr(t, name, None)
@@ -442,9 +458,11 @@ def _load_statement(ticker: str, t, stage: str, attrs: tuple[str, ...], methods:
             continue
         try:
             df = fn()
+            observe_statement(stage, "ticker."+name, df)
             if df is not None and hasattr(df, "empty") and not df.empty:
                 return df
         except Exception as exc:
+            observe_statement(stage, "ticker."+name, None, "ERROR")
             logger.warning("fundamentals stage=%s ticker=%s error_type=%s", stage, ticker, type(exc).__name__)
     return None
 
@@ -629,6 +647,13 @@ def get_live_fundamentals(ticker: str):
     normalized = _normalize_fcf(annual_rows, ttm_fcf=ttm_fcf)
     cash = total_cash if total_cash is not None else 0.0
     debt = total_debt if total_debt is not None else 0.0
+    from financial_forensics_observer import observe_selected
+    observe_selected("cash", cash, "fallback_missing_assumed_zero" if total_cash is None else
+                     "ticker.info.totalCash" if fnum(info.get("totalCash")) is not None else "ticker.balance_sheet.cash", total_cash)
+    observe_selected("debt", debt, "fallback_missing_assumed_zero" if total_debt is None else
+                     "ticker.info.totalDebt" if fnum(info.get("totalDebt")) is not None else "ticker.balance_sheet.debt", total_debt)
+    observe_selected("shares", shares, "ticker.info.sharesOutstanding" if shares_outstanding is not None else "ticker.balance_sheet.shares", shares_outstanding)
+    observe_selected("revenue_growth", fnum(info.get("revenueGrowth")), "ticker.info.revenueGrowth", fnum(info.get("revenueGrowth")))
     if cash < 0:
         cash = 0.0
     if debt < 0:

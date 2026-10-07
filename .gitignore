@@ -4,3 +4,5 @@
 __pycache__/
 *.pyc
 .DS_Store
+output/financial_input_forensics/
+cloud_financial_diagnostic_*.json

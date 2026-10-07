@@ -40,6 +40,16 @@ def _fetch(path,params,key):
 
 
 class FinnhubProvider:
+    def get_diagnostic_basic_financials(self, ticker):
+        """Admin forensic sidecar only; never used as valuation fallback."""
+        result = self._get('stock/metric', {'symbol':ticker,'metric':'all'})
+        metric = (result.get('data') or {}).get('metric', {}) if isinstance(result.get('data'),dict) else {}
+        metric = metric if isinstance(metric,dict) else {}
+        return {'source':'Finnhub basic financials','status':result.get('status'),
+                'fetched_at':result.get('fetched_at'),
+                'fields':{key:number(metric.get(key)) for key in ('epsTTM','forwardPE','peTTM','marketCapitalization')},
+                'used_for_valuation':False}
+
     def __init__(self,*,key_loader=configured_api_key,fetch=_fetch,clock=time.monotonic,sleep=time.sleep):
         self.key_loader,self.fetch,self.clock,self.sleep=key_loader,fetch,clock,sleep
         self._cache={};self._lock=threading.Lock();self._next=0;self._blocked=0

@@ -3,9 +3,12 @@ import json
 import streamlit as st
 
 
-def render_peer_comparable(peer, mode="diagnostic"):
+def render_peer_comparable(peer, mode="diagnostic", diagnostics=None):
     if peer is None:
-        st.caption("同行可比估值：历史快照未保存同行数据。")
+        if (diagnostics or {}).get("status") == "UNAVAILABLE":
+            st.caption("Peer Comparable: Unavailable（同行诊断暂不可用）")
+        else:
+            st.caption("同行可比估值：历史快照未保存同行数据。")
         return
     st.markdown("#### 同行可比估值 · Peer Comparable")
     st.caption("诊断模式：仅供参考，不改变内部 fair value 或买卖区。" if mode != "active"

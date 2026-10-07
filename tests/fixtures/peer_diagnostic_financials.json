@@ -1,0 +1,457 @@
+{
+  "description": "Synthetic regression fixtures, not live market observations. Shared identically across git revisions.",
+  "tickers": {
+    "AMZN": {
+      "forward_eps": 6,
+      "trailing_eps": 5,
+      "shares": 1000000000.0,
+      "fcf": 4000000000.0,
+      "cash": 3000000000.0,
+      "debt": 2000000000.0,
+      "revenue": 20000000000.0,
+      "ebitda": 5000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 4000000000.0
+        },
+        {
+          "free_cash_flow": 3800000000.0
+        },
+        {
+          "free_cash_flow": 3600000000.0
+        }
+      ],
+      "historical_eps": [
+        {
+          "eps": 5
+        },
+        {
+          "eps": 4.5
+        },
+        {
+          "eps": 4
+        }
+      ],
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "AAPL": {
+      "forward_eps": 9.58,
+      "trailing_eps": 8.73,
+      "shares": 14594180000,
+      "fcf": 99584000000,
+      "cash": 62399000576,
+      "debt": 84343996416,
+      "market_cap": 4800000000000.0,
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 100000000000.0,
+          "period": "FY2025"
+        },
+        {
+          "free_cash_flow": 99000000000.0,
+          "period": "FY2024"
+        },
+        {
+          "free_cash_flow": 98000000000.0,
+          "period": "FY2023"
+        }
+      ],
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "AVGO": {
+      "historical_eps": [
+        {
+          "eps": 4.77,
+          "shares": 4850000000.0,
+          "net_income": 23000000000.0
+        }
+      ],
+      "shares": 4770000000.0,
+      "fcf": 19000000000.0,
+      "cash": 24000000000.0,
+      "debt": 59000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 20000000000.0
+        },
+        {
+          "free_cash_flow": 18000000000.0
+        },
+        {
+          "free_cash_flow": 15000000000.0
+        }
+      ],
+      "forward_eps": 6,
+      "trailing_eps": 5.4,
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "GOOG": {
+      "forward_eps": 6,
+      "trailing_eps": 5,
+      "shares": 1000000000.0,
+      "fcf": 4000000000.0,
+      "cash": 3000000000.0,
+      "debt": 2000000000.0,
+      "revenue": 20000000000.0,
+      "ebitda": 5000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 4000000000.0
+        },
+        {
+          "free_cash_flow": 3800000000.0
+        },
+        {
+          "free_cash_flow": 3600000000.0
+        }
+      ],
+      "historical_eps": [
+        {
+          "eps": 5
+        },
+        {
+          "eps": 4.5
+        },
+        {
+          "eps": 4
+        }
+      ],
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "JPM": {
+      "forward_eps": 24.99,
+      "trailing_eps": 23.32,
+      "shares": 2658186195,
+      "book_value_per_share": 133.0,
+      "tangible_book_value_per_share": 110.0,
+      "roe": 0.178,
+      "cash": 1500000000000.0,
+      "debt": 1300000000000.0,
+      "historical_eps": [
+        {
+          "eps": 22
+        },
+        {
+          "eps": 21
+        },
+        {
+          "eps": 20
+        },
+        {
+          "eps": 18
+        }
+      ],
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "META": {
+      "forward_eps": 6,
+      "trailing_eps": 5,
+      "shares": 1000000000.0,
+      "fcf": 4000000000.0,
+      "cash": 3000000000.0,
+      "debt": 2000000000.0,
+      "revenue": 20000000000.0,
+      "ebitda": 5000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 4000000000.0
+        },
+        {
+          "free_cash_flow": 3800000000.0
+        },
+        {
+          "free_cash_flow": 3600000000.0
+        }
+      ],
+      "historical_eps": [
+        {
+          "eps": 5
+        },
+        {
+          "eps": 4.5
+        },
+        {
+          "eps": 4
+        }
+      ],
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "MSFT": {
+      "forward_eps": 6,
+      "trailing_eps": 5,
+      "shares": 1000000000.0,
+      "fcf": 4000000000.0,
+      "cash": 3000000000.0,
+      "debt": 2000000000.0,
+      "revenue": 20000000000.0,
+      "ebitda": 5000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 4000000000.0
+        },
+        {
+          "free_cash_flow": 3800000000.0
+        },
+        {
+          "free_cash_flow": 3600000000.0
+        }
+      ],
+      "historical_eps": [
+        {
+          "eps": 5
+        },
+        {
+          "eps": 4.5
+        },
+        {
+          "eps": 4
+        }
+      ],
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "MU": {
+      "historical_eps": [
+        {
+          "eps": 7.59,
+          "shares": 1125000000.0
+        },
+        {
+          "eps": 0.7
+        },
+        {
+          "eps": 7.7
+        }
+      ],
+      "shares": 1130000000.0,
+      "ebitda": 108000000000.0,
+      "fcf": 120000000.0,
+      "cash": 43000000000.0,
+      "debt": 5000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 120000000.0
+        },
+        {
+          "free_cash_flow": 1000000000.0
+        },
+        {
+          "free_cash_flow": -2000000000.0
+        }
+      ],
+      "forward_eps": 8,
+      "trailing_eps": 7.2,
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "NVDA": {
+      "historical_eps": [
+        {
+          "eps": 4.9,
+          "shares": 24500000000.0
+        }
+      ],
+      "shares": 24150000000.0,
+      "fcf": 60000000000.0,
+      "cash": 62000000000.0,
+      "debt": 39000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 60000000000.0
+        },
+        {
+          "free_cash_flow": 55000000000.0
+        },
+        {
+          "free_cash_flow": 50000000000.0
+        }
+      ],
+      "forward_eps": 5.2,
+      "trailing_eps": 4.680000000000001,
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "ORCL": {
+      "forward_eps": 6,
+      "trailing_eps": 5,
+      "shares": 1000000000.0,
+      "fcf": 4000000000.0,
+      "cash": 3000000000.0,
+      "debt": 2000000000.0,
+      "revenue": 20000000000.0,
+      "ebitda": 5000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 4000000000.0
+        },
+        {
+          "free_cash_flow": 3800000000.0
+        },
+        {
+          "free_cash_flow": 3600000000.0
+        }
+      ],
+      "historical_eps": [
+        {
+          "eps": 5
+        },
+        {
+          "eps": 4.5
+        },
+        {
+          "eps": 4
+        }
+      ],
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "PLTR": {
+      "historical_eps": [
+        {
+          "eps": 0.63,
+          "shares": 2560000000.0
+        }
+      ],
+      "shares": 2300000000.0,
+      "revenue": 6000000000.0,
+      "fcf": 1100000000.0,
+      "cash": 9000000000.0,
+      "debt": 200000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 1100000000.0
+        },
+        {
+          "free_cash_flow": 900000000.0
+        },
+        {
+          "free_cash_flow": 700000000.0
+        }
+      ],
+      "forward_eps": 0.8,
+      "trailing_eps": 0.7200000000000001,
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "COIN": {
+      "forward_eps": 2.84,
+      "trailing_eps": 3.2,
+      "shares": 222803032,
+      "ebitda": 2500000000.0,
+      "enterprise_value": 40000000000.0,
+      "revenue": 6000000000.0,
+      "cash": 8800000000.0,
+      "debt": 6700000000.0,
+      "historical_eps": [
+        {
+          "eps": 3.0
+        },
+        {
+          "eps": 2.5
+        },
+        {
+          "eps": 1.8
+        }
+      ],
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "CRCL": {
+      "forward_eps": 6,
+      "trailing_eps": 5,
+      "shares": 1000000000.0,
+      "fcf": 4000000000.0,
+      "cash": 3000000000.0,
+      "debt": 2000000000.0,
+      "revenue": 20000000000.0,
+      "ebitda": 5000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 4000000000.0
+        },
+        {
+          "free_cash_flow": 3800000000.0
+        },
+        {
+          "free_cash_flow": 3600000000.0
+        }
+      ],
+      "historical_eps": [
+        {
+          "eps": 5
+        },
+        {
+          "eps": 4.5
+        },
+        {
+          "eps": 4
+        }
+      ],
+      "industry": "Financial Data & Stock Exchanges",
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    },
+    "UBER": {
+      "forward_eps": 6,
+      "trailing_eps": 5,
+      "shares": 1000000000.0,
+      "fcf": 4000000000.0,
+      "cash": 3000000000.0,
+      "debt": 2000000000.0,
+      "revenue": 20000000000.0,
+      "ebitda": 5000000000.0,
+      "quote_currency": "USD",
+      "financial_currency": "USD",
+      "annual_cashflows": [
+        {
+          "free_cash_flow": 4000000000.0
+        },
+        {
+          "free_cash_flow": 3800000000.0
+        },
+        {
+          "free_cash_flow": 3600000000.0
+        }
+      ],
+      "historical_eps": [
+        {
+          "eps": 5
+        },
+        {
+          "eps": 4.5
+        },
+        {
+          "eps": 4
+        }
+      ],
+      "forward_eps_source": "ticker.info.forwardEps",
+      "trailing_eps_source": "ticker.info.trailingEps"
+    }
+  }
+}

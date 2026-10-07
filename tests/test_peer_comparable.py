@@ -206,7 +206,7 @@ class PeerComparableTests(unittest.TestCase):
             failed=analyze_ticker('AAPL',**args)
         for field in ['blend','fair','zones','exit_zone','reliability_score']:
             self.assertEqual(baseline.get(field),failed.get(field))
-        self.assertIn('peer_reference_unavailable',failed['peer_comparable']['warnings'])
+        self.assertIn('peer_reference_unavailable',failed['peer_diagnostics']['warnings'])
 
     def test_high_growth_revenue_requires_comparable_profitability(self):
         self.provider.metrics['SNOW']['Operating Margin TTM']=-3
@@ -244,7 +244,7 @@ class PeerComparableTests(unittest.TestCase):
         r=analyze_ticker('AAPL','2025-01-01',history_loader=lambda *_:_ohlcv(),
                          snapshot_loader=lambda *_:None,peer_provider=p,peer_mode='active')
         self.assertEqual(p.calls,[])
-        self.assertIsNone(r['peer_comparable'])
+        self.assertIsNone(r['peer_comparable_result'])
 
     def test_one_peer_transport_failure_is_explicit_and_isolated(self):
         original=self.provider.get_company_profile

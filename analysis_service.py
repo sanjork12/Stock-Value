@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from copy import deepcopy
 import logging
 
 import pandas as pd
@@ -31,6 +32,45 @@ from valuation_engine import (
 )
 
 logger = logging.getLogger("stock_fair_value_monitor")
+
+
+def _peer_mode(requested):
+    if requested in ("diagnostic", "active"):
+        return requested
+    try:
+        from peer_comparable import peer_model_mode
+        return peer_model_mode()
+    except Exception:
+        return "diagnostic"
+
+
+def _peer_result(ticker, financials, valuation_class, provider):
+    # Peer code receives no reference to the internal financials or model set.
+    from peer_comparable import calculate_peer_comparable
+    return calculate_peer_comparable(ticker, deepcopy(financials or {}), valuation_class, provider=provider)
+
+
+def _attach_peer_diagnostics(result, ticker, financials, mode, provider, historical, active_peer=None):
+    """Append only two sidecar fields AFTER internal valuation/display policy.
+
+    No peer output is merged into result, blend, reliability, or trading zones.
+    Even import/calculation/serialization failures are diagnostic-only.
+    """
+    payload = None
+    diagnostics = {"mode": mode, "status": "HISTORICAL_UNAVAILABLE" if historical else "UNAVAILABLE"}
+    if not historical:
+        try:
+            valuation_class = (result.get("blend") or {}).get("profile", {}).get("valuation_class")
+            peer = active_peer if active_peer is not None else _peer_result(ticker, financials, valuation_class, provider)
+            payload = deepcopy(peer.to_dict())
+            diagnostics["status"] = "AVAILABLE" if payload.get("valid") else "UNAVAILABLE"
+        except Exception:
+            # Do not log provider exceptions: they can contain credentials.
+            diagnostics["warnings"] = ["peer_reference_unavailable"]
+    result["peer_comparable_result"] = payload
+    result["peer_diagnostics"] = diagnostics
+    return result
+
 NAMES = {
     "AAPL": "Apple",
     "MSFT": "Microsoft",
@@ -87,6 +127,7 @@ def analyze_ticker(
     market_reference_provider=None,
     peer_provider=None,
     peer_mode=None,
+    financial_diagnostic_sink=None,
 ) -> dict:
     ticker = normalize_ticker(ticker) or str(ticker).upper().strip()
     history_loader = history_loader or (lambda t, d: add_indicators(get_history(t, d)))
@@ -96,8 +137,7 @@ def analyze_ticker(
     financials = None
     blend = None
     peer = None
-    from peer_comparable import peer_model_mode, calculate_peer_comparable, PeerComparableResult
-    resolved_peer_mode = peer_mode if peer_mode in ("active", "diagnostic") else peer_model_mode()
+    resolved_peer_mode = _peer_mode(peer_mode)
     snap = None
     snap_zones = None
     snapshot_date = None
@@ -203,15 +243,22 @@ def analyze_ticker(
         try:
             vol = annualized_volatility(df)
             financials = fill_fundamental_fallbacks(financials or {})
-            # Isolate external reference failures from the internal valuation.
-            from valuation_engine import infer_valuation_class
-            peer_class = infer_valuation_class(ticker, financials)
-            try:
-                peer = calculate_peer_comparable(ticker, financials, peer_class, provider=peer_provider)
-            except Exception:
-                peer = PeerComparableResult(ticker, peer_class)
-                peer.warnings.append("peer_reference_unavailable")
-            peer_kwargs = {"peer_result": peer, "peer_mode": "active"} if resolved_peer_mode == "active" and peer.valid else {}
+            peer_kwargs = {}
+            if resolved_peer_mode == "active":
+                try:
+                    from valuation_engine import infer_valuation_class
+                    peer = _peer_result(ticker, financials, infer_valuation_class(ticker, financials), peer_provider)
+                    if peer.valid:
+                        peer_kwargs = {"peer_result": peer, "peer_mode": "active"}
+                except Exception:
+                    peer = None
+            if financial_diagnostic_sink is not None:
+                try:
+                    from financial_forensics import build_input_snapshot
+                    financial_diagnostic_sink(build_input_snapshot(ticker, deepcopy(financials), price=price))
+                except Exception:
+                    # Optional administrator observation cannot change valuation.
+                    pass
             blend = valuate(ticker, financials, volatility=vol, **peer_kwargs)
         except Exception as exc:
             logger.warning(
@@ -369,8 +416,6 @@ def analyze_ticker(
         "history": df,
         "blend": blend,
         "financials": financials,
-        "peer_comparable": peer.to_dict() if peer else None,
-        "peer_model_mode": resolved_peer_mode,
         "financials_period": (financials or {}).get("fcf_period"),
         "price_timestamp": trade_date,
         "snapshot_date": snapshot_date,
@@ -411,7 +456,9 @@ def analyze_ticker(
     r["market_reference"] = build_market_reference(ticker, reference_inputs, fair, price)
     r["market_reference"].update(external)
     r["forward_estimate_updated_at"] = (financials or {}).get("forward_estimate_updated_at")
-    return apply_reference_display_policy(r)
+    r = apply_reference_display_policy(r)
+    return _attach_peer_diagnostics(r, ticker, financials, resolved_peer_mode,
+                                    peer_provider, historical, active_peer=peer)
 
 
 def _exit_display_mode(exit_zone) -> str | None:

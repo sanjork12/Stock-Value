@@ -1,0 +1,129 @@
+"""Temporary Cloud-only, ADMIN_EMAIL-only public financial input diagnostic."""
+from copy import deepcopy
+import json
+import threading
+import time
+
+from finnhub_admin_diagnostics import is_cloud_runtime, verified_admin
+from financial_forensics import (TICKERS, capture_financial_diagnostic, snapshot_rows,
+                                  snapshot_json, compare_financial_snapshots, source_name)
+
+_LOCK=threading.Lock()
+_LAST_RUN={}
+
+
+def _secret_strings(secrets):
+    # Redact configured strings at the final boundary; never inspect Auth tokens.
+    strings=[]
+    def walk(value,hint=''):
+        if isinstance(value,str):
+            if len(value)>3 and any(word in hint.lower() for word in ('key','token','secret','password','cookie')):strings.append(value)
+        elif hasattr(value,'items'):
+            for key,item in value.items():walk(item,str(key))
+    walk(secrets)
+    return strings
+
+
+def run_cloud_financial_diagnostic(client,user_id,secrets,ticker):
+    if not is_cloud_runtime() or not verified_admin(client,user_id,secrets.get('ADMIN_EMAIL')):
+        raise PermissionError('财务输入诊断仅限 Cloud 中 ADMIN_EMAIL 对应的已登录管理员。')
+    if ticker not in TICKERS:raise ValueError('请选择允许诊断的股票。')
+    if not _LOCK.acquire(blocking=False):raise RuntimeError('已有财务诊断正在执行，请稍后重试。')
+    try:
+        identity=(str(user_id),ticker)
+        if time.monotonic()-_LAST_RUN.get(identity,-1e12)<30:
+            raise RuntimeError('同一股票诊断需间隔至少 30 秒。')
+        _LAST_RUN[identity]=time.monotonic()
+        report=capture_financial_diagnostic(ticker)
+        # Only the redacted schema-projected report is retained in session state.
+        return json.loads(snapshot_json(report,_secret_strings(secrets)))
+    finally:_LOCK.release()
+
+
+def _local_for_comparison(upload,cloud):
+    """Project uploads onto the trusted Cloud schema; never echo arbitrary JSON."""
+    if upload.size>1_000_000:raise ValueError('本地快照文件过大。')
+    raw=json.loads(upload.getvalue().decode('utf-8-sig'))
+    if raw.get('schema_version')!=1 or raw.get('ticker')!=cloud['ticker']:
+        raise ValueError('请选择同一 ticker 的财务诊断 JSON。')
+    from financial_forensics_observer import numeric,currency
+    from financial_forensics import _history
+    local={'ticker':raw['ticker'],'fields':{}}
+    for name,reference in cloud['fields'].items():
+        entry=(raw.get('fields') or {}).get(name,{})
+        value=entry.get('value')
+        if name.endswith(('_currency','.quote_currency','.financial_currency')):value=currency(value)
+        elif name.endswith('_source'):value=source_name(value) if value else None
+        elif name=='cash_flow.fcf_history':value=_history(value if isinstance(value,list) else [])
+        elif name in ('profile.preferred_models','profile.excluded_models'):
+            from financial_forensics import MODEL_INPUTS
+            value=[v for v in value if v in MODEL_INPUTS] if isinstance(value,list) else []
+        elif name=='profile.valuation_class':
+            from valuation_engine import CLASS_SPECS
+            value=value if isinstance(value,str) and value in CLASS_SPECS else None
+        elif isinstance(reference['value'],bool):value=value if isinstance(value,bool) else None
+        else:value=numeric(value)
+        local['fields'][name]={'value':value,'raw_source_name':source_name(entry.get('raw_source_name'))}
+    # Uploaded arbitrary statement/model text is not rendered. Field-by-field
+    # comparison includes history/counts/currencies; full trusted-file comparison
+    # remains available through the local helper/CLI.
+    return local
+
+
+def render_financial_diagnostics(st,client,user_id):
+    if not is_cloud_runtime() or not verified_admin(client,user_id,st.secrets.get('ADMIN_EMAIL')):
+        st.session_state.pop('_financial_diagnostic_result',None)
+        st.session_state.pop('_financial_diagnostic_open',None)
+        st.error('无权访问财务输入诊断。')
+        return
+    st.subheader('财务输入诊断')
+    st.caption('临时 Cloud 管理员入口 · 只读公开财务输入 · Finnhub 仅旁路观察 · 不改变估值')
+    if st.button('返回',key='financial_diagnostic_back'):
+        st.session_state.pop('_financial_diagnostic_open',None)
+        st.rerun()
+    ticker=st.selectbox('Ticker',TICKERS,key='financial_diagnostic_ticker')
+    if st.button('Run diagnostic',key='financial_diagnostic_run'):
+        try:
+            with st.spinner('正在捕获 Yahoo 实际响应路径、估值前输入和模型失败原因…'):
+                report=run_cloud_financial_diagnostic(client,user_id,st.secrets,ticker)
+            saved=st.session_state.get('_financial_diagnostic_result')
+            reports=deepcopy(saved.get('reports',{})) if saved and saved.get('owner')==str(user_id) else {}
+            reports[ticker]=report
+            st.session_state['_financial_diagnostic_result']={'owner':str(user_id),'reports':reports}
+        except (PermissionError,ValueError,RuntimeError):
+            st.warning('诊断未完成、正在执行或请求过于频繁，请稍后重试。')
+        except Exception:
+            st.error('诊断未完成；未输出请求、凭据或异常详情。')
+    saved=st.session_state.get('_financial_diagnostic_result')
+    if not saved:return
+    if saved.get('owner')!=str(user_id):
+        st.session_state.pop('_financial_diagnostic_result',None)
+        return
+    report=saved.get('reports',{}).get(ticker)
+    if not report:return
+    st.caption(f"捕获时间：{report['run_timestamp']} · {report['environment']['runtime']} · BEFORE_VALUATE")
+    rows=snapshot_rows(report)
+    for row in rows:row['Value']=json.dumps(row['Value'],ensure_ascii=False)
+    st.dataframe(rows,hide_index=True,use_container_width=True)
+    trace=report['valuation_failure_trace']
+    if not trace['available']:
+        st.warning(f"UNAVAILABLE because: {trace['UNAVAILABLE because']} · valid_models = {trace['valid_models']} · included = {trace['included_model_count']}")
+    else:st.success(f"内部估值可用：{trace['fair_value']} · {trace['valuation_mode']}")
+    st.dataframe(report['model_applicability'],hide_index=True,use_container_width=True)
+    st.caption('Peer: '+trace['peer'])
+    with st.expander('A–G 假设、原始公开字段和响应路径'):
+        st.json(report['hypotheses'])
+        st.json(report['raw_yahoo_observations'])
+    st.download_button('下载 Cloud Snapshot JSON',snapshot_json(report,_secret_strings(st.secrets)),
+                       f'cloud_financial_diagnostic_{ticker}.json','application/json',key='financial_diagnostic_json')
+    local=st.file_uploader('可选：上传同一 ticker 的本地财务诊断 JSON 做逐字段对比',type=['json'],key='financial_diagnostic_local')
+    if local is not None:
+        try:
+            comparison=compare_financial_snapshots(_local_for_comparison(local,report),report)
+            comparison=[row for row in comparison if row['field'] in report['fields']]
+            for row in comparison:
+                for key in ('local_value','cloud_value'):row[key]=json.dumps(row[key],ensure_ascii=False)
+            # Defensive credential redaction also applies to uploaded values.
+            comparison=json.loads(snapshot_json(comparison,_secret_strings(st.secrets)))
+            st.dataframe(comparison,hide_index=True,use_container_width=True)
+        except Exception:st.warning('无法比较：请使用同一 ticker 的本地诊断工具导出文件。')
