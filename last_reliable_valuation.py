@@ -59,6 +59,8 @@ def reliable_snapshot(result, now=None):
     """A live, already accepted internal valuation; no new reliability threshold."""
     if result.get('source_status') == 'cached_last_reliable':
         return None
+    if result.get('simulated_missing_input') is True:
+        return None  # Synthetic diagnostic runs can never become reliable data.
     if (result.get('peer_diagnostics') or {}).get('mode') == 'active':
         return None
     if result.get('valuation_mode') not in ('STANDARD', 'LOW_CONFIDENCE'):
@@ -138,7 +140,7 @@ def _transient_missing(result, saved):
     return lost
 
 
-def apply_last_reliable(result, row, now=None):
+def apply_last_reliable(result, row, now=None, *, _admin_simulated_missing=False):
     """Return a display copy only. Current financials and peer sidecars survive."""
     live = deepcopy(result)
     live['source_status'] = 'live'
@@ -156,7 +158,14 @@ def apply_last_reliable(result, row, now=None):
             return live
         if not _context_matches(_context(result), saved.get('context') or {}):
             return live
-        if not _transient_missing(result, saved):
+        # Explicit administrator test only: exercise cache retrieval after the
+        # unchanged EPS guard has refused the simulated input. A result flag
+        # alone never enables this exception in the production Dashboard.
+        simulated = (_admin_simulated_missing is True
+                     and result.get('simulated_missing_input') is True
+                     and not (result.get('financials') or {}).get('currency_mismatch')
+                     and (result.get('blend') or {}).get('reason') == 'forward_and_trailing_eps_unavailable')
+        if not simulated and not _transient_missing(result, saved):
             return live
         # Validate cached payload as strictly as live snapshots before display.
         valuation = saved.get('valuation') or {}

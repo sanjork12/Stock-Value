@@ -4,6 +4,7 @@ from collections.abc import Mapping
 import json
 import threading
 import time
+from datetime import date
 
 from finnhub_admin_diagnostics import is_cloud_runtime, verified_admin
 from financial_forensics import (TICKERS, capture_financial_diagnostic, snapshot_rows,
@@ -25,10 +26,11 @@ def _secret_strings(secrets):
     return strings
 
 
-def run_cloud_financial_diagnostic(client,user_id,secrets,ticker):
+def run_cloud_financial_diagnostic(client,user_id,secrets,ticker, *, simulate_missing_input=False):
     if not is_cloud_runtime() or not verified_admin(client,user_id,secrets.get('ADMIN_EMAIL')):
         raise PermissionError('财务输入诊断仅限 Cloud 中 ADMIN_EMAIL 对应的已登录管理员。')
     if ticker not in TICKERS:raise ValueError('请选择允许诊断的股票。')
+    simulate_missing_input = simulate_missing_input is True
     if not _LOCK.acquire(blocking=False):raise RuntimeError('已有财务诊断正在执行，请稍后重试。')
     try:
         identity=(str(user_id),ticker)
@@ -36,7 +38,20 @@ def run_cloud_financial_diagnostic(client,user_id,secrets,ticker):
             raise RuntimeError('同一股票诊断需间隔至少 30 秒。')
         _LAST_RUN[identity]=time.monotonic()
         try:
-            report=capture_financial_diagnostic(ticker)
+            def valuation_display(result):
+                from analysis_service import fetch_historical_snapshot
+                from last_reliable_valuation import apply_last_reliable
+                if simulate_missing_input:
+                    row=fetch_historical_snapshot(client,user_id,ticker,date.today().isoformat())
+                    result=apply_last_reliable(result,row,_admin_simulated_missing=True)
+                # Whitelisted public display fields only; no writes in this path.
+                return {key:deepcopy(result.get(key)) for key in (
+                    'ticker','source_status','stale_reason','fair_value','blended_low',
+                    'blended_mid','blended_high','zones','exit_zone','calculated_at',
+                    'confidence','valuation_mode','simulated_missing_input')
+                } | {'source_status':result.get('source_status','live')}
+            report=capture_financial_diagnostic(ticker,
+                simulate_missing_input=simulate_missing_input,result_sink=valuation_display)
         except FinancialDiagnosticFailure:
             raise
         except Exception as exc:
@@ -95,10 +110,13 @@ def render_financial_diagnostics(st,client,user_id):
         st.session_state.pop('_financial_diagnostic_open',None)
         st.rerun()
     ticker=st.selectbox('Ticker',TICKERS,key='financial_diagnostic_ticker')
+    simulate=st.checkbox('模拟关键财务输入缺失',key='financial_diagnostic_simulate_missing',value=False) is True
+    if simulate:
+        st.warning('测试模式：正在模拟实时财务输入缺失')
     if st.button('Run diagnostic',key='financial_diagnostic_run'):
         try:
             with st.spinner('正在捕获 Yahoo 实际响应路径、估值前输入和模型失败原因…'):
-                report=run_cloud_financial_diagnostic(client,user_id,st.secrets,ticker)
+                report=run_cloud_financial_diagnostic(client,user_id,st.secrets,ticker,simulate_missing_input=simulate)
             saved=st.session_state.get('_financial_diagnostic_result')
             reports=deepcopy(saved.get('reports',{})) if saved and saved.get('owner')==str(user_id) else {}
             reports[ticker]=report
@@ -117,6 +135,9 @@ def render_financial_diagnostics(st,client,user_id):
         return
     report=saved.get('reports',{}).get(ticker)
     if not report:return
+    if not report.get('capture_error') and bool(report.get('simulated_missing_input')) != simulate:
+        st.info('测试开关已切换，请点击 Run diagnostic 重新运行。')
+        return
     if report.get('capture_error'):
         error=report['capture_error']
         st.error(f"诊断失败阶段：{error['stage']} · 错误类别：{error['category']}。未输出凭据或异常原文。")
@@ -134,6 +155,12 @@ def render_financial_diagnostics(st,client,user_id):
     else:st.success(f"内部估值可用：{trace['fair_value']} · {trace['valuation_mode']}")
     st.dataframe(report['model_applicability'],hide_index=True,use_container_width=True)
     st.caption('Peer: '+trace['peer'])
+    valuation=report.get('valuation')
+    if valuation:
+        from last_reliable_valuation import render_cache_notice
+        render_cache_notice(st,valuation)
+        st.caption('以下为展示结果；上方保留本次实时模型的真实计算与失败原因。')
+        st.json(valuation)
     with st.expander('A–G 假设、原始公开字段和响应路径'):
         st.json(report['hypotheses'])
         st.json(report['raw_yahoo_observations'])

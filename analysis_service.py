@@ -130,6 +130,7 @@ def analyze_ticker(
     peer_mode=None,
     financial_diagnostic_sink=None,
     financial_diagnostic_error_sink=None,
+    diagnostic_simulate_missing_eps=False,
 ) -> dict:
     ticker = normalize_ticker(ticker) or str(ticker).upper().strip()
     history_loader = history_loader or (lambda t, d: add_indicators(get_history(t, d)))
@@ -245,6 +246,13 @@ def analyze_ticker(
         try:
             vol = annualized_volatility(df)
             financials = fill_fundamental_fallbacks(financials or {})
+            if diagnostic_simulate_missing_eps:
+                # Administrator diagnostic invocation only; never mutate the
+                # provider response or shared cached fundamentals.
+                financials = deepcopy(financials)
+                financials['forward_eps'] = None
+                financials['trailing_eps'] = None
+                financials['simulated_missing_input'] = True
             peer_kwargs = {}
             if resolved_peer_mode == "active":
                 try:
@@ -464,6 +472,8 @@ def analyze_ticker(
     r["market_reference"].update(external)
     r["forward_estimate_updated_at"] = (financials or {}).get("forward_estimate_updated_at")
     r = apply_reference_display_policy(r)
+    if diagnostic_simulate_missing_eps and not historical:
+        r['simulated_missing_input'] = True
     return _attach_peer_diagnostics(r, ticker, financials, resolved_peer_mode,
                                     peer_provider, historical, active_peer=peer)
 

@@ -276,7 +276,8 @@ def compare_financial_snapshots(local,cloud):
     return rows
 
 
-def capture_financial_diagnostic(ticker, *, history_loader=None, fundamentals_loader=None, finnhub_provider=None):
+def capture_financial_diagnostic(ticker, *, history_loader=None, fundamentals_loader=None, finnhub_provider=None,
+                                 simulate_missing_input=False, result_sink=None):
     if ticker not in TICKERS:raise ValueError('Unsupported diagnostic ticker.')
     from analysis_service import analyze_ticker
     snapshots=[]
@@ -284,7 +285,8 @@ def capture_financial_diagnostic(ticker, *, history_loader=None, fundamentals_lo
     with observe_financial_inputs():
         result=analyze_ticker(ticker,history_loader=history_loader,fundamentals_loader=fundamentals_loader,
                               peer_mode='diagnostic',financial_diagnostic_sink=lambda snapshot:snapshots.append(deepcopy(snapshot)),
-                              financial_diagnostic_error_sink=capture_errors.append)
+                              financial_diagnostic_error_sink=capture_errors.append,
+                              diagnostic_simulate_missing_eps=simulate_missing_input)
     if not snapshots:
         if capture_errors:
             raise FinancialDiagnosticFailure('PRE_VALUATION_SNAPSHOT',public_error=capture_errors[0])
@@ -297,7 +299,12 @@ def capture_financial_diagnostic(ticker, *, history_loader=None, fundamentals_lo
     except Exception:
         finnhub={'status':'NETWORK_ERROR','fields':{},'used_for_valuation':False}
     try:
-        return finalize_snapshot(snapshots[0],result,finnhub)
+        report = finalize_snapshot(snapshots[0],result,finnhub)
+        if simulate_missing_input:
+            report['simulated_missing_input'] = True
+        if result_sink is not None:
+            report['valuation'] = result_sink(deepcopy(result))
+        return report
     except Exception as exc:
         raise FinancialDiagnosticFailure('FINALIZE_REPORT',exc) from None
 

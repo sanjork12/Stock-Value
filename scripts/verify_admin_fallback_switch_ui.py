@@ -1,0 +1,51 @@
+"""Offline real-widget check of the administrator simulation switch."""
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from streamlit.testing.v1 import AppTest
+
+
+def main():
+    root=Path(__file__).resolve().parents[1]
+    source=f'''
+import sys
+sys.path.insert(0,{str(root)!r})
+import streamlit as st
+from unittest.mock import patch
+from tests.test_admin_fallback_switch import AdminFallbackSwitchTests
+import financial_forensics_admin as admin
+test=AdminFallbackSwitchTests()
+test.setUp()
+with patch.object(admin,'is_cloud_runtime',return_value=True), \
+     patch.object(admin,'capture_financial_diagnostic',side_effect=test.capture), \
+     patch('analysis_service.fetch_historical_snapshot',return_value=test.row):
+    admin.render_financial_diagnostics(st,test.client,'owner')
+'''
+    with TemporaryDirectory() as directory:
+        path=Path(directory)/'app.py'
+        path.write_text(source,encoding='utf-8')
+        app=AppTest.from_file(str(path),default_timeout=20)
+        app.secrets['ADMIN_EMAIL']='admin@example.test'
+        app.run()
+        assert not app.exception
+        assert app.checkbox[0].label=='模拟关键财务输入缺失'
+        assert not app.checkbox[0].value
+        app.selectbox[0].select('NVDA').run()
+        app.checkbox[0].check().run()
+        assert any('测试模式：正在模拟实时财务输入缺失' in w.value for w in app.warning)
+        next(b for b in app.button if b.label=='Run diagnostic').click().run()
+        assert not app.exception
+        report=app.session_state['_financial_diagnostic_result']['reports']['NVDA']
+        assert report['valuation']['source_status']=='cached_last_reliable'
+        assert any('实时财务输入暂不完整，当前显示最近一次可靠估值。' in w.value for w in app.warning)
+        assert any(report['valuation']['calculated_at'] in c.value for c in app.caption)
+        app.checkbox[0].uncheck().run()
+        assert not any('当前显示最近一次可靠估值' in w.value for w in app.warning)
+        next(b for b in app.button if b.label=='Run diagnostic').click().run()
+        assert not app.exception
+        report=app.session_state['_financial_diagnostic_result']['reports']['NVDA']
+        assert report['valuation']['source_status']=='live'
+        assert report['fields']['eps.forward_eps']['value'] is not None
+    print('Administrator fallback switch: simulated cache display and restored live UI PASS')
+
+
+if __name__=='__main__':main()
