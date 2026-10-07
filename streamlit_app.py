@@ -46,6 +46,7 @@ try:
         get_live_fundamentals,
         fnum,
     )
+    from market_reference_provider import format_consensus_target
     from analysis_service import (
         analyze_ticker,
         build_snapshot_record,
@@ -808,6 +809,19 @@ def render_cycle_panel(r: dict):
         st.caption(f"周期 PE 区间：{pe_range[0]} – {pe_range[1]}")
 
 
+def render_market_reference(r: dict):
+    ref = r.get("market_reference") or {}
+    st.markdown("**市场参考**")
+    st.write("Analyst consensus:", format_consensus_target(ref))
+    st.caption(f"Range: {money(ref.get('analyst_target_low'))} – {money(ref.get('analyst_target_high'))} · Source: {ref.get('consensus_source') or 'Finnhub'} · Updated: {ref.get('consensus_updated_at') or '未提供'}")
+    deviation = ref.get("internal_vs_consensus_pct")
+    st.write("Internal vs consensus:", f"{deviation:+.1f}%" if deviation is not None else "—")
+    if ref.get("error"):
+        st.caption(ref["error"])
+    if ref.get("sanity_status") == "HIGH_DIVERGENCE":
+        st.warning("⚠ 内部估值与市场一致预期分歧显著")
+
+
 def render_valuation_diagnostics(r: dict):
     ref = r.get("market_reference") or {}
     st.caption("买入区与减仓区由内部估值、波动率、模型可靠性和安全边际规则推导，并非独立估值模型。")
@@ -1545,7 +1559,7 @@ if page == "自选股":
                 "价格": r["price"],
                 "状态": r["recommendation"],
                 "内部估值": dashboard_fair_text(r),
-                "市场一致目标": money((r.get("market_reference") or {}).get("analyst_consensus_target")),
+                "市场一致目标": format_consensus_target(r.get("market_reference")),
                 "内部 vs 市场": (f"{r['market_reference']['internal_vs_consensus_pct']:+.1f}%" if (r.get("market_reference") or {}).get("internal_vs_consensus_pct") is not None else "—"),
                 "估值模式": r.get("valuation_mode") or "—",
                 **{key: (f"{r['market_reference'][key]:.2f}x" if (r.get("market_reference") or {}).get(key) is not None else "—") for key in ("current_forward_pe", "internal_implied_forward_pe", "historical_pe_median_3y", "historical_pe_median_5y", "sector_forward_pe")},
@@ -1883,6 +1897,8 @@ elif page == "单股分析":
             )
         elif view.get("mode") == "specialized":
             st.info("传统估值模型不适用，需要专项场景估值。仅显示技术观察。")
+
+        render_market_reference(r)
 
         # 买入 / 持有 / 高估 / 减仓区
         if r.get("zones") and not r.get("hide_precise_trading_zones"):

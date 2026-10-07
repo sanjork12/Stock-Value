@@ -5,6 +5,7 @@ import logging
 
 import pandas as pd
 from market_reference import build_market_reference, apply_reference_display_policy
+from market_reference_provider import get_market_reference_provider
 
 from mag7_monitor import (
     add_indicators,
@@ -84,6 +85,7 @@ def analyze_ticker(
     history_loader=None,
     fundamentals_loader=None,
     snapshot_loader=None,
+    market_reference_provider=None,
 ) -> dict:
     ticker = normalize_ticker(ticker) or str(ticker).upper().strip()
     history_loader = history_loader or (lambda t, d: add_indicators(get_history(t, d)))
@@ -377,7 +379,21 @@ def analyze_ticker(
     elif errors and not fair:
         r["analysis_error"] = "财务数据暂时获取失败" if any(e.get("stage") == "fundamentals" for e in errors) else None
     r["recommendation"] = _recommendation_label(r)
-    r["market_reference"] = build_market_reference(ticker, financials, fair, price)
+    # Only after internal valuation and zone calculations; never normalize or
+    # feed provider targets back into the internal fundamentals/model.
+    external = ({"source_status": "HISTORICAL_UNAVAILABLE", "source": "Finnhub"}
+                if historical else (market_reference_provider or get_market_reference_provider()).get_price_target(ticker))
+    reference_inputs = dict(financials or {})
+    reference_inputs.update({
+        "analyst_consensus_target": external.get("target_mean"),
+        "analyst_target_low": external.get("target_low"),
+        "analyst_target_high": external.get("target_high"),
+        "analyst_count": external.get("analyst_count"),
+        "consensus_source": external.get("source"),
+        "consensus_updated_at": external.get("last_updated"),
+    })
+    r["market_reference"] = build_market_reference(ticker, reference_inputs, fair, price)
+    r["market_reference"].update(external)
     r["forward_estimate_updated_at"] = (financials or {}).get("forward_estimate_updated_at")
     return apply_reference_display_policy(r)
 

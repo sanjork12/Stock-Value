@@ -154,3 +154,36 @@ rule-derived zones. Display prices use two decimals; LOW ranges use integers.
 
 Validation: python -m unittest discover -s tests -v (220 tests passed).
 No live provider or interactive browser validation was performed.
+
+
+### Finnhub live market reference provider
+
+Current live analyses use the independent Finnhub adapter in
+`market_reference_provider.py`, via GET
+`https://finnhub.io/api/v1/stock/price-target?symbol=TICKER`.
+The app reads `FINNHUB_API_KEY` from the environment, then Streamlit secrets.
+Copy the placeholder in `.streamlit/secrets.toml.example` into deployment secrets;
+never commit the actual key. The configured account must have endpoint access.
+
+Provider results contain ticker, target_mean/high/low, analyst_count,
+last_updated, source, source_status and a sanitized error. Finnhub's targetMean,
+targetHigh, targetLow and lastUpdated map directly; numberAnalysts is used only
+when supplied. Missing analyst counts/dates remain null.
+
+The process-wide provider caches public results by normalized ticker for 12 hours
+(success/no-data), and transient errors for 60 seconds. Requests are serialized
+and spaced 1.1 seconds apart; HTTP 429 activates a shared cooldown of at least
+60 seconds (respecting numeric Retry-After up to one hour). Existing valid cache
+entries remain usable during cooldown. Cache is in-memory per application worker;
+worker restarts clear it. Credentials are neither cache keys nor cached values.
+
+States distinguish NOT_CONFIGURED, NO_DATA, RATE_LIMIT, NETWORK_ERROR,
+INVALID_SYMBOL, AUTH_ERROR, ACCESS_DENIED and PROVIDER_ERROR. Dashboard shows
+explicit state labels rather than a generic dash. Historical analyses do not
+fetch current targets. Single-stock summaries show consensus, range, deviation,
+source/update date and high-divergence warnings even for specialized valuations.
+
+Provider data is joined after internal valuation and zone calculations, without
+changing financial normalization or feeding analyst targets into model inputs.
+Validation includes injected HTTP responses, cache expiry/cooldown, safe errors,
+and end-to-end analysis comparisons with and without external references.
