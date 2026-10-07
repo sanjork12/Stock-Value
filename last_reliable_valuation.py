@@ -161,10 +161,13 @@ def apply_last_reliable(result, row, now=None, *, _admin_simulated_missing=False
         # Explicit administrator test only: exercise cache retrieval after the
         # unchanged EPS guard has refused the simulated input. A result flag
         # alone never enables this exception in the production Dashboard.
+        simulated_inputs = result.get('financials') or {}
         simulated = (_admin_simulated_missing is True
                      and result.get('simulated_missing_input') is True
-                     and not (result.get('financials') or {}).get('currency_mismatch')
-                     and (result.get('blend') or {}).get('reason') == 'forward_and_trailing_eps_unavailable')
+                     and not simulated_inputs.get('currency_mismatch')
+                     and all(simulated_inputs.get(k) is None for k in ('forward_eps','trailing_eps','eps_proxy'))
+                     and (result.get('blend') or {}).get('reason') in (
+                         'forward_and_trailing_eps_unavailable', 'insufficient_valid_models'))
         if not simulated and not _transient_missing(result, saved):
             return live
         # Validate cached payload as strictly as live snapshots before display.

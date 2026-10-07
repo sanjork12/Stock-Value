@@ -1,0 +1,20 @@
+{
+  "revision": "e5f17b2",
+  "description": "SHA256 of complete internal_snapshot for 14 synthetic fixtures, captured before single-source input fix.",
+  "tickers": {
+    "AMZN": "0fbe7a24caafd190cfaf3fbe75d985c7e1f50e7802c167be0ec96ac0704f817e",
+    "AAPL": "9a1ca7cd391c7516e84660a12e4c298c4cb751c711434a870e61ef8dec26ed66",
+    "AVGO": "f86fa2ec15310486c0a35fd039eed87735cdf886a64545752ec5d538129dc169",
+    "GOOG": "c2b0abc62c21782e70171ede75206fb2c7438da77dfc6ed58f10fbaea2e109bc",
+    "JPM": "1454f4a36665be0ffd670383d5002486c22c6e8691ad13bd33086ea03c6d6cff",
+    "META": "fc9010400f2e617f76c8953ace783f4f3279695fc8d1ea6ed55c9d291af8467a",
+    "MSFT": "cf005bf1cbfa3a828d4bda3feb34c83b42da031b43019cee411b083a0d9bf80d",
+    "MU": "28565fac0068c45f4c30a6899082b00a868ccde5abd926a07944aefd6415f9e0",
+    "NVDA": "3afa472c8c4985e02b3885f0f374b422cd687e7d42340f1e747406e91036380a",
+    "ORCL": "9b66502c71e73533c5f54a72fbec53356857b217717624b38302cf42888b0f1d",
+    "PLTR": "30498aaad402da654ed6a0b1d286132d468eeab683e6709a01fa49a05563f836",
+    "COIN": "28a3372dc9c85a76103b24e309e7852a56c64f89e6ceef367ff15d7cd187751f",
+    "CRCL": "09bb28a31f946ed0baa6082255b7aa7afa0441e3330cfadf2ddef515fd944539",
+    "UBER": "e7ac399ec8c391bb28563e0e2526ed067ae7d2cff632a905afedcce3fe26b16c"
+  }
+}

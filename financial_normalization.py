@@ -34,6 +34,15 @@ CLASS_SPECIFIC_SHARES = "class_specific_shares_detected"
 FORWARD_AND_TRAILING_UNAVAILABLE = "forward_and_trailing_eps_unavailable"
 
 
+class NormalizedFinancialInputs(dict):
+    """Explicit normalization boundary, preserved by deepcopy.
+
+    Model execution must consume these values as supplied. Statement-derived
+    fallback is resolved here before applicability, never again inside valuate.
+    Plain provider dictionaries remain supported by normalizing once on entry.
+    """
+
+
 def _ccy(value) -> str | None:
     if value is None:
         return None
@@ -315,7 +324,7 @@ def normalize_financials(financials: dict | None) -> dict:
         "currency_mismatch": mismatch,
         "fx_converted": bool(data.get("fx_converted")),
     }
-    return data
+    return NormalizedFinancialInputs(data)
 
 
 def quote_currency_eps_for_conversion(financials: dict) -> tuple[float | None, str | None]:

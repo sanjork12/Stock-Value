@@ -252,6 +252,15 @@ def analyze_ticker(
                 financials = deepcopy(financials)
                 financials['forward_eps'] = None
                 financials['trailing_eps'] = None
+                financials['eps_proxy'] = None
+                financials['forward_eps_source'] = None
+                financials['trailing_eps_source'] = None
+                financials['eps_proxy_source'] = None
+                financials['eps_proxy_currency_safe'] = False
+                for key in ('forward_eps', 'trailing_eps', 'eps_proxy'):
+                    if key in (financials.get('provenance') or {}):
+                        financials['provenance'][key]['value'] = None
+                        financials['provenance'][key]['source'] = None
                 financials['simulated_missing_input'] = True
             peer_kwargs = {}
             if resolved_peer_mode == "active":

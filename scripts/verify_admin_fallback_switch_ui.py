@@ -58,6 +58,28 @@ with patch.object(admin,'is_cloud_runtime',return_value=True), \
         assert displayed['last_reliable_calculated_at'] is None
         assert displayed['fallback_reason'] is None
         assert report['fields']['eps.forward_eps']['value'] is not None
+        # AMZN must also cache after EPS loss even though its class permits a
+        # statement proxy during normal normalization. Keep the DCF guard real.
+        amzn_source=source.replace('test.setUp()', '''test.setUp()
+from tests.test_single_source_valuation_inputs import amzn_inputs,analyze_amzn
+from last_reliable_valuation import reliable_snapshot
+test.raw=amzn_inputs()
+test.row={'raw':{'last_reliable':reliable_snapshot(analyze_amzn())}}''')
+        path.write_text(amzn_source,encoding='utf-8')
+        amzn=AppTest.from_file(str(path),default_timeout=20)
+        amzn.secrets['ADMIN_EMAIL']='admin@example.test'
+        amzn.run()
+        amzn.selectbox[0].select('AMZN').run()
+        amzn.checkbox[0].check().run()
+        next(b for b in amzn.button if b.label=='Run diagnostic').click().run()
+        assert not amzn.exception
+        report=amzn.session_state['_financial_diagnostic_result']['reports']['AMZN']
+        assert not report['valuation_failure_trace']['available']
+        assert report['valuation']['source_status']=='cached_last_reliable'
+        displayed=next(json.loads(item.value) for item in amzn.json if 'final_fair_value' in item.value)
+        assert displayed['final_fair_value']==report['valuation']['fair_value']
+        assert displayed['last_reliable_calculated_at']==report['valuation']['calculated_at']
+        assert displayed['fallback_reason']=='current_financial_input_incomplete'
     print('Administrator fallback switch: simulated cache display and restored live UI PASS')
 
 

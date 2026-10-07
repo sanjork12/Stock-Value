@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 import logging
 import math
@@ -1088,11 +1089,11 @@ APPLICABILITY_GATES = {
 }
 
 
-def run_model(model_id: str, profile: ValuationProfile, financials: dict) -> dict:
+def run_model(model_id: str, profile: ValuationProfile, financials: dict, *, _gate_result=None) -> dict:
     gate = APPLICABILITY_GATES.get(model_id)
     why = ""
     if gate:
-        ok, reason, why, diag = gate(profile, financials)
+        ok, reason, why, diag = _gate_result if _gate_result is not None else gate(profile, financials)
         if not ok:
             return _not_applicable(model_id, reason, why, diag)
     runner = MODEL_RUNNERS.get(model_id)
@@ -1893,8 +1894,33 @@ def check_valuation_invariants(blend: dict | None, *, strict: bool = False) -> l
     return problems
 
 
+def check_model_input_invariants(models, included, pre_applicability):
+    """A blocked gate cannot execute or enter the blend on the same input."""
+    for name, applicable in pre_applicability.items():
+        model = models.get(name) or {}
+        if not applicable and (model.get('executed') or model.get('valid') or name in included):
+            raise AssertionError('pre_valuation_applicability_violation:' + name)
+
+
 def valuate(ticker: str, financials: dict, volatility: float | None = None, *, peer_result=None, peer_mode="diagnostic") -> dict:
-    financials = normalize_financials(financials)
+    from financial_normalization import NormalizedFinancialInputs
+    # Never normalize a supplied normalized snapshot again: doing so silently
+    # resurrects EPS from historical statements AFTER the diagnostic gate.
+    financials = financials or {}
+    explicit_missing_eps = all(key in financials and financials[key] is None
+                               for key in ('forward_eps', 'trailing_eps', 'eps_proxy'))
+    financials = deepcopy(financials) if isinstance(financials, NormalizedFinancialInputs) else normalize_financials(financials)
+    if explicit_missing_eps:
+        # Also honor explicit absence in serialized/deserialized snapshots that
+        # lost their Python type. Legacy raw inputs omitting proxy still resolve
+        # their documented statement fallback before any applicability checks.
+        for key in ('forward_eps', 'trailing_eps', 'eps_proxy'):
+            financials[key] = None
+            financials[key + '_source'] = None
+            if key in (financials.get('provenance') or {}):
+                financials['provenance'][key]['value'] = None
+                financials['provenance'][key]['source'] = None
+        financials['eps_proxy_currency_safe'] = False
     profile = build_profile(ticker, financials)
     spec = profile.spec
     specialized = spec.get("fair_policy") in {"specialized", "specialized_if_unprofitable"} and (
@@ -1931,8 +1957,12 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None, *, p
             "view": primary_valuation_view({"confidence": overall}),
         })
 
+    pre_applicability = {}
     for model_id in profile.preferred_models:
-        models[model_id] = run_model(model_id, profile, financials)
+        gate = APPLICABILITY_GATES.get(model_id)
+        gate_result = gate(profile, financials) if gate else None
+        pre_applicability[model_id] = gate_result[0] if gate_result else True
+        models[model_id] = run_model(model_id, profile, financials, _gate_result=gate_result)
     for model_id in profile.excluded_models:
         if model_id not in models:
             models[model_id] = _not_applicable(model_id, "excluded_by_valuation_class", "该估值类型默认排除此模型。")
@@ -1983,6 +2013,7 @@ def valuate(ticker: str, financials: dict, volatility: float | None = None, *, p
                 "why": obj.get("why_applicable"),
             })
 
+    check_model_input_invariants(models, included, pre_applicability)
     usable_pairs = [(name, models[name]) for name in included]
     disp = dispersion_pct([obj for _, obj in usable_pairs])
     reliability = compute_reliability(profile, financials, models, included, excluded, disp, False)
