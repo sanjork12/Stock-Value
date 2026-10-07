@@ -215,3 +215,90 @@ execution button behavior and the existing application's regression suite.
 Cloud verification still requires deploying these uncommitted files through the
 normal deployment process and configuring `ADMIN_EMAIL`; no Cloud deployment
 or live-account audit is implied by the local tests.
+
+## V5.5 — Finnhub Free Data Integration
+
+The Cloud capability audit supplied for this release confirms quote, company
+profile, company news, basic metrics, earnings calendar (partial symbol coverage),
+earnings surprises and recommendations. V5.5 production code enables only those
+seven endpoint families through `finnhub_service.FinnhubProvider`. This section
+supersedes earlier live price-target integration instructions. Target adapters
+remain available for explicitly injected comparisons and administrator audits;
+the normal analysis path never requests price targets or earnings/revenue
+estimate endpoints. Dashboard consensus target/deviation columns are hidden.
+
+### Data boundaries and caching
+
+Yahoo and the existing financial pipeline remain primary for historical prices,
+SMA, valuation inputs, model math, MOS, zones and reliability. Finnhub results
+contain `source`, `fetched_at`, `status` and selected `data`. No Supabase client,
+user token, key or watchlist ownership state is cached. Environment variables
+and Streamlit Secrets supply the key through the existing safe loader.
+
+Endpoint TTLs: quote 10 minutes; company profile 24 hours; company news 20
+minutes; basic financials and earnings calendar 8 hours; earnings surprises
+24 hours; recommendations 12 hours. Cache is process-local and precedes news
+filtering. All uncached calls are serialized and spaced at least 1.2 seconds
+apart. A transient network/5xx failure retries once. HTTP 429 activates a shared
+cooldown (at least 60 seconds) with no immediate retry; cached results remain
+usable. Error strings never include raw responses or credentials.
+
+### Headlines and calendar
+
+Production 头等大事 uses real company-news for the selected watchlist/time
+window and the earnings calendar for upcoming events. Demo/static data remains
+behind explicit `NEWS_DEMO_MODE=true`. The default view remains the whole
+watchlist; existing single-stock links apply a ticker filter.
+
+News windows use London time: rolling 24 hours, Monday-to-now, quarter-start-to-
+now. Exact timestamps exclude future news, and requests never exceed 100 days.
+Filtering requires a related ticker match, a valid source URL and timestamp;
+Alphabet aliases are supported. Deduplication removes tracking-query URL copies,
+identical normalized headlines and near-identical syndicated headlines per
+company. Ordinary price moves, analyst target chatter and speculative previews
+are filtered. Rule-based event types/importance cover earnings, guidance,
+regulation, M&A, contracts, capex, management, products, competition and legal
+matters. Importance score then publication time controls ranking; ticker caps
+are 2/3/5 for 24 hours/week/quarter.
+
+Chinese structured summaries describe the classified topic, quote the original
+headline and distinguish potential effects from confirmed facts. They do not
+translate full articles or infer new numbers. Cards retain original news URLs,
+publisher attribution via Finnhub, why it matters and two follow-up checks.
+
+Calendar requests cover the next 30 days and are cached across watchlists, with
+results filtered to the current user's symbols. Only future-dated entries are
+shown, with date, pre/post-market timing, fiscal quarter and available calendar
+EPS/revenue estimates. These embedded calendar fields do not call the paid
+estimate endpoints. A missing symbol/date is explicitly shown as Finnhub 暂无该公司
+未来财报日期; no date is inferred. Single-stock teasers show one highest-priority
+recent event and preserve the ticker-filtered navigation link.
+
+### Single-stock external reference
+
+A compact 外部市场参考 block follows internal valuation and business financials.
+It shows company metadata (market capitalization and shares in Finnhub's million
+units), recent four-period recommendations, recent four-quarter EPS surprises
+and selected metrics: explicit forwardPE if available, peTTM, pbAnnual, roeTTM,
+operatingMarginTTM, revenueGrowthTTMYoy, epsGrowthTTMYoy, 52WeekHigh/Low and beta.
+Missing forward PE is not replaced by normalized/trailing PE. Recommendations
+are counts and sentiment context, not system trading instructions. EPS beat
+counts do not imply future returns or revenue surprises.
+
+Quote is a read-only sanity reference: >2% discrepancy warns about timestamps.
+When the primary price is missing, Finnhub's quote is explicitly labeled as an
+external fallback reference in this block; historical indicators/internal
+valuation are not synthesized or overwritten. Forward-PE/ROE discrepancies
+>25% warn about period/definition differences and never replace internal data.
+Each module handles unavailable/limited data independently. Without a key, the
+external block is hidden and Headlines says 实时新闻源未配置。
+
+### Validation
+
+The full unittest suite, including V5.5 provider/news/calendar/isolation tests,
+passes. A Streamlit AppTest renders all three external-reference tables and
+sanity warnings with fixtures. Baseline comparison against the previous commit
+confirms identical fair values, ranges, confidence, buy/exit zones, reliability
+and dispersion for AAPL/MSFT/NVDA/AMZN/GOOG/JPM/TSLA. Local credentials are absent;
+these checks do not claim live Cloud API validation. No Auth/RLS, ownership,
+valuation engine or financial normalization changes were made.

@@ -1,7 +1,8 @@
 """Headline news service: aggregate providers → normalized Events (V5.4)."""
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Sequence
 
 from industry.news.providers import (
@@ -25,11 +26,14 @@ from industry.news.schema import (
 
 def range_bounds(range_key: str, *, now: Optional[date] = None) -> Dict[str, Any]:
     """Map UI range labels → start/end/include_upcoming."""
-    today = now or date.today()
+    today = now or datetime.now(ZoneInfo("Europe/London")).date()
     key = str(range_key or "").strip()
     if key in {"即将发生", "upcoming", "UPCOMING"}:
         return {"start_time": None, "end_time": None, "include_upcoming": True}
     if key in {"过去24小时", "24h"}:
+        if now is None:
+            current = datetime.now(ZoneInfo("Europe/London"))
+            return {"start_time": (current - timedelta(hours=24)).isoformat(), "end_time": current.isoformat(), "include_upcoming": False}
         start = today - timedelta(days=1)
         return {
             "start_time": start.isoformat(),
@@ -122,6 +126,10 @@ def get_company_events(
     if not tick_list:
         return []
 
+    if providers is None and not news_demo_mode_enabled():
+        from industry.news.finnhub_live import get_live_events
+        return get_live_events(tick_list, start_time, end_time, include_upcoming,
+                               now=now, range_key=range_key, apply_limits=apply_limits)
     impls = list(providers) if providers is not None else default_providers()
     # When callers inject providers for tests, honor them as-is.
     raw_rows = _collect_raw(

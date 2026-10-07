@@ -17,11 +17,8 @@ def news_demo_mode_enabled() -> bool:
 
 
 def external_news_configured() -> bool:
-    return bool(
-        str(os.environ.get("NEWS_API_KEY") or "").strip()
-        or str(os.environ.get("FINNHUB_API_KEY") or "").strip()
-        or str(os.environ.get("POLYGON_API_KEY") or "").strip()
-    )
+    from finnhub_service import get_finnhub_provider
+    return get_finnhub_provider().configured()
 
 
 class NewsProvider(ABC):
@@ -92,8 +89,13 @@ class ExternalNewsProvider(NewsProvider):
         _ = (ticker, start_time, end_time)
         if not external_news_configured():
             return []
-        # Configured but not wired in V5.4 — return empty rather than fake rows.
-        return []
+        from finnhub_service import get_finnhub_provider
+        from industry.news.finnhub_live import normalize_finnhub_news
+        from datetime import timedelta
+        end = str(end_time or date.today().isoformat())[:10]
+        start = str(start_time or (date.today() - timedelta(days=90)).isoformat())[:10]
+        result = get_finnhub_provider().get_company_news(ticker, start, end)
+        return [event for raw in result.get("data") or [] if (event := normalize_finnhub_news(raw, ticker))]
 
 
 class StaticDemoProvider(NewsProvider):

@@ -827,7 +827,8 @@ def render_valuation_diagnostics(r: dict):
     ref = r.get("market_reference") or {}
     st.caption("买入区与减仓区由内部估值、波动率、模型可靠性和安全边际规则推导，并非独立估值模型。")
     st.write("估值模式：", r.get("valuation_mode") or "—")
-    st.write("Market consensus reference：", money(ref.get("analyst_consensus_target")))
+    if ref.get("analyst_consensus_target") is not None:
+        st.write("Market consensus reference：", money(ref.get("analyst_consensus_target")))
     if r.get("valuation_mode") == "SPECIALIZED":
         st.caption("内部估值：专项模型未提供")
     for warning in ref.get("sanity_warnings") or []:
@@ -1656,6 +1657,8 @@ if page == "自选股":
             "SMA50",
             "SMA200",
         ])
+    # V5.5: free account has no analyst price-target entitlement.
+    dashboard_columns = [col for col in dashboard_columns if col not in {"市场一致目标", "内部 vs 市场"}]
     visible = [col for col in dashboard_columns if col in df.columns]
     if "错误" in visible and "错误" in df.columns:
         err_series = df["错误"]
@@ -1912,8 +1915,6 @@ elif page == "单股分析":
         elif view.get("mode") == "specialized":
             st.info("传统估值模型不适用，需要专项场景估值。仅显示技术观察。")
 
-        render_market_reference(r)
-
         # 买入 / 持有 / 高估 / 减仓区
         if r.get("zones") and not r.get("hide_precise_trading_zones"):
             labels = (r["zones"] or {}).get("labels") or {}
@@ -1963,6 +1964,8 @@ elif page == "单股分析":
             from industry.company_panels import render_earnings_inline, render_latest_event_teaser
 
             render_earnings_inline(current)
+            from external_reference_ui import render_external_reference
+            render_external_reference(current, r)
             render_latest_event_teaser(current, open_headlines_cb=open_headlines)
         except Exception as exc:
             st.warning(f"财报/事件模块暂不可用：{type(exc).__name__}")
@@ -2109,11 +2112,29 @@ elif page == "头等大事":
                 st.session_state.pop("headline_filter_ticker", None)
                 st.rerun()
 
+    if not src_status.get("demo_mode") and src_status.get("live_configured"):
+        from finnhub_service import get_finnhub_provider, STATUS_TEXT
+        from industry.news.finnhub_live import upcoming_events
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        checked_tickers = [ticker_filter] if ticker_filter else tickers
+        if range_opt == "即将发生":
+            _, module_statuses = upcoming_events(checked_tickers, datetime.now(ZoneInfo("Europe/London")).date())
+            for ticker, status in module_statuses.items():
+                if status == "NO_DATA":
+                    st.caption(f"{ticker}：Finnhub 暂无该公司未来财报日期")
+                elif status != "AVAILABLE":
+                    st.caption(f"{ticker}：{STATUS_TEXT.get(status, '暂不可用')}")
+        else:
+            for ticker in checked_tickers:
+                reference = get_finnhub_provider().get_company_news(ticker, str(bounds['start_time'])[:10], str(bounds['end_time'])[:10])
+                if reference['status'] not in ('AVAILABLE', 'NO_DATA'):
+                    st.caption(f"{ticker}：{STATUS_TEXT.get(reference['status'], '暂不可用')}")
     show_rows = events
     if not show_rows:
         empty_msg = src_status.get("message_if_empty")
         if empty_msg and not src_status.get("demo_mode") and not src_status.get("live_configured"):
-            st.info(empty_msg)
+            st.info("实时新闻源未配置。")
         elif range_opt == "即将发生":
             st.info("本周期没有发现明显改变投资逻辑的重大事件。")
         else:
@@ -2127,11 +2148,14 @@ elif page == "头等大事":
             area = " / ".join(translate_ui_term(a) for a in areas) if areas else translate_ui_term(e.get("impact_area") or "产品")
             ed = e.get("event_date") or e.get("event_time") or "—"
             # Compact collapsed row: Ticker · Headline · Date · Importance · Impact
-            label = f"{t} · {headline}  ·  {ed} · {imp} · {area}"
+            label = f"{t} · {imp} · {headline} · {ed} · {area}"
             with st.expander(label, expanded=False):
                 st.markdown(f"**{t} · {headline}**")
                 st.caption(f"日期：{ed}　重要性：{imp}　影响：{area}")
 
+                if e.get("calendar"):
+                    cal = e["calendar"]
+                    st.caption(f"Fiscal quarter: FY{cal.get('year') or '—'} Q{cal.get('quarter') or '—'} · EPS estimate: {money(cal.get('epsEstimate'))} · Revenue estimate: {money(cal.get('revenueEstimate'))}")
                 st.markdown("**【发生了什么】**")
                 st.write(e.get("what_happened") or e.get("short_summary") or "—")
 

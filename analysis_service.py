@@ -5,7 +5,6 @@ import logging
 
 import pandas as pd
 from market_reference import build_market_reference, apply_reference_display_policy
-from market_reference_provider import get_market_reference_provider
 
 from mag7_monitor import (
     add_indicators,
@@ -382,7 +381,8 @@ def analyze_ticker(
     # Only after internal valuation and zone calculations; never normalize or
     # feed provider targets back into the internal fundamentals/model.
     external = ({"source_status": "HISTORICAL_UNAVAILABLE", "source": "Finnhub"}
-                if historical else (market_reference_provider or get_market_reference_provider()).get_price_target(ticker))
+                if historical else market_reference_provider.get_price_target(ticker) if market_reference_provider is not None
+                else {"source_status": "NOT_ENTITLED", "source": "Finnhub"})
     reference_inputs = dict(financials or {})
     reference_inputs.update({
         "analyst_consensus_target": external.get("target_mean"),

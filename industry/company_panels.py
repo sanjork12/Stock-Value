@@ -111,9 +111,11 @@ def render_latest_event_teaser(ticker: str, *, open_headlines_cb=None) -> None:
         range_key="本季度",
     )
     if not rows:
-        st.caption("本季度暂无重大事件。")
+        from finnhub_service import get_finnhub_provider
+        st.caption("本季度暂无重大事件。" if get_finnhub_provider().configured() else "实时新闻源未配置。")
     else:
-        ev = rows[0]
+        ev = next((row for row in rows if row.get("importance") in {"重大", "重要"}), rows[0])
+        st.caption(ev.get("short_summary") or "")
         st.write(
             f"**{ev.get('ticker')}** · {ev.get('event_date')} · {ev.get('importance')} · "
             f"{ev.get('headline')}"
