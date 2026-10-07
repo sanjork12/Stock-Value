@@ -187,3 +187,31 @@ Provider data is joined after internal valuation and zone calculations, without
 changing financial normalization or feeding analyst targets into model inputs.
 Validation includes injected HTTP responses, cache expiry/cooldown, safe errors,
 and end-to-end analysis comparisons with and without external references.
+
+### Temporary administrator Finnhub audit
+
+The account menu shows `Finnhub 能力诊断` only for a server-verified Supabase
+user whose email matches `ADMIN_EMAIL` in Streamlit Secrets. Configure the
+administrator's actual login email in Cloud Secrets; an empty value disables
+access. User metadata and session email labels are not used for authorization.
+
+The diagnostic fails closed outside Community Cloud's `/mount/src` application
+checkout. It reads the Finnhub key directly from `st.secrets`, calls the audit
+core in-process, and never invokes a shell or writes report files. Reports live
+only in the administrator's session, bound to the verified user ID. JSON/CSV
+exports are generated in memory after defensive credential redaction.
+
+Click the account menu → Finnhub 能力诊断 → 开始能力诊断. The seven required
+symbols run sequentially with >=1.2 seconds between calls. The first rate limit
+stops the run. A process lock prevents overlapping diagnostics and a five-minute
+cooldown limits repeated runs. Downloads and rerenders do not repeat API calls.
+Table rows group each capability by its observed status; untested pairs are
+omitted, and Coverage uses the seven-symbol denominator. A full run includes
+105 requests and may take several minutes depending on response times.
+
+Local validation covers access denial, verified email/user-ID matching,
+Cloud-only execution, session-owner isolation, exports, redaction, cooldown,
+execution button behavior and the existing application's regression suite.
+Cloud verification still requires deploying these uncommitted files through the
+normal deployment process and configuring `ADMIN_EMAIL`; no Cloud deployment
+or live-account audit is implied by the local tests.

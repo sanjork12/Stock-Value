@@ -46,6 +46,7 @@ try:
         get_live_fundamentals,
         fnum,
     )
+    from finnhub_admin_diagnostics import is_cloud_runtime, verified_admin, render_diagnostics
     from market_reference_provider import format_consensus_target
     from analysis_service import (
         analyze_ticker,
@@ -1398,6 +1399,12 @@ if not st.session_state.get("_profile_ensured"):
             st.stop()
         logger.exception("ensure_profile failed")
 
+# Temporary diagnostics: fail closed locally; admin email is verified server-side.
+audit_admin = is_cloud_runtime() and verified_admin(db, user_id, st.secrets.get("ADMIN_EMAIL"))
+if not audit_admin:
+    st.session_state.pop("_finnhub_audit_open", None)
+    st.session_state.pop("_finnhub_audit_result", None)
+
 # ---------------- Main app ----------------
 
 header_left, header_right = st.columns([10, 2], vertical_alignment="center")
@@ -1412,6 +1419,9 @@ with header_right:
     with st.popover(f"{email_prefix} ▼", help=user_email or "账户"):
         st.caption("已登录")
         st.write(user_email)
+        if audit_admin and st.button("Finnhub 能力诊断", use_container_width=True, key="menu_finnhub_audit"):
+            st.session_state._finnhub_audit_open = True
+            st.rerun()
         if st.button("账户设置", use_container_width=True, key="menu_account_settings"):
             st.session_state.account_open = True
             st.rerun()
@@ -1427,6 +1437,10 @@ with header_right:
             _delete_remember_cookie(cookie_manager, "logout_delete_cookie")
             clear_auth_session()
             st.rerun()
+
+if st.session_state.get("_finnhub_audit_open"):
+    render_diagnostics(st, db, user_id)
+    st.stop()
 
 if "nav_initialized" not in st.session_state:
     qp_boot = query_ticker_param()
