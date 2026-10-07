@@ -135,7 +135,12 @@ def render_financial_diagnostics(st,client,user_id):
         return
     report=saved.get('reports',{}).get(ticker)
     if not report:return
-    if not report.get('capture_error') and bool(report.get('simulated_missing_input')) != simulate:
+    if report.get('simulation_aborted') and simulate:
+        st.warning('当前实时数据本身不完整，无法执行受控 fallback 测试，请稍后重试。')
+        if report.get('baseline_valuation'):
+            st.json(report['baseline_valuation'])
+        return
+    if not report.get('capture_error') and bool(report.get('simulation_requested',report.get('simulated_missing_input'))) != simulate:
         st.info('测试开关已切换，请点击 Run diagnostic 重新运行。')
         return
     if report.get('capture_error'):
@@ -146,6 +151,9 @@ def render_financial_diagnostics(st,client,user_id):
                            f'cloud_financial_diagnostic_{ticker}.json','application/json',key='financial_diagnostic_error_json')
         return
     st.caption(f"捕获时间：{report['run_timestamp']} · {report['environment']['runtime']} · BEFORE_VALUATE")
+    if report.get('baseline_valuation'):
+        st.caption('Live baseline（模拟前）：')
+        st.json(report['baseline_valuation'])
     rows=snapshot_rows(report)
     for row in rows:row['Value']=json.dumps(row['Value'],ensure_ascii=False)
     st.dataframe(rows,hide_index=True,use_container_width=True)

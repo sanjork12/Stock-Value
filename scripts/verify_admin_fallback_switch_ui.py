@@ -80,6 +80,24 @@ test.row={'raw':{'last_reliable':reliable_snapshot(analyze_amzn())}}''')
         assert displayed['final_fair_value']==report['valuation']['fair_value']
         assert displayed['last_reliable_calculated_at']==report['valuation']['calculated_at']
         assert displayed['fallback_reason']=='current_financial_input_incomplete'
+        incomplete_source=amzn_source.replace('test.raw=amzn_inputs()',
+            "test.raw=amzn_inputs()\ntest.raw['quote_currency']=None")
+        path.write_text(incomplete_source,encoding='utf-8')
+        incomplete=AppTest.from_file(str(path),default_timeout=20)
+        incomplete.secrets['ADMIN_EMAIL']='admin@example.test'
+        incomplete.run()
+        incomplete.selectbox[0].select('AMZN').run()
+        incomplete.checkbox[0].check().run()
+        next(b for b in incomplete.button if b.label=='Run diagnostic').click().run()
+        assert not incomplete.exception
+        assert any('当前实时数据本身不完整，无法执行受控 fallback 测试，请稍后重试。' in w.value
+                   for w in incomplete.warning)
+        assert not any('当前显示最近一次可靠估值' in w.value for w in incomplete.warning)
+        report=incomplete.session_state['_financial_diagnostic_result']['reports']['AMZN']
+        assert report['simulation_aborted'] and not report['simulated_missing_input']
+        incomplete.checkbox[0].uncheck().run()
+        assert not incomplete.exception
+        assert any('测试开关已切换' in item.value for item in incomplete.info)
     print('Administrator fallback switch: simulated cache display and restored live UI PASS')
 
 

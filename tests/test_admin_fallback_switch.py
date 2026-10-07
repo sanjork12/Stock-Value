@@ -44,7 +44,7 @@ class AdminFallbackSwitchTests(unittest.TestCase):
 
     def test_sets_eps_none_at_valuate_without_mutating_provider(self):
         before=deepcopy(self.raw)
-        with patch('analysis_service.valuate',wraps=analysis_service.valuate) as valuate:
+        with patch('valuation_engine.valuate',wraps=analysis_service.valuate) as valuate:
             report=self.run_admin()
         inputs=valuate.call_args.args[1]
         self.assertIsNone(inputs['forward_eps'])

@@ -276,6 +276,50 @@ def compare_financial_snapshots(local,cloud):
     return rows
 
 
+def _controlled_baseline_available(result):
+    """Test prerequisite only; production fallback eligibility is untouched."""
+    f=result.get('financials') or {}
+    shares=numeric(f.get('canonical_shares'))
+    fair=numeric(result.get('fair_value'))
+    return bool(currency(f.get('quote_currency')) and currency(f.get('financial_currency'))
+                and shares is not None and shares>0 and f.get('canonical_shares_source')
+                and f.get('split_context_known') is True and not f.get('currency_mismatch')
+                and fair is not None and fair>0
+                and result.get('valuation_mode') in ('STANDARD','LOW_CONFIDENCE'))
+
+
+def _baseline_display(result):
+    f=result.get('financials') or {}
+    return {'source_status':'live','fair_value':result.get('fair_value'),
+            'valuation_mode':result.get('valuation_mode'),
+            **{key:f.get(key) for key in ('quote_currency','financial_currency','canonical_shares',
+                'canonical_shares_source','split_context_known','last_split_date','last_split_factor')}}
+
+
+def _controlled_eps_simulation(baseline):
+    """No loaders/providers: simulate exclusively from the accepted live input.
+
+    Only the three EPS values and the explicit test flag differ. In particular,
+    do not re-normalize, re-resolve shares, fetch prices or attach external data.
+    """
+    from valuation_engine import valuate
+    from market_reference import apply_reference_display_policy
+    f=deepcopy(baseline['financials'])
+    for key in ('forward_eps','trailing_eps','eps_proxy'):
+        f[key]=None
+    f['simulated_missing_input']=True
+    snapshot=build_input_snapshot(baseline['ticker'],deepcopy(f),price=baseline.get('price'))
+    blend=valuate(baseline['ticker'],f,volatility=baseline.get('volatility_1y'))
+    result={'ticker':baseline['ticker'],'price':baseline.get('price'),'financials':f,'blend':blend,
+            'valuation_class':baseline.get('valuation_class'),'model_version':baseline.get('model_version'),
+            'confidence':blend.get('confidence'),'source_status':'live','simulated_missing_input':True,
+            'fair':blend.get('fair'),'fair_low':blend.get('fair_low'),'fair_high':blend.get('fair_high'),
+            **{key:blend.get(key) for key in ('fair_value','blended_low','blended_mid','blended_high')},
+            'reliability_score':(blend.get('reliability') or {}).get('reliability_score'),
+            'zones':None,'exit_zone':None,'peer_diagnostics':{'mode':'diagnostic','status':'NOT_TESTED'}}
+    return snapshot,apply_reference_display_policy(result)
+
+
 def capture_financial_diagnostic(ticker, *, history_loader=None, fundamentals_loader=None, finnhub_provider=None,
                                  simulate_missing_input=False, result_sink=None):
     if ticker not in TICKERS:raise ValueError('Unsupported diagnostic ticker.')
@@ -285,8 +329,18 @@ def capture_financial_diagnostic(ticker, *, history_loader=None, fundamentals_lo
     with observe_financial_inputs():
         result=analyze_ticker(ticker,history_loader=history_loader,fundamentals_loader=fundamentals_loader,
                               peer_mode='diagnostic',financial_diagnostic_sink=lambda snapshot:snapshots.append(deepcopy(snapshot)),
-                              financial_diagnostic_error_sink=capture_errors.append,
-                              diagnostic_simulate_missing_eps=simulate_missing_input)
+                              financial_diagnostic_error_sink=capture_errors.append)
+        baseline_display=_baseline_display(result) if simulate_missing_input else None
+        if simulate_missing_input and (not snapshots or not _controlled_baseline_available(result)):
+            # Never call result_sink (or read a cached valuation) after an
+            # incomplete baseline. It is not a controlled simulation.
+            report=finalize_snapshot(snapshots[0],result) if snapshots else {'ticker':ticker}
+            report.update(simulation_requested=True,simulation_aborted=True,
+                          simulated_missing_input=False,baseline_valuation=baseline_display)
+            return report
+        if simulate_missing_input:
+            snapshot,result=_controlled_eps_simulation(result)
+            snapshots=[snapshot]
     if not snapshots:
         if capture_errors:
             raise FinancialDiagnosticFailure('PRE_VALUATION_SNAPSHOT',public_error=capture_errors[0])
@@ -302,6 +356,8 @@ def capture_financial_diagnostic(ticker, *, history_loader=None, fundamentals_lo
         report = finalize_snapshot(snapshots[0],result,finnhub)
         if simulate_missing_input:
             report['simulated_missing_input'] = True
+            report['simulation_requested'] = True
+            report['baseline_valuation'] = baseline_display
         if result_sink is not None:
             report['valuation'] = result_sink(deepcopy(result))
         return report
