@@ -203,7 +203,7 @@ class V53SingleStockAndHeadlinesTests(unittest.TestCase):
         self.assertIn("阅读全文", app)
 
     def test_19_stale_flag_when_old(self):
-        latest = get_latest_company_quarter("TSLA", as_of=date(2026, 10, 5))
+        latest = get_latest_company_quarter("TSLA", as_of=date(2026, 10, 5), rows=[{"ticker":"TSLA", "report_date":"2025-07-23", "fiscal_period":"CY2025 Q2"}])
         self.assertEqual(latest["data_status"], "STALE_DATA")
         self.assertGreater(latest["data_age_days"], 150)
 

@@ -1,0 +1,497 @@
+{
+  "version": "V5.6/V5.7",
+  "as_of": "2026-10-07",
+  "timezone": "Europe/London",
+  "financial_freshness_audit": [
+    {
+      "ticker": "AAPL",
+      "current_stored_latest_quarter": "FY2025 Q3",
+      "actual_latest_officially_reported_quarter": "FY2026 Q3",
+      "historical_stale": true,
+      "latest_reported_period": "FY2026 Q3",
+      "latest_report_date": "2026-07-30",
+      "data_age_days": 69,
+      "data_status": "CURRENT",
+      "source_url": "https://www.apple.com/newsroom/pdfs/fy2026q3/FY26_Q3_Consolidated_Financial_Statements.pdf",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "MSFT",
+      "current_stored_latest_quarter": "FY2025 Q4",
+      "actual_latest_officially_reported_quarter": "FY2026 Q4",
+      "historical_stale": true,
+      "latest_reported_period": "FY2026 Q4",
+      "latest_report_date": "2026-07-29",
+      "data_age_days": 70,
+      "data_status": "CURRENT",
+      "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "GOOG",
+      "current_stored_latest_quarter": "CY2025 Q2",
+      "actual_latest_officially_reported_quarter": "CY2026 Q2",
+      "historical_stale": true,
+      "latest_reported_period": "CY2026 Q2",
+      "latest_report_date": "2026-07-22",
+      "data_age_days": 77,
+      "data_status": "CURRENT",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "AMZN",
+      "current_stored_latest_quarter": "CY2025 Q2",
+      "actual_latest_officially_reported_quarter": "CY2026 Q2",
+      "historical_stale": true,
+      "latest_reported_period": "CY2026 Q2",
+      "latest_report_date": "2026-07-30",
+      "data_age_days": 69,
+      "data_status": "CURRENT",
+      "source_url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/default.aspx",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "NVDA",
+      "current_stored_latest_quarter": "FY2026 Q1",
+      "actual_latest_officially_reported_quarter": "FY2027 Q2",
+      "historical_stale": true,
+      "latest_reported_period": "FY2027 Q2",
+      "latest_report_date": "2026-08-26",
+      "data_age_days": 42,
+      "data_status": "CURRENT",
+      "source_url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "META",
+      "current_stored_latest_quarter": "CY2025 Q2",
+      "actual_latest_officially_reported_quarter": "CY2026 Q2",
+      "historical_stale": true,
+      "latest_reported_period": "CY2026 Q2",
+      "latest_report_date": "2026-07-29",
+      "data_age_days": 70,
+      "data_status": "CURRENT",
+      "source_url": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Second-Quarter-2026-Results/default.aspx",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "TSLA",
+      "current_stored_latest_quarter": "CY2025 Q2",
+      "actual_latest_officially_reported_quarter": "CY2026 Q2",
+      "historical_stale": true,
+      "latest_reported_period": "CY2026 Q2",
+      "latest_report_date": "2026-07-22",
+      "data_age_days": 77,
+      "data_status": "CURRENT",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026049270/tsla-20260630.htm",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "MU",
+      "current_stored_latest_quarter": "FY2025 Q4",
+      "actual_latest_officially_reported_quarter": "FY2026 Q4",
+      "historical_stale": true,
+      "latest_reported_period": "FY2026 Q4",
+      "latest_report_date": "2026-09-30",
+      "data_age_days": 7,
+      "data_status": "CURRENT",
+      "source_url": "https://investors.micron.com/news/press-release/2026/Micron-Technology-Inc--Reports-Record-Fiscal-Fourth-Quarter-and-Full-Year-2026-Results/default.aspx",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "AVGO",
+      "current_stored_latest_quarter": "FY2025 Q3",
+      "actual_latest_officially_reported_quarter": "FY2026 Q3",
+      "historical_stale": true,
+      "latest_reported_period": "FY2026 Q3",
+      "latest_report_date": "2026-09-02",
+      "data_age_days": 35,
+      "data_status": "CURRENT",
+      "source_url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "ORCL",
+      "current_stored_latest_quarter": "FY2026 Q1",
+      "actual_latest_officially_reported_quarter": "FY2027 Q1",
+      "historical_stale": true,
+      "latest_reported_period": "FY2027 Q1",
+      "latest_report_date": "2026-09-10",
+      "data_age_days": 27,
+      "data_status": "CURRENT",
+      "source_url": "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Q1-Results-Driven-by-Triple-Digit-Growth-in-Cloud-Infrastructure-Revenues/default.aspx",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "PLTR",
+      "current_stored_latest_quarter": "CY2025 Q2",
+      "actual_latest_officially_reported_quarter": "CY2026 Q2",
+      "historical_stale": true,
+      "latest_reported_period": "CY2026 Q2",
+      "latest_report_date": "2026-08-03",
+      "data_age_days": 65,
+      "data_status": "CURRENT",
+      "source_url": "https://investors.palantir.com/files/2026%20Q2%20PLTR%2010-Q.pdf",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "JPM",
+      "current_stored_latest_quarter": null,
+      "actual_latest_officially_reported_quarter": "CY2026 Q2",
+      "historical_stale": true,
+      "latest_reported_period": "CY2026 Q2",
+      "latest_report_date": "2026-07-14",
+      "data_age_days": 85,
+      "data_status": "CURRENT",
+      "source_url": "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/quarterly-earnings/2026/2nd-quarter/6cded9fd-a164-4e6c-8cff-377357cf105c.pdf",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "NFLX",
+      "current_stored_latest_quarter": null,
+      "actual_latest_officially_reported_quarter": "CY2026 Q2",
+      "historical_stale": true,
+      "latest_reported_period": "CY2026 Q2",
+      "latest_report_date": "2026-07-16",
+      "data_age_days": 83,
+      "data_status": "CURRENT",
+      "source_url": "https://s22.q4cdn.com/959853165/files/doc_financials/2026/q2/FINAL-Q2-26-Shareholder-Letter.pdf",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "UBER",
+      "current_stored_latest_quarter": null,
+      "actual_latest_officially_reported_quarter": "CY2026 Q2",
+      "historical_stale": true,
+      "latest_reported_period": "CY2026 Q2",
+      "latest_report_date": "2026-08-05",
+      "data_age_days": 63,
+      "data_status": "CURRENT",
+      "source_url": "https://investor.uber.com/news-events/news/press-release-details/2026/Uber-Announces-Results-for-Second-Quarter-2026/default.aspx",
+      "as_of": "2026-10-07"
+    },
+    {
+      "ticker": "BABA",
+      "current_stored_latest_quarter": null,
+      "actual_latest_officially_reported_quarter": "FY2027 Q1",
+      "historical_stale": true,
+      "latest_reported_period": "FY2027 Q1",
+      "latest_report_date": "2026-08-20",
+      "data_age_days": 48,
+      "data_status": "CURRENT",
+      "source_url": "https://links.sgx.com/FileOpen/9988.HK_100_Put_SLD.ashx?App=Prospectus&FileID=70866",
+      "as_of": "2026-10-07"
+    }
+  ],
+  "updated_quarters": [
+    {
+      "ticker": "AAPL",
+      "quarter": "FY2026 Q3",
+      "report_date": "2026-07-30"
+    },
+    {
+      "ticker": "MSFT",
+      "quarter": "FY2026 Q4",
+      "report_date": "2026-07-29"
+    },
+    {
+      "ticker": "GOOG",
+      "quarter": "CY2026 Q2",
+      "report_date": "2026-07-22"
+    },
+    {
+      "ticker": "AMZN",
+      "quarter": "CY2026 Q2",
+      "report_date": "2026-07-30"
+    },
+    {
+      "ticker": "NVDA",
+      "quarter": "FY2027 Q2",
+      "report_date": "2026-08-26"
+    },
+    {
+      "ticker": "META",
+      "quarter": "CY2026 Q2",
+      "report_date": "2026-07-29"
+    },
+    {
+      "ticker": "TSLA",
+      "quarter": "CY2026 Q2",
+      "report_date": "2026-07-22"
+    },
+    {
+      "ticker": "MU",
+      "quarter": "FY2026 Q4",
+      "report_date": "2026-09-30"
+    },
+    {
+      "ticker": "AVGO",
+      "quarter": "FY2026 Q3",
+      "report_date": "2026-09-02"
+    },
+    {
+      "ticker": "ORCL",
+      "quarter": "FY2027 Q1",
+      "report_date": "2026-09-10"
+    },
+    {
+      "ticker": "PLTR",
+      "quarter": "CY2026 Q2",
+      "report_date": "2026-08-03"
+    },
+    {
+      "ticker": "JPM",
+      "quarter": "CY2026 Q2",
+      "report_date": "2026-07-14"
+    },
+    {
+      "ticker": "NFLX",
+      "quarter": "CY2026 Q2",
+      "report_date": "2026-07-16"
+    },
+    {
+      "ticker": "UBER",
+      "quarter": "CY2026 Q2",
+      "report_date": "2026-08-05"
+    },
+    {
+      "ticker": "BABA",
+      "quarter": "FY2027 Q1",
+      "report_date": "2026-08-20"
+    }
+  ],
+  "files_changed": [
+    "industry/company_panels.py",
+    "industry/earnings_helpers.py",
+    "industry/news/finnhub_live.py",
+    "streamlit_app.py",
+    "tests/test_v53_single_stock.py",
+    "tests/test_v54_news_intelligence.py",
+    "tests/test_v55_finnhub_free.py",
+    "data/industry/company_quarter_snapshots.json",
+    "industry/news/grounded_summary.py",
+    "tests/test_v56_v57.py",
+    "scripts/verify_v56_v57_ui.py",
+    "reports/v56_v57_financial_audit.csv",
+    "reports/v56_v57_validation.json"
+  ],
+  "news_behavior": {
+    "global_dedupe": "Union by URL (tracking removed, identity query parameters retained), Finnhub id or normalized original headline. Merge primary/secondary tickers; prefer richer supplied summary.",
+    "primary": "Named headline subjects, or leading summary subject. Repeated, explicit core competitor comparisons can promote a secondary subject.",
+    "secondary": "Related and incidental mentions do not independently create cards.",
+    "summary": "Conservative Chinese extraction using Finnhub summary; unsupported/short summaries explicitly marked insufficient, single-fact summaries marked partial. No invented numeric completion.",
+    "detail_navigation": "Single-stock teaser retains event_id, opens quarter range and expands matching event."
+  },
+  "before_after": {
+    "AMZN": {
+      "before": "CY2025 Q2",
+      "after": "CY2026 Q2, report 2026-07-30, revenue USD 200.606bn"
+    },
+    "TSLA": {
+      "before": "CY2025 Q2",
+      "after": "CY2026 Q2, report 2026-07-22, revenue USD 28.236bn"
+    },
+    "AVGO_ORCL": {
+      "before": "Per-ticker duplicate cards with generic headline-based templates",
+      "after": {
+        "event_id": "73475cb40a568e8da8a0",
+        "ticker": "AVGO",
+        "headline": "博通与甲骨文财报将检验AI云基础设施需求是否持续强劲",
+        "published_at": "2026-10-07T12:00:00+00:00",
+        "event_date": "2026-10-07",
+        "event_time": "2026-10-07T12:00:00+00:00",
+        "event_status": "PAST",
+        "event_type": "earnings",
+        "importance": "重大",
+        "what_happened": "博通、甲骨文即将公布财报；本文讨论的是业绩检验窗口，并非已实现的业绩结果。",
+        "why_it_matters": "博通、甲骨文的收入兑现与利润转换是本次财报检验的核心；预告不能当作已公布业绩。",
+        "impact_summary": {
+          "收入": "正面"
+        },
+        "impact_areas": [
+          "收入"
+        ],
+        "impact_area": "Revenue",
+        "watch_next": [
+          "下一季度收入及同比增速",
+          "营业利润率与自由现金流"
+        ],
+        "source_name": "Illustrative publisher fixture (not live news) via Finnhub",
+        "source_url": "https://publisher.test/article?id=42",
+        "source_type": "finnhub",
+        "short_summary": "博通、甲骨文即将公布财报；本文讨论的是业绩检验窗口，并非已实现的业绩结果。",
+        "summary": "博通、甲骨文即将公布财报；本文讨论的是业绩检验窗口，并非已实现的业绩结果。",
+        "detailed_summary": [
+          "博通、甲骨文即将公布财报；本文讨论的是业绩检验窗口，并非已实现的业绩结果。"
+        ],
+        "sentiment_or_impact": "",
+        "layer_impact": [],
+        "content_quality_ok": true,
+        "conclusion": "博通、甲骨文即将公布财报；本文讨论的是业绩检验窗口，并非已实现的业绩结果。",
+        "facts": [
+          "博通、甲骨文即将公布财报；本文讨论的是业绩检验窗口，并非已实现的业绩结果。",
+          "报道具体涉及云基础设施，这些业务是本文讨论的对象。",
+          "博通：收入增长，报道数据为 86%；$29.6 十亿（按原摘要顺序）。",
+          "甲骨文：云收入增长，报道数据为 62%；$11.6 十亿（按原摘要顺序）。"
+        ],
+        "fact_evidence": [
+          "Broadcom and Oracle will report quarterly earnings this week.",
+          "Investors are assessing cloud infrastructure demand.",
+          "revenue grew 86% to $29.6 billion",
+          "cloud revenue increased 62% to $11.6 billion"
+        ],
+        "summary_status": "GROUNDED",
+        "primary_tickers": [
+          "AVGO",
+          "ORCL"
+        ],
+        "secondary_tickers": [
+          "NVDA"
+        ],
+        "involved_tickers": [
+          "AVGO",
+          "NVDA",
+          "ORCL"
+        ],
+        "finnhub_id": 42,
+        "original_headline": "Broadcom, Oracle Earnings to Test Cloud Infrastructure's AI-Driven Momentum",
+        "original_summary": "Broadcom and Oracle will report quarterly earnings this week. Investors are assessing cloud infrastructure demand. Broadcom revenue grew 86% to $29.6 billion. Oracle cloud revenue increased 62% to $11.6 billion.",
+        "related": "AVGO,ORCL,NVDA",
+        "relevance_score": 100,
+        "event_importance_score": 90,
+        "source": "Finnhub",
+        "summary_method": "grounded_extraction",
+        "status": "AVAILABLE"
+      },
+      "example_type": "Synthetic regression fixture; not a claim about a currently published article"
+    }
+  },
+  "tests": {
+    "unit_test_command": "python -m unittest discover -s tests -v",
+    "tests": 296,
+    "failures": 0,
+    "errors": 0,
+    "real_streamlit_command": "python scripts/verify_v56_v57_ui.py",
+    "real_streamlit": "PASS",
+    "protected_files": {
+      "valuation_engine.py": {
+        "unchanged": true,
+        "sha256": "c9ed944a1a557fe977a54c12fb3eced1f959657253858ca2836c4a1227066b5c"
+      },
+      "analysis_service.py": {
+        "unchanged": true,
+        "sha256": "f49042225b185438d8facc0d7ea0ed0dc3a3c9ef12e4930ecadc4d438a32efc1"
+      },
+      "data/industry/earnings.json": {
+        "unchanged": true,
+        "sha256": "a2b4b40726cce710aa511c74f201062b5da3748a41e47f3f016d006ef9e43911"
+      },
+      "finnhub_service.py": {
+        "unchanged": true,
+        "sha256": "0108452a1f68ed7b2c0d325691cc60873942e0e16bfc6f08488692192c8f1244"
+      }
+    }
+  },
+  "missing_verified_fields": {
+    "AAPL": [
+      "free_cash_flow",
+      "capex",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "MSFT": [
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "GOOG": [
+      "free_cash_flow",
+      "capex",
+      "segment_revenue_json",
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "AMZN": [
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "NVDA": [
+      "segment_revenue_json",
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "META": [
+      "segment_revenue_json",
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "TSLA": [
+      "free_cash_flow",
+      "capex",
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "MU": [
+      "segment_revenue_json",
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "AVGO": [
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "ORCL": [
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "PLTR": [
+      "free_cash_flow",
+      "capex",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "JPM": [
+      "revenue_growth_yoy",
+      "operating_income",
+      "operating_margin",
+      "free_cash_flow",
+      "capex",
+      "segment_revenue_json",
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "NFLX": [
+      "segment_revenue_json",
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "UBER": [
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ],
+    "BABA": [
+      "capex",
+      "segment_revenue_json",
+      "segment_growth_json",
+      "current_profit_engine",
+      "future_expansion"
+    ]
+  },
+  "limitations": [
+    "Point-in-time official-source refresh verified on 2026-10-07; maintained snapshots need updates for later official releases.",
+    "Unverified quarter-only fields remain null; cumulative or TTM cash flows were not relabeled as quarterly.",
+    "Current profit engine and future expansion commentary remain existing business descriptions where no quarter-specific narrative was maintained.",
+    "The summary extractor has bounded language coverage; unsupported factual claims are not translated or inferred.",
+    "Streamlit Cloud/Finnhub live-key validation was not run from this local workspace."
+  ],
+  "push": false
+}

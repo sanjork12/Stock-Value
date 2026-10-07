@@ -235,7 +235,7 @@ class V54NewsIntelligenceTests(unittest.TestCase):
         self.assertNotIn("model_platform", app.split("头等大事")[-1][:2000] if False else "")
         # Headline UI uses translate_ui_term — no raw internal jargon sections
         self.assertIn("translate_ui_term", app)
-        self.assertIn("【可能影响】", app)
+        self.assertIn("【影响判断】", app)
 
     def test_15_per_ticker_limits_applied(self):
         os.environ["NEWS_DEMO_MODE"] = "true"

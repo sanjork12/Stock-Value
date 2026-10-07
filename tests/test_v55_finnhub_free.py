@@ -37,7 +37,7 @@ class FinnhubFreeIntegrationTests(unittest.TestCase):
     def test_related_filter_and_alias(self):
         self.assertIsNone(normalize_finnhub_news(raw(ticker='MSFT'),'AAPL'))
         self.assertIsNone(normalize_finnhub_news(raw(ticker=''),'AAPL'))
-        self.assertIsNotNone(normalize_finnhub_news(raw(ticker='GOOGL'),'GOOG'))
+        self.assertIsNotNone(normalize_finnhub_news(raw('Alphabet reports earnings results',ticker='GOOGL'),'GOOG'))
     def test_duplicates_headline_url_and_syndication(self):
         items=[raw(),raw(url='https://other.test/article'),raw(headline='Apple reports earnings results today',url='https://example.test/news/1?tracking=1')]
         self.assertEqual(len(deduplicate([normalize_finnhub_news(x,'AAPL') for x in items])),1)
@@ -152,7 +152,7 @@ class FinnhubFreeIntegrationTests(unittest.TestCase):
         self.assertNotIn('test-placeholder-key',str(p._cache))
 
     def test_partial_news_failure_preserves_other_ticker(self):
-        p=Mock();p.get_company_news.side_effect=[RuntimeError('private'),result([raw(ticker='MSFT')])]
+        p=Mock();p.get_company_news.side_effect=[RuntimeError('private'),result([raw('Microsoft reports earnings results',ticker='MSFT')])]
         rows=get_live_events(['AAPL','MSFT'],'2026-10-01','2026-10-07',now=NOW.date(),provider=p)
         self.assertEqual([e['ticker'] for e in rows],['MSFT'])
     def test_all_metadata_and_calendar_without_estimates(self):

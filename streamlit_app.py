@@ -585,9 +585,14 @@ def open_single_stock(ticker: str, *, tab: str | None = None) -> None:
     st.rerun()
 
 
-def open_headlines(ticker: str | None = None) -> None:
+def open_headlines(ticker: str | None = None, event_id: str | None = None) -> None:
     """Jump to 头等大事. Only pass ticker from single-stock deep link."""
     st.session_state._pending_nav_page = "头等大事"
+    st.session_state.headline_selected_event_id = event_id
+    if event_id:
+        st.session_state.headline_range = "本季度"
+    else:
+        st.session_state.pop("headline_selected_event", None)
     if ticker:
         t = normalize_ticker(ticker)
         if t:
@@ -2074,6 +2079,8 @@ elif page == "头等大事":
             st.session_state["headline_ticker_filter"] = filter_ticker
         else:
             st.session_state.pop("headline_ticker_filter", None)
+            st.session_state.pop("headline_selected_event_id", None)
+            st.session_state.pop("headline_selected_event", None)
 
     range_opt = st.radio(
         "时间范围",
@@ -2102,7 +2109,7 @@ elif page == "头等大事":
 
     ticker_filter = st.session_state.get("headline_ticker_filter")
     if ticker_filter:
-        events = [e for e in events if str(e.get("ticker") or "").upper() == str(ticker_filter).upper()]
+        events = [e for e in events if ("GOOG" if str(ticker_filter).upper() == "GOOGL" else str(ticker_filter).upper()) in e.get("primary_tickers", [str(e.get("ticker") or "").upper()])]
         c1, c2 = st.columns([4, 1])
         with c1:
             st.caption(f"已筛选：{ticker_filter}")
@@ -2110,6 +2117,8 @@ elif page == "头等大事":
             if st.button("清除筛选", key="clear_headline_filter"):
                 st.session_state.pop("headline_ticker_filter", None)
                 st.session_state.pop("headline_filter_ticker", None)
+                st.session_state.pop("headline_selected_event_id", None)
+                st.session_state.pop("headline_selected_event", None)
                 st.rerun()
 
     if not src_status.get("demo_mode") and src_status.get("live_configured"):
@@ -2131,6 +2140,12 @@ elif page == "头等大事":
                 if reference['status'] not in ('AVAILABLE', 'NO_DATA'):
                     st.caption(f"{ticker}：{STATUS_TEXT.get(reference['status'], '暂不可用')}")
     show_rows = events
+    selected = st.session_state.get("headline_selected_event")
+    selected_id = st.session_state.get("headline_selected_event_id")
+    if selected_id and selected and selected.get("event_id") == selected_id and range_opt == "本季度":
+        allowed = set(tickers) | ({"GOOG"} if "GOOGL" in tickers else set())
+        if allowed.intersection(selected.get("primary_tickers") or [selected.get("ticker")]):
+            show_rows = [selected] + [e for e in show_rows if e.get("event_id") != selected_id]
     if not show_rows:
         empty_msg = src_status.get("message_if_empty")
         if empty_msg and not src_status.get("demo_mode") and not src_status.get("live_configured"):
@@ -2142,29 +2157,38 @@ elif page == "头等大事":
     else:
         for i, e in enumerate(show_rows):
             t = e.get("ticker") or "—"
+            involved = " / ".join(e.get("involved_tickers") or [t])
             headline = e.get("headline") or "（无标题）"
             imp = e.get("importance") or "一般"
             areas = e.get("impact_areas") or []
             area = " / ".join(translate_ui_term(a) for a in areas) if areas else translate_ui_term(e.get("impact_area") or "产品")
             ed = e.get("event_date") or e.get("event_time") or "—"
             # Compact collapsed row: Ticker · Headline · Date · Importance · Impact
-            label = f"{t} · {imp} · {headline} · {ed} · {area}"
-            with st.expander(label, expanded=False):
+            label = f"{involved} · {imp} · {headline} · {ed} · {area}"
+            with st.expander(label, expanded=e.get("event_id") == st.session_state.get("headline_selected_event_id")):
                 st.markdown(f"**{t} · {headline}**")
                 st.caption(f"日期：{ed}　重要性：{imp}　影响：{area}")
 
                 if e.get("calendar"):
                     cal = e["calendar"]
-                    st.caption(f"Fiscal quarter: FY{cal.get('year') or '—'} Q{cal.get('quarter') or '—'} · EPS estimate: {money(cal.get('epsEstimate'))} · Revenue estimate: {money(cal.get('revenueEstimate'))}")
+                    st.caption(f"财政季度：FY{cal.get('year') or '—'} Q{cal.get('quarter') or '—'} · 每股收益预期：{money(cal.get('epsEstimate'))} · 收入预期：{money(cal.get('revenueEstimate'))}")
+                st.caption(f"涉及：{involved}")
+                if e.get('original_headline'):
+                    st.caption('原英文标题：' + e['original_headline'])
+                st.markdown("**【一句话结论】**")
+                st.write(e.get('conclusion') or e.get('short_summary') or '—')
                 st.markdown("**【发生了什么】**")
-                st.write(e.get("what_happened") or e.get("short_summary") or "—")
+                for fact in e.get('facts') or [e.get('what_happened') or '—']:
+                    st.write('• ' + fact)
+                if e.get('summary_status') == 'PARTIAL_SUMMARY':
+                    st.caption('原始摘要仅能提取一项具体事实，更多细节请阅读原文。')
 
                 st.markdown("**【为什么重要】**")
                 st.write(e.get("why_it_matters") or "—")
 
                 impact = e.get("impact_summary") or {}
                 if isinstance(impact, dict) and impact:
-                    st.markdown("**【可能影响】**")
+                    st.markdown("**【影响判断】**")
                     for k, v in impact.items():
                         st.markdown(f"- {translate_ui_term(k)}：{translate_ui_term(v)}")
 

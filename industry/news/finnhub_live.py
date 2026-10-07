@@ -1,6 +1,8 @@
 """Finnhub news -> bounded, deduplicated Chinese rule summaries and calendar events."""
 from datetime import date, datetime, time, timedelta, timezone
 from difflib import SequenceMatcher
+import hashlib
+from industry.news.grounded_summary import canonical, mentions, ticker_roles, summarize
 import re
 from urllib.parse import urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
@@ -17,6 +19,7 @@ RULES=[
  ('legal',85,'Regulation',r'lawsuit|litigation|court|诉讼','法律事项可能带来成本或经营约束，需核实进展与实际责任。'),
  ('partnership',85,'Revenue',r'major contract|major deal|multi.year.*(?:deal|contract)|重大合同','合同事项可能影响收入可见度，需核实合同金额、履约时间及是否具约束力。'),
  ('partnership',65,'Revenue',r'partner|agreement|contract|合作|协议','合作可能影响渠道、供应或收入机会，需核对商业条款与兑现进度。'),
+ ('product',85,'Product',r'major.*roadmap|major.*platform|重大.*路线图','产品路线图需要通过交付和客户采用转化为收入。'),
  ('product',65,'Product',r'launch|roadmap|unveil|new chip|ai infrastructure|产品发布','产品进展可能影响竞争力与收入结构，需关注交付时间和客户采用。'),
  ('competition',65,'Competition',r'market share|segment growth|竞争|市场份额','竞争或分部变化可能影响收入与利润率，需核对数据口径和持续性。'),
 ]
@@ -48,17 +51,35 @@ def normalize_finnhub_news(raw,ticker):
     kind,score,area,why=classify_news(headline,str(raw.get('summary') or ''))
     if NOISE.search(headline) and (score<65 or re.search(r'before|ahead of|preview|rumou?r|speculat',headline,re.I)):
         return None
-    # Summaries describe a rule-classified topic, not unverified facts from a body.
-    what=f"{raw.get('source') or '新闻来源'} 的报道原标题为‘{headline}’。消息涉及{AREA_ZH[area]}相关的{ {'earnings':'财报','guidance':'业绩指引','product':'产品进展','capex':'资本开支','partnership':'合作或合同','regulation':'监管','competition':'竞争','management':'管理层','M&A':'并购','legal':'法律事项','other':'业务消息'}[kind]}。具体事实请以原始报道和公司披露为准。"
+    summary = str(raw.get('summary') or '').strip()
+    primary, secondary = ticker_roles(headline, summary, raw.get('related'))
+    if canonical(ticker) not in primary:
+        return None
+    relevance = min(100, 35 + (25 if canonical(ticker) in ticker_roles(headline, '', '')[0] else 0)
+                    + (10 if canonical(ticker) in mentions(summary) else 0)
+                    + (5 if len(summary) >= 60 else 0)
+                    + (15 if score >= 65 else 0) + (10 if score >= 85 else 0))
+    if relevance < 60 or score < 60:
+        return None
+    detail = summarize(headline, summary, primary, kind, AREA_ZH[area])
     importance='重大' if score>=85 else '重要' if score>=60 else '一般'
-    event=normalize_event({'ticker':ticker,'headline':headline,'published_at':published.isoformat(),
-       'event_time':published.isoformat(),'event_type':kind,'importance':importance,'what_happened':what,
-       'why_it_matters':why,'impact_summary':{AREA_ZH[area]:'可能涉及该领域，方向和幅度尚需核实。'},
-       'impact_areas':[AREA_ZH[area]],'watch_next':['核对公司公告或监管原文','关注事项时间表和实际财务影响'],
+    event=normalize_event({'ticker':ticker,'headline':detail['headline'],'published_at':published.isoformat(),
+       'event_time':published.isoformat(),'event_type':kind,'importance':importance,
+       'what_happened':detail['conclusion'], 'why_it_matters':detail['why_it_matters'],
+       'impact_summary':detail['impact_summary'], 'impact_areas':list(detail['impact_summary']),
+       'watch_next':detail['watch_next'],
        'source_name':f"{raw.get('source') or '新闻来源'} via Finnhub",'source_url':url,'source_type':'finnhub'},now=published.date())
+    identity = str(raw.get('id') or urlunsplit((*urlsplit(url)[:3], '', '')))
+    event.update(detail)
     event.update({'published_at':published.isoformat(),'event_time':published.isoformat(),
-                  'event_importance_score':score,'impact_area':area,'source':'Finnhub',
-                  'summary_method':'rule_template','status':'AVAILABLE'})
+                  'event_id':hashlib.sha256(identity.encode()).hexdigest()[:20],
+                  'primary_tickers':primary,'secondary_tickers':secondary,
+                  'involved_tickers':sorted(set(primary+secondary)),
+                  'finnhub_id':raw.get('id'),'original_headline':headline,
+                  'original_summary':summary,'related':raw.get('related'),
+                  'relevance_score':relevance,'event_importance_score':score,'impact_area':area,'source':'Finnhub',
+                  'short_summary':detail['conclusion'],'what_happened':detail['conclusion'],
+                  'summary_method':'grounded_extraction','status':'AVAILABLE'})
     return event
 
 
@@ -73,17 +94,32 @@ def _instant(value,end=False):
 
 
 def deduplicate(events):
-    output=[];urls=set();headlines={}
-    for ev in sorted(events,key=lambda x:x['event_time'],reverse=True):
-        parsed=urlsplit(ev['source_url']);url=urlunsplit((parsed.scheme,parsed.netloc,parsed.path,'',''))
-        headline=re.sub(r'\W+',' ',ev['headline'].lower()).strip()
-        tokens=set(headline.split());ticker=ev['ticker'];key=(ticker,url)
-        previous=headlines.setdefault(ticker,[])
-        duplicate=any(headline==h or (len(tokens & words)/max(len(tokens | words),1)>.65
-                      and SequenceMatcher(None,headline,h).ratio()>.9) for h,words in previous)
-        if key in urls or duplicate:continue
-        urls.add(key);previous.append((headline,tokens));output.append(ev)
-    return output
+    """Global, transitive union by canonical URL, provider id, or original title."""
+    groups=[]
+    for ev in sorted((e for e in events if e),key=lambda x:x['event_time'],reverse=True):
+        parsed=urlsplit(ev['source_url'])
+        # Preserve identity query parameters, drop tracking only.
+        from urllib.parse import parse_qsl, urlencode
+        query=urlencode(sorted((k,v) for k,v in parse_qsl(parsed.query) if not k.lower().startswith(('utm_', 'fbclid', 'gclid', 'tracking'))))
+        url=urlunsplit((parsed.scheme.lower(),parsed.netloc.lower(),parsed.path.rstrip('/'),query,''))
+        headline=re.sub(r'\W+',' ',ev.get('original_headline',ev['headline']).lower()).strip()
+        keys={('url',url),('headline',headline)}
+        if ev.get('finnhub_id') is not None:keys.add(('id',str(ev['finnhub_id'])))
+        matches=[g for g in groups if g[0]&keys]
+        if not matches:
+            groups.append((keys,dict(ev)));continue
+        primary=set(ev.get('primary_tickers',[ev['ticker']]))
+        secondary=set(ev.get('secondary_tickers',[]))
+        # Prefer the richer supplied summary when overlapping feeds differ.
+        target=dict(max([ev]+[g[1] for g in matches], key=lambda e: (len(e.get('fact_evidence') or []),len(e.get('original_summary') or ''))))
+        for group in matches:
+            keys |= group[0]
+            primary.update(group[1].get('primary_tickers',[group[1]['ticker']]))
+            secondary.update(group[1].get('secondary_tickers',[]))
+            groups.remove(group)
+        target.update(primary_tickers=sorted(primary),secondary_tickers=sorted(secondary-primary),involved_tickers=sorted(primary|secondary))
+        groups.append((keys,target))
+    return [event for _,event in groups]
 
 
 def get_live_events(tickers,start_time=None,end_time=None,include_upcoming=False,*,now=None,range_key=None,apply_limits=True,provider=None):
@@ -108,8 +144,10 @@ def get_live_events(tickers,start_time=None,end_time=None,include_upcoming=False
     events.sort(key=lambda x:x['event_importance_score'],reverse=True)
     counts={};output=[];limit=PER_TICKER_LIMITS.get(range_key or 'quarter',5)
     for ev in events:
-        ticker=ev['ticker'];counts[ticker]=counts.get(ticker,0)+1
-        if not apply_limits or counts[ticker]<=limit:output.append(ev)
+        subjects=ev.get('primary_tickers') or [ev['ticker']]
+        if not apply_limits or all(counts.get(t,0)<limit for t in subjects):
+            output.append(ev)
+            for t in subjects:counts[t]=counts.get(t,0)+1
     return output
 
 

@@ -1,0 +1,16 @@
+﻿ticker,stored_before_refresh,latest_official_quarter,report_date,stale_before_refresh,stale_after_refresh,source_url
+AAPL,FY2025 Q3,FY2026 Q3,2026-07-30,yes,no,https://www.apple.com/newsroom/pdfs/fy2026q3/FY26_Q3_Consolidated_Financial_Statements.pdf
+MSFT,FY2025 Q4,FY2026 Q4,2026-07-29,yes,no,https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast
+GOOG,CY2025 Q2,CY2026 Q2,2026-07-22,yes,no,https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm
+AMZN,CY2025 Q2,CY2026 Q2,2026-07-30,yes,no,https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/default.aspx
+NVDA,FY2026 Q1,FY2027 Q2,2026-08-26,yes,no,https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/
+META,CY2025 Q2,CY2026 Q2,2026-07-29,yes,no,https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Second-Quarter-2026-Results/default.aspx
+TSLA,CY2025 Q2,CY2026 Q2,2026-07-22,yes,no,https://www.sec.gov/Archives/edgar/data/1318605/000162828026049270/tsla-20260630.htm
+MU,FY2025 Q4,FY2026 Q4,2026-09-30,yes,no,https://investors.micron.com/news/press-release/2026/Micron-Technology-Inc--Reports-Record-Fiscal-Fourth-Quarter-and-Full-Year-2026-Results/default.aspx
+AVGO,FY2025 Q3,FY2026 Q3,2026-09-02,yes,no,https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial
+ORCL,FY2026 Q1,FY2027 Q1,2026-09-10,yes,no,https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Q1-Results-Driven-by-Triple-Digit-Growth-in-Cloud-Infrastructure-Revenues/default.aspx
+PLTR,CY2025 Q2,CY2026 Q2,2026-08-03,yes,no,https://investors.palantir.com/files/2026%20Q2%20PLTR%2010-Q.pdf
+JPM,MISSING,CY2026 Q2,2026-07-14,yes,no,https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/quarterly-earnings/2026/2nd-quarter/6cded9fd-a164-4e6c-8cff-377357cf105c.pdf
+NFLX,MISSING,CY2026 Q2,2026-07-16,yes,no,https://s22.q4cdn.com/959853165/files/doc_financials/2026/q2/FINAL-Q2-26-Shareholder-Letter.pdf
+UBER,MISSING,CY2026 Q2,2026-08-05,yes,no,https://investor.uber.com/news-events/news/press-release-details/2026/Uber-Announces-Results-for-Second-Quarter-2026/default.aspx
+BABA,MISSING,FY2027 Q1,2026-08-20,yes,no,https://links.sgx.com/FileOpen/9988.HK_100_Put_SLD.ashx?App=Prospectus&FileID=70866

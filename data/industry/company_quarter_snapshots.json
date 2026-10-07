@@ -1,0 +1,726 @@
+[
+  {
+    "total_revenue": 109417000000.0,
+    "revenue_growth_yoy": 0.16356501765281384,
+    "operating_income": 35695000000.0,
+    "operating_margin": 0.3262290137729969,
+    "net_income": 29789000000.0,
+    "free_cash_flow": null,
+    "capex": null,
+    "capex_to_revenue": null,
+    "segment_revenue_json": {
+      "iPhone": 54252000000.0,
+      "Mac": 10352000000.0,
+      "iPad": 6191000000.0,
+      "穿戴、家居及配件": 7883000000.0,
+      "服务": 30739000000.0
+    },
+    "segment_growth_json": {
+      "iPhone": 0.2169036831008031,
+      "Mac": 0.2866020382798906,
+      "iPad": -0.059261510408752494,
+      "穿戴、家居及配件": 0.06469475958941118,
+      "服务": 0.12092039528862641
+    },
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "AAPL",
+    "company_id": "AAPL",
+    "fiscal_period": "FY2026 Q3",
+    "period_end": "2026-06-27",
+    "report_date": "2026-07-30",
+    "source_name": "AAPL Investor Relations",
+    "source_url": "https://www.apple.com/newsroom/pdfs/fy2026q3/FY26_Q3_Consolidated_Financial_Statements.pdf",
+    "source_urls": [
+      "https://www.apple.com/newsroom/pdfs/fy2026q3/FY26_Q3_Consolidated_Financial_Statements.pdf"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "产品类别收入；现金流表为九个月累计，未当作单季。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": null,
+    "segments": [
+      {
+        "name": "iPhone",
+        "revenue": 54252000000.0,
+        "percentage_of_total": 49.582788780536845,
+        "yoy_growth": 0.2169036831008031
+      },
+      {
+        "name": "Mac",
+        "revenue": 10352000000.0,
+        "percentage_of_total": 9.461052670060411,
+        "yoy_growth": 0.2866020382798906
+      },
+      {
+        "name": "iPad",
+        "revenue": 6191000000.0,
+        "percentage_of_total": 5.658170119816847,
+        "yoy_growth": -0.059261510408752494
+      },
+      {
+        "name": "穿戴、家居及配件",
+        "revenue": 7883000000.0,
+        "percentage_of_total": 7.204547739382363,
+        "yoy_growth": 0.06469475958941118
+      },
+      {
+        "name": "服务",
+        "revenue": 30739000000.0,
+        "percentage_of_total": 28.093440690203533,
+        "yoy_growth": 0.12092039528862641
+      }
+    ],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 90007000000.0,
+    "revenue_growth_yoy": 0.17747020577962092,
+    "operating_income": 40603000000.0,
+    "operating_margin": 0.4511093581610319,
+    "net_income": 35766000000.0,
+    "free_cash_flow": 19639000000.0,
+    "capex": 35802000000.0,
+    "capex_to_revenue": 0.3977690624062573,
+    "segment_revenue_json": {
+      "生产力与业务流程": 37847000000.0,
+      "智能云": 39306000000.0,
+      "更多个人计算": 12854000000.0
+    },
+    "segment_growth_json": {
+      "生产力与业务流程": 0.14299951679149547,
+      "智能云": 0.31554990293861707,
+      "更多个人计算": -0.04438331722548505
+    },
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "MSFT",
+    "company_id": "MSFT",
+    "fiscal_period": "FY2026 Q4",
+    "period_end": "2026-06-30",
+    "report_date": "2026-07-29",
+    "source_name": "MSFT Investor Relations",
+    "source_url": "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast",
+    "source_urls": [
+      "https://www.microsoft.com/en-us/investor/earnings/fy-2026-q4/press-release-webcast"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "自由现金流=单季经营现金流55441百万美元减现金购置固定资产35802百万美元；不含融资租赁。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": 0.3977690624062573,
+    "segments": [
+      {
+        "name": "生产力与业务流程",
+        "revenue": 37847000000.0,
+        "percentage_of_total": 42.04895174819736,
+        "yoy_growth": 0.14299951679149547
+      },
+      {
+        "name": "智能云",
+        "revenue": 39306000000.0,
+        "percentage_of_total": 43.66993678269468,
+        "yoy_growth": 0.31554990293861707
+      },
+      {
+        "name": "更多个人计算",
+        "revenue": 12854000000.0,
+        "percentage_of_total": 14.281111469107959,
+        "yoy_growth": -0.04438331722548505
+      }
+    ],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 119796000000.0,
+    "revenue_growth_yoy": 0.2423362508814868,
+    "operating_income": 40770000000.0,
+    "operating_margin": 0.3403285585495342,
+    "net_income": 112193000000.0,
+    "free_cash_flow": null,
+    "capex": null,
+    "capex_to_revenue": null,
+    "segment_revenue_json": null,
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "GOOG",
+    "company_id": "GOOG",
+    "fiscal_period": "CY2026 Q2",
+    "period_end": "2026-06-30",
+    "report_date": "2026-07-22",
+    "source_name": "GOOG Investor Relations",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm",
+    "source_urls": [
+      "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000066/googexhibit991q22026.htm",
+      "https://www.sec.gov/Archives/edgar/data/1652044/000165204426000071/goog-20260630.htm"
+    ],
+    "source_type": "sec_filing",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "SEC 10-Q合并口径；净利润包含重大投资重估收益，不等同经营盈利。现金流表为半年累计，未冒充单季。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": null,
+    "segments": [],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 200606000000.0,
+    "revenue_growth_yoy": 0.19620517346245125,
+    "operating_income": 27461000000.0,
+    "operating_margin": 0.1368902226254449,
+    "net_income": 62647000000.0,
+    "free_cash_flow": -7689000000.0,
+    "capex": 53076000000.0,
+    "capex_to_revenue": 0.2645783276671685,
+    "segment_revenue_json": {
+      "北美": 116177000000.0,
+      "国际": 42197000000.0,
+      "AWS": 42232000000.0
+    },
+    "segment_growth_json": {
+      "北美": 0.16098053323739858,
+      "国际": 0.1478741057098556,
+      "AWS": 0.36792666731448187
+    },
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "AMZN",
+    "company_id": "AMZN",
+    "fiscal_period": "CY2026 Q2",
+    "period_end": "2026-06-30",
+    "report_date": "2026-07-30",
+    "source_name": "AMZN Investor Relations",
+    "source_url": "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/default.aspx",
+    "source_urls": [
+      "https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Second-Quarter-Results/default.aspx"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "资本开支=购置固定资产54208减处置及激励1132（百万美元）；自由现金流=单季经营现金流45387减净资本开支53076。净利润含Anthropic投资收益，不等同经常性经营利润。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": 0.2645783276671685,
+    "segments": [
+      {
+        "name": "北美",
+        "revenue": 116177000000.0,
+        "percentage_of_total": 57.913023538677805,
+        "yoy_growth": 0.16098053323739858
+      },
+      {
+        "name": "国际",
+        "revenue": 42197000000.0,
+        "percentage_of_total": 21.034764663070895,
+        "yoy_growth": 0.1478741057098556
+      },
+      {
+        "name": "AWS",
+        "revenue": 42232000000.0,
+        "percentage_of_total": 21.0522117982513,
+        "yoy_growth": 0.36792666731448187
+      }
+    ],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 96221000000.0,
+    "revenue_growth_yoy": 1.0585114348672526,
+    "operating_income": 63734000000.0,
+    "operating_margin": 0.6623710000935347,
+    "net_income": 59688000000.0,
+    "free_cash_flow": 21341000000.0,
+    "capex": 2736000000.0,
+    "capex_to_revenue": 0.028434541316344666,
+    "segment_revenue_json": null,
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "NVDA",
+    "company_id": "NVDA",
+    "fiscal_period": "FY2027 Q2",
+    "period_end": "2026-07-26",
+    "report_date": "2026-08-26",
+    "source_name": "NVDA Investor Relations",
+    "source_url": "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/",
+    "source_urls": [
+      "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Second-Quarter-Fiscal-2027/"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "资本开支包括固定及无形资产购置2677及相关本金偿付59百万美元；自由现金流采用公司披露口径。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": 0.028434541316344666,
+    "segments": [],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 60801000000.0,
+    "revenue_growth_yoy": 0.27959003283104633,
+    "operating_income": 18775000000.0,
+    "operating_margin": 0.3087942632522491,
+    "net_income": 15848000000.0,
+    "free_cash_flow": 784000000.0,
+    "capex": 31080000000.0,
+    "capex_to_revenue": 0.5111758030295555,
+    "segment_revenue_json": null,
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "META",
+    "company_id": "META",
+    "fiscal_period": "CY2026 Q2",
+    "period_end": "2026-06-30",
+    "report_date": "2026-07-29",
+    "source_name": "META Investor Relations",
+    "source_url": "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Second-Quarter-2026-Results/default.aspx",
+    "source_urls": [
+      "https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Second-Quarter-2026-Results/default.aspx"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "资本开支含融资租赁本金；自由现金流采用公司披露非GAAP口径。资本开支按公告十亿美元精度。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": 0.5111758030295555,
+    "segments": [],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 28236000000.0,
+    "revenue_growth_yoy": 0.25515647226173543,
+    "operating_income": 398000000.0,
+    "operating_margin": 0.014095480946309675,
+    "net_income": 1128000000.0,
+    "free_cash_flow": null,
+    "capex": null,
+    "capex_to_revenue": null,
+    "segment_revenue_json": {
+      "汽车销售与租赁（含积分）": 20516000000.0,
+      "能源": 3139000000.0,
+      "服务及其他": 4581000000.0
+    },
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "TSLA",
+    "company_id": "TSLA",
+    "fiscal_period": "CY2026 Q2",
+    "period_end": "2026-06-30",
+    "report_date": "2026-07-22",
+    "source_name": "TSLA Investor Relations",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/1318605/000162828026049270/tsla-20260630.htm",
+    "source_urls": [
+      "https://www.sec.gov/Archives/edgar/data/1318605/000162828026049270/tsla-20260630.htm"
+    ],
+    "source_type": "sec_filing",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "发布日期由Tesla IR公告核验；分部表中汽车与服务合并，此处按收入类别展示。 净利润采用合并口径（归属普通股股东1114百万美元，加非控股权益14百万美元）。单季现金流尚未核实，留空。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": null,
+    "segments": [
+      {
+        "name": "汽车销售与租赁（含积分）",
+        "revenue": 20516000000.0,
+        "percentage_of_total": 72.65901685791188,
+        "yoy_growth": null
+      },
+      {
+        "name": "能源",
+        "revenue": 3139000000.0,
+        "percentage_of_total": 11.117013741323134,
+        "yoy_growth": null
+      },
+      {
+        "name": "服务及其他",
+        "revenue": 4581000000.0,
+        "percentage_of_total": 16.223969400764982,
+        "yoy_growth": null
+      }
+    ],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 54229000000.0,
+    "revenue_growth_yoy": 3.7926646045072916,
+    "operating_income": 43751000000.0,
+    "operating_margin": 0.8067823489276955,
+    "net_income": 37701000000.0,
+    "free_cash_flow": 33200000000.0,
+    "capex": 10770000000.0,
+    "capex_to_revenue": 0.19860222390234009,
+    "segment_revenue_json": null,
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "MU",
+    "company_id": "MU",
+    "fiscal_period": "FY2026 Q4",
+    "period_end": "2026-09-03",
+    "report_date": "2026-09-30",
+    "source_name": "MU Investor Relations",
+    "source_url": "https://investors.micron.com/news/press-release/2026/Micron-Technology-Inc--Reports-Record-Fiscal-Fourth-Quarter-and-Full-Year-2026-Results/default.aspx",
+    "source_urls": [
+      "https://investors.micron.com/news/press-release/2026/Micron-Technology-Inc--Reports-Record-Fiscal-Fourth-Quarter-and-Full-Year-2026-Results/default.aspx"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "资本开支为公司净投资口径；自由现金流为公司adjusted free cash flow，非GAAP。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": 0.19860222390234009,
+    "segments": [],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 29591000000.0,
+    "revenue_growth_yoy": 0.8550025075225678,
+    "operating_income": 15955000000.0,
+    "operating_margin": 0.5391842114156331,
+    "net_income": 13088000000.0,
+    "free_cash_flow": 13665000000.0,
+    "capex": 532000000.0,
+    "capex_to_revenue": 0.017978439390355174,
+    "segment_revenue_json": {
+      "半导体解决方案": 20839000000.0,
+      "基础设施软件": 8752000000.0
+    },
+    "segment_growth_json": {
+      "半导体解决方案": 1.2735108007855116,
+      "基础设施软件": 0.28971411730032415
+    },
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "AVGO",
+    "company_id": "AVGO",
+    "fiscal_period": "FY2026 Q3",
+    "period_end": "2026-08-02",
+    "report_date": "2026-09-02",
+    "source_name": "AVGO Investor Relations",
+    "source_url": "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial",
+    "source_urls": [
+      "https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-third-quarter-fiscal-year-2026-financial"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "自由现金流为公司披露非GAAP指标；资本开支=经营现金流14197减FCF13665百万美元。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": 0.017978439390355174,
+    "segments": [
+      {
+        "name": "半导体解决方案",
+        "revenue": 20839000000.0,
+        "percentage_of_total": 70.42343955932547,
+        "yoy_growth": 1.2735108007855116
+      },
+      {
+        "name": "基础设施软件",
+        "revenue": 8752000000.0,
+        "percentage_of_total": 29.57656044067453,
+        "yoy_growth": 0.28971411730032415
+      }
+    ],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 19345000000.0,
+    "revenue_growth_yoy": 0.2960605654562509,
+    "operating_income": 6728000000.0,
+    "operating_margin": 0.3477901266477126,
+    "net_income": 4760000000.0,
+    "free_cash_flow": -5396000000.0,
+    "capex": 28499000000.0,
+    "capex_to_revenue": 1.4731972085810288,
+    "segment_revenue_json": {
+      "云": 11607000000.0,
+      "软件": 5550000000.0,
+      "硬件": 774000000.0,
+      "服务": 1414000000.0
+    },
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "ORCL",
+    "company_id": "ORCL",
+    "fiscal_period": "FY2027 Q1",
+    "period_end": "2026-08-31",
+    "report_date": "2026-09-10",
+    "source_name": "ORCL Investor Relations",
+    "source_url": "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Q1-Results-Driven-by-Triple-Digit-Growth-in-Cloud-Infrastructure-Revenues/default.aspx",
+    "source_urls": [
+      "https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Q1-Results-Driven-by-Triple-Digit-Growth-in-Cloud-Infrastructure-Revenues/default.aspx"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "资本开支与FCF采用公司披露季度口径，未改用扣除客户预付款后的net cash outlay。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": 1.4731972085810288,
+    "segments": [
+      {
+        "name": "云",
+        "revenue": 11607000000.0,
+        "percentage_of_total": 60.0,
+        "yoy_growth": null
+      },
+      {
+        "name": "软件",
+        "revenue": 5550000000.0,
+        "percentage_of_total": 28.6895838718015,
+        "yoy_growth": null
+      },
+      {
+        "name": "硬件",
+        "revenue": 774000000.0,
+        "percentage_of_total": 4.001033858878263,
+        "yoy_growth": null
+      },
+      {
+        "name": "服务",
+        "revenue": 1414000000.0,
+        "percentage_of_total": 7.3093822693202375,
+        "yoy_growth": null
+      }
+    ],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 1935464000.0,
+    "revenue_growth_yoy": 0.928334945705726,
+    "operating_income": 912004000.0,
+    "operating_margin": 0.4712069043908851,
+    "net_income": 1065962000.0,
+    "free_cash_flow": null,
+    "capex": null,
+    "capex_to_revenue": null,
+    "segment_revenue_json": {
+      "政府": 990032000.0,
+      "商业": 945432000.0
+    },
+    "segment_growth_json": {
+      "政府": 0.7903479853811057,
+      "商业": 1.0976317576112566
+    },
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "PLTR",
+    "company_id": "PLTR",
+    "fiscal_period": "CY2026 Q2",
+    "period_end": "2026-06-30",
+    "report_date": "2026-08-03",
+    "source_name": "PLTR Investor Relations",
+    "source_url": "https://investors.palantir.com/files/2026%20Q2%20PLTR%2010-Q.pdf",
+    "source_urls": [
+      "https://investors.palantir.com/reports-2026.html",
+      "https://investors.palantir.com/files/2026%20Q2%20PLTR%2010-Q.pdf"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "10-Q原表单位千美元，已转换美元；净利润采用合并口径。现金流表为半年累计，未混作单季。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": null,
+    "segments": [
+      {
+        "name": "政府",
+        "revenue": 990032000.0,
+        "percentage_of_total": 51.15217849569922,
+        "yoy_growth": 0.7903479853811057
+      },
+      {
+        "name": "商业",
+        "revenue": 945432000.0,
+        "percentage_of_total": 48.847821504300775,
+        "yoy_growth": 1.0976317576112566
+      }
+    ],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 57300000000.0,
+    "revenue_growth_yoy": null,
+    "operating_income": null,
+    "operating_margin": null,
+    "net_income": 21200000000.0,
+    "free_cash_flow": null,
+    "capex": null,
+    "capex_to_revenue": null,
+    "segment_revenue_json": null,
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "JPM",
+    "company_id": "JPM",
+    "fiscal_period": "CY2026 Q2",
+    "period_end": "2026-06-30",
+    "report_date": "2026-07-14",
+    "source_name": "JPM Investor Relations",
+    "source_url": "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/quarterly-earnings/2026/2nd-quarter/6cded9fd-a164-4e6c-8cff-377357cf105c.pdf",
+    "source_urls": [
+      "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/quarterly-earnings/2026/2nd-quarter/6cded9fd-a164-4e6c-8cff-377357cf105c.pdf"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "报告净收入与净利润，按公告十亿美元精度录入；未混用managed revenue。银行不套用工业公司FCF/营业利润口径。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": null,
+    "segments": [],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 12560000000.0,
+    "revenue_growth_yoy": 0.13367632457803058,
+    "operating_income": 4193000000.0,
+    "operating_margin": 0.3338375796178344,
+    "net_income": 3401000000.0,
+    "free_cash_flow": 1525000000.0,
+    "capex": 219000000.0,
+    "capex_to_revenue": 0.017436305732484076,
+    "segment_revenue_json": null,
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "NFLX",
+    "company_id": "NFLX",
+    "fiscal_period": "CY2026 Q2",
+    "period_end": "2026-06-30",
+    "report_date": "2026-07-16",
+    "source_name": "NFLX Investor Relations",
+    "source_url": "https://s22.q4cdn.com/959853165/files/doc_financials/2026/q2/FINAL-Q2-26-Shareholder-Letter.pdf",
+    "source_urls": [
+      "https://s22.q4cdn.com/959853165/files/doc_financials/2026/q2/FINAL-Q2-26-Shareholder-Letter.pdf"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "资本开支=经营现金流1744减FCF1525百万美元。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": 0.017436305732484076,
+    "segments": [],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 14191000000.0,
+    "revenue_growth_yoy": 0.12172950754881029,
+    "operating_income": 1890000000.0,
+    "operating_margin": 0.1331830033119583,
+    "net_income": 2394000000.0,
+    "free_cash_flow": 2792000000.0,
+    "capex": 70000000.0,
+    "capex_to_revenue": 0.004932703826368825,
+    "segment_revenue_json": {
+      "出行": 7363000000.0,
+      "配送": 5245000000.0,
+      "货运": 1583000000.0
+    },
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "UBER",
+    "company_id": "UBER",
+    "fiscal_period": "CY2026 Q2",
+    "period_end": "2026-06-30",
+    "report_date": "2026-08-05",
+    "source_name": "UBER Investor Relations",
+    "source_url": "https://investor.uber.com/news-events/news/press-release-details/2026/Uber-Announces-Results-for-Second-Quarter-2026/default.aspx",
+    "source_urls": [
+      "https://investor.uber.com/news-events/news/press-release-details/2026/Uber-Announces-Results-for-Second-Quarter-2026/default.aspx"
+    ],
+    "source_type": "company_ir",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "USD",
+    "data_status": "CURRENT",
+    "notes": "净利润采用归属Uber股东口径，含投资重估收益；FCF采用公司披露口径。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": 0.004932703826368825,
+    "segments": [
+      {
+        "name": "出行",
+        "revenue": 7363000000.0,
+        "percentage_of_total": 51.88499753364809,
+        "yoy_growth": null
+      },
+      {
+        "name": "配送",
+        "revenue": 5245000000.0,
+        "percentage_of_total": 36.960045099006415,
+        "yoy_growth": null
+      },
+      {
+        "name": "货运",
+        "revenue": 1583000000.0,
+        "percentage_of_total": 11.154957367345501,
+        "yoy_growth": null
+      }
+    ],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  },
+  {
+    "total_revenue": 268953000000.0,
+    "revenue_growth_yoy": 0.09,
+    "operating_income": 15161000000.0,
+    "operating_margin": 0.05637044390655616,
+    "net_income": 10444000000.0,
+    "free_cash_flow": -44670000000.0,
+    "capex": null,
+    "capex_to_revenue": null,
+    "segment_revenue_json": null,
+    "segment_growth_json": null,
+    "current_profit_engine": null,
+    "future_expansion": null,
+    "ticker": "BABA",
+    "company_id": "BABA",
+    "fiscal_period": "FY2027 Q1",
+    "period_end": "2026-06-30",
+    "report_date": "2026-08-20",
+    "source_name": "Alibaba results announcement, SGX filing appendix pp.53–79",
+    "source_url": "https://links.sgx.com/FileOpen/9988.HK_100_Put_SLD.ashx?App=Prospectus&FileID=70866",
+    "source_urls": [
+      "https://www.alibabagroup.com/en-US/document-2026456290057781248",
+      "https://links.sgx.com/FileOpen/9988.HK_100_Put_SLD.ashx?App=Prospectus&FileID=70866"
+    ],
+    "source_type": "exchange_filing",
+    "last_verified_at": "2026-10-07",
+    "snapshot_collection": "company_quarter_snapshots",
+    "currency": "CNY",
+    "data_status": "CURRENT",
+    "notes": "人民币合并口径；SGX附件转载公司正式季度公告，原始IR链接见source_urls。FCF为公司非GAAP口径，未以经营现金流差额推算资本开支。",
+    "missing_data_note": "未核实的字段留空；不以半年、全年或 TTM 数据代替单季。",
+    "capex_as_pct_revenue": null,
+    "segments": [],
+    "narrative_note": "未维护当季利润引擎/扩张叙述时，页面显示原有公司业务介绍，不作为当季财报事实。"
+  }
+]
