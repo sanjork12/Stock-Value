@@ -640,6 +640,14 @@ def get_live_fundamentals(ticker: str):
         )
 
     payload = {
+        "analyst_consensus_target": fnum(info.get("targetMeanPrice")),
+        "analyst_target_low": fnum(info.get("targetLowPrice")),
+        "analyst_target_high": fnum(info.get("targetHighPrice")),
+        "analyst_count": fnum(info.get("numberOfAnalystOpinions")),
+        "consensus_source": "Yahoo Finance / yfinance ticker.info",
+        "consensus_updated_at": None,
+        "forward_estimate_updated_at": None,
+        "current_forward_pe": fnum(info.get("forwardPE")),
         "current_price": current,
         "forward_eps": forward_eps,
         "forward_eps_source": forward_eps_source,

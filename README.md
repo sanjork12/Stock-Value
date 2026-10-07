@@ -125,3 +125,32 @@ Historical OHLCV data can be reconstructed later, but historical analyst expecta
 ## Disclaimer
 
 This is a research and monitoring tool, not personalized investment advice. Fair value depends heavily on future earnings, growth, capital expenditure, margins, discount rates and valuation multiples.
+
+## V4.3 External Valuation Sanity Layer
+
+The analysis service exposes `market_reference` (MarketReferenceResult), numeric
+`valuation_low/mid/high`, `valuation_mode`, and a separate nullable confidence.
+Internal valuation formulas and engine outputs are unchanged. Legacy snapshot
+confidence encoding is retained for compatibility; presentation normalizes it.
+
+Yahoo Finance / yfinance ticker.info supplies targetMeanPrice, targetLowPrice,
+targetHighPrice, numberOfAnalystOpinions and forwardPE. Consensus never enters
+internal model weighting. Provider update dates, historical PE medians and sector
+PE are unavailable from this feed and remain null; retrieval time is not an
+estimate update time. Historical analysis does not fetch current consensus.
+
+Deviation = (internal midpoint / consensus target - 1) * 100 percentage points.
+Absolute deviation <20 is NORMAL, 20 through 35 is REVIEW, >35 is
+HIGH_DIVERGENCE. Missing reference or internal midpoint is
+NO_EXTERNAL_REFERENCE and does not penalize valuation. A high divergence is a
+review warning, not proof that either estimate is correct.
+
+Dashboard: internal valuation, consensus target, signed deviation, valuation mode
+and confidence replace the standalone fair-value presentation. Advanced columns
+include current/implied forward PE and optional historical/sector references.
+LOW + HIGH_DIVERGENCE hides dashboard trading zones; numeric internal zones are
+preserved. Single-stock diagnostics explain source, missing update dates, PE and
+rule-derived zones. Display prices use two decimals; LOW ranges use integers.
+
+Validation: python -m unittest discover -s tests -v (220 tests passed).
+No live provider or interactive browser validation was performed.

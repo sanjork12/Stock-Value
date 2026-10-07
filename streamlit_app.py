@@ -809,6 +809,16 @@ def render_cycle_panel(r: dict):
 
 
 def render_valuation_diagnostics(r: dict):
+    ref = r.get("market_reference") or {}
+    st.caption("买入区与减仓区由内部估值、波动率、模型可靠性和安全边际规则推导，并非独立估值模型。")
+    st.write("估值模式：", r.get("valuation_mode") or "—")
+    st.write("Market consensus reference：", money(ref.get("analyst_consensus_target")))
+    if r.get("valuation_mode") == "SPECIALIZED":
+        st.caption("内部估值：专项模型未提供")
+    for warning in ref.get("sanity_warnings") or []:
+        st.warning(warning)
+    st.caption(f"前瞻预测更新：{r.get('forward_estimate_updated_at') or '未提供'} · 一致目标更新：{ref.get('consensus_updated_at') or '未提供'} · 来源：{ref.get('consensus_source') or '—'}")
+    st.write({key: (f"{ref[key]:.2f}x" if ref.get(key) is not None else "—") for key in ("current_forward_pe", "internal_implied_forward_pe", "historical_pe_median_3y", "historical_pe_median_5y", "sector_forward_pe")})
     f = r.get("financials") or {}
     blend = r.get("blend") or {}
     profile = blend.get("profile") or {}
@@ -926,7 +936,7 @@ def style_status(v):
 
 def render_valuation_band(r: dict):
     """Continuous valuation band from deep value through extreme overvaluation."""
-    zones = r.get("zones") or {}
+    zones = {} if r.get("hide_precise_trading_zones") else (r.get("zones") or {})
     exit_zone = r.get("exit_zone") or ((r.get("blend") or {}).get("exit_zone")) or {}
     price = fnum(r.get("price"))
     conf = str(r.get("confidence") or "").upper()
@@ -1498,7 +1508,7 @@ if page == "自选股":
                     "价格": None,
                     "状态": "数据不足",
                     "错误": r.get("analysis_error") or "行情数据暂时获取失败",
-                    "公允价值": "—",
+                    "内部估值": "—",
                     "置信度": "—",
                     "距公允价值%": "—",
                     "第一批区": "—",
@@ -1534,12 +1544,16 @@ if page == "自选股":
                 "股票": t,
                 "价格": r["price"],
                 "状态": r["recommendation"],
-                "公允价值": dashboard_fair_text(r),
+                "内部估值": dashboard_fair_text(r),
+                "市场一致目标": money((r.get("market_reference") or {}).get("analyst_consensus_target")),
+                "内部 vs 市场": (f"{r['market_reference']['internal_vs_consensus_pct']:+.1f}%" if (r.get("market_reference") or {}).get("internal_vs_consensus_pct") is not None else "—"),
+                "估值模式": r.get("valuation_mode") or "—",
+                **{key: (f"{r['market_reference'][key]:.2f}x" if (r.get("market_reference") or {}).get(key) is not None else "—") for key in ("current_forward_pe", "internal_implied_forward_pe", "historical_pe_median_3y", "historical_pe_median_5y", "sector_forward_pe")},
                 "置信度": confidence_zh(r.get("confidence")),
                 "距公允价值%": delta_display,
-                "第一批区": zone_text(r["zones"]["first"]) if r["zones"] else "—",
-                "核心买入区": zone_text(r["zones"]["core"]) if r["zones"] else "—",
-                "深度价值区": zone_text(r["zones"]["deep"]) if r["zones"] else "—",
+                "第一批区": zone_text(r["zones"]["first"]) if r["zones"] and not r.get("hide_precise_trading_zones") else "—",
+                "核心买入区": zone_text(r["zones"]["core"]) if r["zones"] and not r.get("hide_precise_trading_zones") else "—",
+                "深度价值区": zone_text(r["zones"]["deep"]) if r["zones"] and not r.get("hide_precise_trading_zones") else "—",
                 "减仓参考区": trim_txt,
                 "明显高估区": extreme_txt,
                 "可靠性": r.get("reliability_score") if r.get("reliability_score") is not None else "—",
@@ -1561,7 +1575,7 @@ if page == "自选股":
                 "价格": None,
                 "状态": "数据不足",
                 "错误": err_text,
-                "公允价值": "—",
+                "内部估值": "—",
                 "置信度": "—",
                 "距公允价值%": "—",
                 "第一批区": "—",
@@ -1581,7 +1595,11 @@ if page == "自选股":
         progress.progress(i / len(watch), text=f"正在更新 {i}/{len(watch)}")
     progress.empty()
 
+    st.caption("买入区与减仓区由内部估值、波动率、模型可靠性和安全边际规则推导，并非独立估值模型。偏差绝对值 >35% 表示模型与市场分歧显著，精确区间仅供内部模型参考。")
     df = pd.DataFrame(rows)
+    for price_col in ("价格", "SMA30", "SMA50", "SMA200"):
+        if price_col in df.columns:
+            df[price_col] = pd.to_numeric(df[price_col], errors="coerce").round(2)
     if "_core_gap" in df.columns:
         df = df.drop(columns=["_core_gap"])
     dashboard_columns = [
@@ -1589,7 +1607,10 @@ if page == "自选股":
         "价格",
         "状态",
         "错误",
-        "公允价值",
+        "内部估值",
+        "市场一致目标",
+        "内部 vs 市场",
+        "估值模式",
         "距公允价值%",
         "核心买入区",
         "减仓参考区",
@@ -1597,6 +1618,8 @@ if page == "自选股":
     ]
     if show_advanced_cols:
         dashboard_columns.extend([
+            "current_forward_pe", "internal_implied_forward_pe",
+            "historical_pe_median_3y", "historical_pe_median_5y", "sector_forward_pe",
             "第一批区",
             "深度价值区",
             "可靠性",
@@ -1621,7 +1644,7 @@ if page == "自选股":
             "股票": st.column_config.TextColumn(width=75),
             "价格": st.column_config.NumberColumn(format="$%.2f", width=90),
             "状态": st.column_config.TextColumn(width=180),
-            "公允价值": st.column_config.TextColumn(width=120),
+            "内部估值": st.column_config.TextColumn(width=120),
             "置信度": st.column_config.TextColumn(width=90),
             "距公允价值%": st.column_config.TextColumn(width=105),
             "第一批区": st.column_config.TextColumn(width=150),
@@ -1830,9 +1853,9 @@ elif page == "单股分析":
         a1, a2, a3, a4 = st.columns(4)
         a1.metric("价格", money(r.get("price")))
         if view.get("mode") == "specialized":
-            a2.metric("公允价值", "不适用")
+            a2.metric("内部估值", "不适用")
         elif view.get("mode") == "unavailable":
-            a2.metric("公允价值", "数据不足")
+            a2.metric("内部估值", "数据不足")
         elif view.get("mode") == "indicative_range":
             _ = ("Indicative Valuation Range", "Reference midpoint")
             a2.metric(
@@ -1840,17 +1863,17 @@ elif page == "单股分析":
                 f"{money_conf(view.get('low'), 'LOW')} – {money_conf(view.get('high'), 'LOW')}",
             )
         elif view.get("mode") == "point":
-            a2.metric("公允价值", money_conf(view.get("mid"), "HIGH"))
+            a2.metric("内部估值", money_conf(view.get("mid"), "HIGH"))
         else:
             _ = ("Fair Value Estimate", "Reasonable Range")
-            a2.metric("公允价值估计", money_conf(view.get("mid"), conf))
+            a2.metric("Internal Fair Value Estimate", money_conf(view.get("mid"), conf))
         a3.metric("置信度", confidence_zh(r.get("confidence")))
         a4.metric("可靠性", f"{score}" if score is not None else "—")
         b1, b2, b3 = st.columns(3)
         b1.metric("距公允价值%", delta_display)
         b2.metric(
             "核心买入区",
-            zone_text(r["zones"]["core"]) if r.get("zones") else "—",
+            zone_text(r["zones"]["core"]) if r.get("zones") and not r.get("hide_precise_trading_zones") else "—",
         )
         b3.metric("减仓参考区", trim_txt)
 
@@ -1862,7 +1885,7 @@ elif page == "单股分析":
             st.info("传统估值模型不适用，需要专项场景估值。仅显示技术观察。")
 
         # 买入 / 持有 / 高估 / 减仓区
-        if r.get("zones"):
+        if r.get("zones") and not r.get("hide_precise_trading_zones"):
             labels = (r["zones"] or {}).get("labels") or {}
             z1, z2, z3 = st.columns(3)
             z1.info(f"**{labels.get('first', '第一批区')}**\n\n{zone_text(r['zones']['first'])}")

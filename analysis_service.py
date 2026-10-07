@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone
 import logging
 
 import pandas as pd
+from market_reference import build_market_reference, apply_reference_display_policy
 
 from mag7_monitor import (
     add_indicators,
@@ -376,7 +377,9 @@ def analyze_ticker(
     elif errors and not fair:
         r["analysis_error"] = "财务数据暂时获取失败" if any(e.get("stage") == "fundamentals" for e in errors) else None
     r["recommendation"] = _recommendation_label(r)
-    return r
+    r["market_reference"] = build_market_reference(ticker, financials, fair, price)
+    r["forward_estimate_updated_at"] = (financials or {}).get("forward_estimate_updated_at")
+    return apply_reference_display_policy(r)
 
 
 def _exit_display_mode(exit_zone) -> str | None:
@@ -646,7 +649,7 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
         "raw": {
             "note": r.get("note"),
             "valuation_class": r.get("valuation_class"),
-            "confidence": r.get("confidence"),
+            "confidence": r.get("confidence") or (r.get("blend") or {}).get("confidence"),
             "models_json": blend.get("models"),
             "model_version": r.get("model_version") or MODEL_VERSION,
             "weights_used": blend.get("weights_used"),
@@ -668,7 +671,7 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
             "exit_reason_codes": reason_codes,
         },
         "valuation_class": r.get("valuation_class"),
-        "confidence": r.get("confidence"),
+        "confidence": r.get("confidence") or (r.get("blend") or {}).get("confidence"),
         "models_json": blend.get("models"),
         "model_version": r.get("model_version") or MODEL_VERSION,
         "reliability_score": r.get("reliability_score"),
@@ -721,7 +724,7 @@ def industry_valuation_snapshot(
         ),
         "fair_value_display": format_fair_value(r),
         "blended_mid": _mid(r),
-        "confidence": r.get("confidence"),
+        "confidence": r.get("confidence") or (r.get("blend") or {}).get("confidence"),
         "status": r.get("recommendation") or _recommendation_label(r),
         "valuation_class": r.get("valuation_class"),
     }

@@ -69,7 +69,8 @@ class ArchitectureCleanupTests(unittest.TestCase):
             history_loader=lambda t, d: _ohlcv(26.73),
             fundamentals_loader=lambda t: {"forward_eps": 0.4, "shares": 1e9, "fcf": 1e8},
         )
-        self.assertEqual(result["confidence"], "SPECIALIZED")
+        self.assertIsNone(result["confidence"])
+        self.assertEqual(result["valuation_mode"], "SPECIALIZED")
         self.assertIsNone(result["fair"])
         self.assertEqual(result["price"], 26.73)
         row = build_snapshot_record("user-1", result)
@@ -107,7 +108,10 @@ class ArchitectureCleanupTests(unittest.TestCase):
             "股票",
             "价格",
             "状态",
-            "公允价值",
+            "内部估值",
+            "市场一致目标",
+            "内部 vs 市场",
+            "估值模式",
             "距公允价值%",
             "核心买入区",
             "减仓参考区",
