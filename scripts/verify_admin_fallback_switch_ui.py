@@ -1,5 +1,6 @@
 """Offline real-widget check of the administrator simulation switch."""
 from pathlib import Path
+import json
 from tempfile import TemporaryDirectory
 from streamlit.testing.v1 import AppTest
 
@@ -36,6 +37,12 @@ with patch.object(admin,'is_cloud_runtime',return_value=True), \
         assert not app.exception
         report=app.session_state['_financial_diagnostic_result']['reports']['NVDA']
         assert report['valuation']['source_status']=='cached_last_reliable'
+        displayed=next(json.loads(item.value) for item in app.json if 'final_fair_value' in item.value)
+        assert displayed['final_fair_value']==report['valuation']['fair_value']
+        assert displayed['final_valuation_mode']==report['valuation']['valuation_mode']
+        assert displayed['source_status']=='cached_last_reliable'
+        assert displayed['last_reliable_calculated_at']==report['valuation']['calculated_at']
+        assert displayed['fallback_reason']=='current_financial_input_incomplete'
         assert any('实时财务输入暂不完整，当前显示最近一次可靠估值。' in w.value for w in app.warning)
         assert any(report['valuation']['calculated_at'] in c.value for c in app.caption)
         app.checkbox[0].uncheck().run()
@@ -44,6 +51,12 @@ with patch.object(admin,'is_cloud_runtime',return_value=True), \
         assert not app.exception
         report=app.session_state['_financial_diagnostic_result']['reports']['NVDA']
         assert report['valuation']['source_status']=='live'
+        displayed=next(json.loads(item.value) for item in app.json if 'final_fair_value' in item.value)
+        assert displayed['final_fair_value']==report['valuation']['fair_value']
+        assert displayed['final_valuation_mode']==report['valuation']['valuation_mode']
+        assert displayed['source_status']=='live'
+        assert displayed['last_reliable_calculated_at'] is None
+        assert displayed['fallback_reason'] is None
         assert report['fields']['eps.forward_eps']['value'] is not None
     print('Administrator fallback switch: simulated cache display and restored live UI PASS')
 

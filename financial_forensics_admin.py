@@ -160,7 +160,14 @@ def render_financial_diagnostics(st,client,user_id):
         from last_reliable_valuation import render_cache_notice
         render_cache_notice(st,valuation)
         st.caption('以下为展示结果；上方保留本次实时模型的真实计算与失败原因。')
-        st.json(valuation)
+        # Read-only aliases of the final display result; no valuation/cache edits.
+        cached=valuation.get('source_status')=='cached_last_reliable'
+        st.json({**valuation,
+                 'final_fair_value':valuation.get('fair_value'),
+                 'final_valuation_mode':valuation.get('valuation_mode'),
+                 'source_status':valuation.get('source_status','live'),
+                 'last_reliable_calculated_at':valuation.get('calculated_at') if cached else None,
+                 'fallback_reason':valuation.get('stale_reason') if cached else None})
     with st.expander('A–G 假设、原始公开字段和响应路径'):
         st.json(report['hypotheses'])
         st.json(report['raw_yahoo_observations'])
