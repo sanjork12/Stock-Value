@@ -39,6 +39,15 @@ def build_trace(ticker,acquired,valuation,calibration,*,batch_id=None):
         'fresh_recovery_result':meta.get('fresh_recovery_result'),
         'accepted_recovery_payload_is_downstream_payload':None,
         'value_divergent_fields':[]}
+    decision=meta.get('provider_recovery_decision') or {}
+    trace.update(primary_exception_category=meta.get('primary_exception_category'),
+        primary_exception_class=meta.get('primary_exception_class'),
+        recovery_triggered=decision.get('triggered'),recovery_trigger_type=decision.get('trigger_type'),
+        recovery_attempted=meta.get('fresh_recovery_attempted'),recovery_result=meta.get('fresh_recovery_result'),
+        recovery_health=(meta.get('fresh_recovery_health') or {}).get('overall_state'),
+        rate_limit_observed=meta.get('rate_limit_observed'),batch_cooldown_applied=meta.get('batch_cooldown_applied'),
+        provider_recovery_status=meta.get('provider_recovery_status'),provider_attempts=deepcopy(meta.get('provider_attempts')),
+        trace_acceptance_semantics='WIRING_CONSISTENCY_ONLY_NOT_PROVIDER_AVAILABILITY')
     for field in FIELDS:
         observation=raw.get(field) or {}
         provenance=(acquired.get('acquisition_provenance') or {}).get(field) or {}
@@ -57,18 +66,22 @@ def build_trace(ticker,acquired,valuation,calibration,*,batch_id=None):
         if any(v!=values[0] for v in values[1:]):trace['value_divergent_fields'].append(field)
     if meta.get('fresh_recovery_used') and len(raw)==len(FIELDS):
         trace['accepted_recovery_payload_is_downstream_payload']=not trace['value_divergent_fields']
-    trace['acceptance_status']='FAIL' if divergent or (trace['acquisition_health']=='HEALTHY' and trace['value_divergent_fields']) else (
+    trace['acceptance_status']='FAIL' if divergent or ((trace['acquisition_health']=='HEALTHY' or meta.get('fresh_recovery_used')) and trace['value_divergent_fields']) else (
         'PASS' if not missing and len(raw)==len(FIELDS) else 'UNOBSERVED')
     return trace
 
 
 def summary(stock):
     trace=stock.get('production_input_trace') or {}
-    row={'ticker':stock['ticker'],'batch_id':trace.get('input_batch_id'),
-        'acquisition_id':trace.get('fundamentals_acquisition_id'),'acquisition_health':trace.get('acquisition_health')}
+    row={'ticker':stock['ticker'],'acquisition_health':trace.get('acquisition_health')}
+    row.update(primary_health=trace.get('primary_acquisition_health'),
+        primary_exception=trace.get('primary_exception_class'),rate_limited=trace.get('rate_limit_observed'),
+        recovery_attempted=trace.get('recovery_attempted'),recovery_result=trace.get('recovery_result'),
+        recovery_health=trace.get('recovery_health'),cooldown=trace.get('batch_cooldown_applied'),
+        calibration_eligibility=stock.get('calibration_eligibility'),provider_recovery_status=trace.get('provider_recovery_status'))
     for field in FIELDS:
         values=trace.get(field) or {}
-        row[field+'_raw']=values.get('raw');row[field+'_normalized']=values.get('normalized')
+        row[field+'_raw']=values.get('raw')
     row.update(valuation_forward_eps=(trace.get('forward_eps') or {}).get('valuation_input'),
         calibration_forward_eps=(trace.get('forward_eps') or {}).get('calibration_input'),
         divergence=trace.get('divergence'),acceptance_status=trace.get('acceptance_status'))

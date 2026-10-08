@@ -68,7 +68,7 @@ class QualityAcquisitionTests(unittest.TestCase):
     def test_fresh_success_whole_response(self):
         primary=Healthy(raw=incomplete());primary.raw['unrelated_old_marker']=123
         info,_,m,f=self.acquire(primary)
-        self.assertEqual(m['fresh_recovery_result'],'ACCEPT_RECOVERY');self.assertEqual(info['forwardEps'],5)
+        self.assertEqual(m['fresh_recovery_result'],'RECOVERED_HEALTHY');self.assertEqual(info['forwardEps'],5)
         self.assertNotIn('unrelated_old_marker',info);self.assertEqual(f.call_count,2)
         self.assertEqual(m['health_state'],'HEALTHY')
 
@@ -89,7 +89,7 @@ class QualityAcquisitionTests(unittest.TestCase):
 
     def test_fresh_wrong_identity_rejected(self):
         info,_,m,_=self.acquire(Healthy(raw=incomplete()),Healthy('WRONG'))
-        self.assertNotEqual(m['fresh_recovery_result'],'ACCEPT_RECOVERY');self.assertIsNone(info.get('forwardEps'))
+        self.assertFalse(m['fresh_recovery_used']);self.assertIsNone(info.get('forwardEps'))
 
     def test_healthy_ttl_900(self):
         c=a.RawAcquisitionCache();r=c.get('NVDA',factory=Healthy,normalize=normalize,provider=self.no_provider)

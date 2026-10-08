@@ -49,6 +49,9 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
         assert all('enterprise_family_suitability' in s for s in report['stocks'])
         assert any('V4.9 Enterprise Family Suitability Audit' in e.value for e in app.markdown)
         assert all('production_input_trace' in s for s in report['stocks'])
+        assert 'provider_rate_limit_summary' in report
+        assert report['provider_rate_limit_summary']['rate_limit_observed'] is False
+        assert any('Yahoo Rate-Limit Summary' in x.value for x in app.caption)
         assert any('Production Input Wiring Trace' in e.value for e in app.markdown)
         assert len(app.get('download_button'))==5
         assert any('V4.6 Reliability Governance Audit' in element.value for element in app.markdown)

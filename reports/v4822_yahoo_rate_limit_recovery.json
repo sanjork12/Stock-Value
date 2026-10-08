@@ -1,0 +1,160 @@
+{
+  "version": "v4.8.2.2",
+  "baseline_commit": "f93669d63929aa2d91ef9a9e87ca4cc96a21dedb",
+  "root_cause": "RECOVERY_TRIGGER_GAP_ON_PROVIDER_EXCEPTION",
+  "old_trigger": "primary truthy AND primary health DEGRADED, before fallback composition; exception becomes empty dict and bypasses retry",
+  "new_trigger": "composed critical fields still missing AND (transient primary exception OR valid degraded primary payload), with existing option enabled; exactly one recovery",
+  "exception_taxonomy": [
+    "TRANSIENT_RATE_LIMIT",
+    "TRANSIENT_TIMEOUT",
+    "TRANSIENT_NETWORK",
+    "NON_TRANSIENT_PROVIDER_ERROR",
+    "PROGRAMMING_ERROR",
+    "UNKNOWN_EXCEPTION"
+  ],
+  "backoff": {
+    "scope": "ContextVar acquisition_batch only",
+    "batch_seconds": 3,
+    "recovery_seconds": 2,
+    "injectable_sleeper_clock": true
+  },
+  "attempt_bound": {
+    "primary_per_ticker": 1,
+    "recovery_per_ticker": 1,
+    "five_stock_max": 10,
+    "info_alias_fallback_removed": true,
+    "owned_yahoo_info_reads_pinned_to_canonical_payload": true,
+    "http_request_count": "HTTP_COUNT_UNAVAILABLE"
+  },
+  "acceptance": "Frozen strict subset improvement in critical missing fields against fallback-composed payload; whole recovery response accepted, never merge two partial info dicts",
+  "cache": {
+    "HEALTHY": 900,
+    "PARTIAL": 300,
+    "DEGRADED": 60,
+    "UNAVAILABLE": 60,
+    "healthy_not_overwritten_by_degraded": true,
+    "cache_does_not_unlock_calibration": true,
+    "cache_hit_current_attempts": 0,
+    "origin_recovery_preserved_separately": true
+  },
+  "production_invariants": [
+    {
+      "file": "valuation_engine.py",
+      "unchanged": true,
+      "sha256": "f25b7bbb5c9ca0fc3b99dc6ffaa55dd14bdbb4bb518937dde09f73084c167430"
+    },
+    {
+      "file": "valuation_primitives.py",
+      "unchanged": true,
+      "sha256": "7d2c551b7ee5321869b3147dc06cd6a5aadbf00e90481afec2fb67315b62b83a"
+    },
+    {
+      "file": "financial_normalization.py",
+      "unchanged": true,
+      "sha256": "6273f6ca22e142173faf521710bae32673ed05b2015ab8af63fd5ebffa4dd35f"
+    },
+    {
+      "file": "analysis_service.py",
+      "unchanged": true,
+      "sha256": "8d0634adb97cd57a1e8098d5dcdcaf8b9a0cf5c4d6a7ff6adc5d7141cb00f84e"
+    },
+    {
+      "file": "calibration_snapshot_guard.py",
+      "unchanged": true,
+      "sha256": "99704d73ed08a833c68b8018af4bc1191a7b1b954ba9de163b3e18016a918be9"
+    },
+    {
+      "file": "enterprise_evidence.py",
+      "unchanged": true,
+      "sha256": "aada0a02e74a6b62ecab3985b5f469e21fd0e8278bcb6b3a8d656c6d0787f3df"
+    },
+    {
+      "file": "enterprise_evidence_policy.py",
+      "unchanged": true,
+      "sha256": "e5c7baed4e78088f692d09f69f35a31c2fc1211601448c56972f77fe16e11e1f"
+    },
+    {
+      "file": "enterprise_evidence_closure.py",
+      "unchanged": true,
+      "sha256": "e9e5a3c1a5ad62d1c6c313a112d6e305fd87739e913073ba03fc5435e7234ecd"
+    },
+    {
+      "file": "enterprise_evidence_closure_policy.py",
+      "unchanged": true,
+      "sha256": "5e26295ea6bfef566dedc8ef07b03f31d308cb92c1996970674ed02377fccfd2"
+    },
+    {
+      "file": "enterprise_family_suitability.py",
+      "unchanged": true,
+      "sha256": "65bc8ab9791062bc998eefd1bc4b0ffe53b90f1d5b7a8cad1d48bb6a8ff0b917"
+    },
+    {
+      "file": "enterprise_aware_experiment.py",
+      "unchanged": true,
+      "sha256": "8f73a9cfd5c3e70543f6b8da13abd6310a547359949ce24115672acf84b778d8"
+    },
+    {
+      "file": "capital_structure_overlay.py",
+      "unchanged": true,
+      "sha256": "87d9839b604d3da51a34f046e34d5b5930c0d1d4e360ab28f4b224017642f0d9"
+    },
+    {
+      "file": "last_reliable_valuation.py",
+      "unchanged": true,
+      "sha256": "b4a1d5631756474bb992960fa1b65858ed1d0438c0a1248019ac185d76d6d23c"
+    },
+    {
+      "file": "peer_comparable.py",
+      "unchanged": true,
+      "sha256": "872ee9d6701ea38abb1384c0837fc3baa68a1fa3abcf0bb9ab0e9c49a782eea4"
+    },
+    {
+      "file": "mag7_monitor.py",
+      "unchanged": true,
+      "sha256": "40346405bdd04feb064a4da0de38ea81bb48657b0e1a282f56abe358435821bc"
+    }
+  ],
+  "tests": {
+    "new": 32,
+    "total": 988,
+    "failures": 0,
+    "errors": 0,
+    "streamlit_ui": "PASS",
+    "diff_check": "PASS"
+  },
+  "offline_five_stock_simulation": {
+    "primary_limited": [
+      "GOOG",
+      "MSFT",
+      "NVDA"
+    ],
+    "recovery_limited": [
+      "MSFT"
+    ],
+    "attempts": 8,
+    "cooldown_events": 7,
+    "recovered": [
+      "GOOG",
+      "NVDA"
+    ],
+    "later_tickers_not_skipped": true
+  },
+  "cloud_acceptance": {
+    "status": "PENDING_DEPLOYMENT",
+    "steps": [
+      "Run five-stock production snapshot once; do not repeatedly click",
+      "Download V4.5 JSON",
+      "Inspect provider_rate_limit_summary and per-stock production_input_trace",
+      "Healthy recovery must show one attempt, accepted=true and consistent downstream values",
+      "Repeated rate limit must show exactly two get_info attempts and Calibration remains ineligible",
+      "Run V5.0/V5.1 only after an eligible production batch"
+    ]
+  },
+  "known_risks": [
+    "Yahoo may remain limited after fixed cooldown",
+    "Logical get_info count is bounded; other preexisting endpoint and transport HTTP counts are not represented as get_info attempts",
+    "Listing identity conflicts remain governed by existing validation",
+    "Recovery partial data does not bypass any guard"
+  ],
+  "commit_hash": "See git log -1 -- reports/v4822_yahoo_rate_limit_recovery.json; this report is included in implementation commit"
+}

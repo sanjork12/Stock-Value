@@ -11,8 +11,9 @@ import time
 from uuid import uuid4
 
 from valuation_primitives import fnum
+from provider_recovery import BatchProviderRateLimitState, classify_exception, transient, pin_owned_info_alias
 
-VERSION='v4.8.2'
+VERSION='v4.8.2.2'
 HEALTH_TTLS={'HEALTHY':900,'PARTIAL':300,'DEGRADED':60,'UNAVAILABLE':60}
 ENABLE_QUALITY_AWARE_FUNDAMENTALS_CACHE=True
 ENABLE_ONE_SHOT_FRESH_RECOVERY=True
@@ -141,35 +142,43 @@ def get_value(obj,key):
     except Exception:return None
 
 
-def acquire(ticker,factory,*,provider=None,options=None,policy=None):
+def acquire(ticker,factory,*,provider=None,options=None,policy=None,rate_limit_state=None):
     options=options or flags();ticker=ticker.upper();t=factory(ticker);acquired=now().isoformat()
-    calls={};errors={}
+    scope=_SCOPE.get()
+    state=rate_limit_state or (scope['provider_rate_limit_state'] if scope else BatchProviderRateLimitState())
+    calls={};errors={};exception_taxonomy={}
     def attempt(name,fn):
         calls[name]=calls.get(name,0)+1
         try:return fn()
-        except Exception as exc:errors[name]=type(exc).__name__;return None
+        except Exception as exc:
+            errors[name]=type(exc).__name__;exception_taxonomy[name]=classify_exception(exc)
+            if exception_taxonomy[name]=='TRANSIENT_RATE_LIMIT' and name in ('yahoo.get_info','yahoo.fresh_get_info'):
+                state.observe(ticker,recovery=name=='yahoo.fresh_get_info')
+            return None
+    state.count_attempt(ticker)
+    primary_cooldown=state.cooldown()
     primary=attempt('yahoo.get_info',lambda:t.get_info())
+    if not isinstance(primary,dict) and 'yahoo.get_info' not in errors:
+        errors['yahoo.get_info']='INVALID_RESPONSE_TYPE'
+        exception_taxonomy['yahoo.get_info']='NON_TRANSIENT_PROVIDER_ERROR'
     primary=deepcopy(primary) if isinstance(primary,dict) else {}
+    pin_owned_info_alias(t,primary)
     path='yahoo.get_info'
-    if not primary:
-        fallback=attempt('yahoo.info',lambda:t.info)
-        if isinstance(fallback,dict):primary=deepcopy(fallback);path='yahoo.info'
+    # .info aliases get_info and could hide an unaccounted second request.
     if str(primary.get('symbol') or ticker).upper()!=ticker:
         raise ValueError('Yahoo ticker identity mismatch')
     info=deepcopy(primary);policy=policy or field_policy(ticker,primary)
     before=health(ticker,primary,policy=policy);recovery=False;accepted=False;recovered=[]
-    if primary and before.overall_state=='DEGRADED' and options.fresh_recovery:
-        recovery=True
-        fresh=attempt('yahoo.fresh_get_info',lambda:factory(ticker).get_info())
-        if isinstance(fresh,dict) and str(fresh.get('symbol') or ticker).upper()==ticker:
-            after=health(ticker,fresh,policy=policy)
-            # Accept whole response only; never fill two partial info dictionaries.
-            if set(after.critical_missing_fields)<set(before.critical_missing_fields):
-                info=deepcopy(fresh);accepted=True;path='yahoo.fresh_get_info'
-                recovered=sorted(set(before.critical_missing_fields)-set(after.critical_missing_fields))
     source={key:path+'.'+key for key in info}
     # Existing fast-info candidates; no canonical share resolver changes.
     fast=attempt('yahoo.fast_info',lambda:t.fast_info)
+    # FastInfo.market_cap can internally call .info when shares are unavailable.
+    # Inspect only safe fast fields once, avoiding a hidden get_info alias retry.
+    from yfinance.scrapers.quote import FastInfo
+    if isinstance(fast,FastInfo):
+        safe_fast={key:get_value(fast,key) for key in ('shares','last_price','currency')}
+        if positive(safe_fast['shares']):safe_fast['market_cap']=get_value(fast,'market_cap')
+        fast=safe_fast
     for target,keys in (('sharesOutstanding',('shares','sharesOutstanding')),('marketCap',('market_cap','marketCap')),
         ('currentPrice',('last_price','lastPrice','regularMarketPrice'))):
         if fnum(info.get(target)) is None:
@@ -234,15 +243,72 @@ def acquire(ticker,factory,*,provider=None,options=None,policy=None):
     if options.trailing_fallback and not positive(info.get('trailingEps')):
         # Flag deliberately records a candidate only until period/basis validation exists.
         errors['finnhub.trailing_eps']='VALIDATION_REQUIRED_NOT_ENABLED_FOR_AUTOMATIC_USE'
+    composed=health(ticker,info,policy=policy)
+    primary_category=exception_taxonomy.get('yahoo.get_info')
+    primary_transient=transient(primary_category)
+    primary_failed='yahoo.get_info' in errors
+    needs_recovery=bool(composed.critical_missing_fields and composed.overall_state in ('DEGRADED','UNAVAILABLE'))
+    recovery_allowed=bool(options.fresh_recovery and needs_recovery and (primary_transient or
+        (not primary_failed and primary and before.overall_state=='DEGRADED')))
+    trigger='PRIMARY_PROVIDER_EXCEPTION' if primary_failed else 'CRITICAL_FIELDS_MISSING'
+    reason=errors.get('yahoo.get_info') if primary_failed else 'CRITICAL_FIELDS_MISSING'
+    skip_reason='RECOVERY_DISABLED' if not options.fresh_recovery else 'RECOVERY_NOT_NEEDED' if not needs_recovery else 'NON_TRANSIENT_EXCEPTION' if primary_failed else 'UNAVAILABLE_WITHOUT_TRANSIENT_EVIDENCE'
+    decision={'triggered':recovery_allowed,'trigger_type':trigger if recovery_allowed else None,
+        'trigger_reason':reason if recovery_allowed else skip_reason,'reason':reason if recovery_allowed else skip_reason,
+        'attempt_number':1 if recovery_allowed else 0,'max_attempts':1,'primary_health':before.overall_state,
+        'critical_missing_fields':list(composed.critical_missing_fields),'recovery_allowed':recovery_allowed}
+    recovery_started=None;recovery_completed=None;recovery_health=None;recovery_cooldown=False
+    recovery_result='RECOVERY_NOT_NEEDED' if not needs_recovery else 'RECOVERY_NOT_ALLOWED'
+    acceptance_reason=skip_reason
+    if recovery_allowed:
+        recovery=True;state.count_attempt(ticker,recovery=True);state.recovery_attempts+=1
+        recovery_cooldown=state.cooldown(recovery=True);recovery_started=now().isoformat()
+        fresh=attempt('yahoo.fresh_get_info',lambda:factory(ticker).get_info())
+        recovery_completed=now().isoformat()
+        recovery_health=health(ticker,{},policy=policy).to_dict()
+        if exception_taxonomy.get('yahoo.fresh_get_info')=='TRANSIENT_RATE_LIMIT':
+            recovery_result='RECOVERY_RATE_LIMITED';acceptance_reason='RECOVERY_RATE_LIMITED'
+        elif 'yahoo.fresh_get_info' in errors:
+            recovery_result='RECOVERY_FAILED';acceptance_reason='RECOVERY_PROVIDER_EXCEPTION'
+        elif not isinstance(fresh,dict):
+            recovery_result='RECOVERY_INVALID_PAYLOAD';acceptance_reason='INVALID_RESPONSE'
+        elif str(fresh.get('symbol') or ticker).upper()!=ticker:
+            recovery_result='RECOVERY_INVALID_PAYLOAD';acceptance_reason='TICKER_IDENTITY_MISMATCH'
+        else:
+            after=health(ticker,fresh,policy=policy);recovery_health=after.to_dict()
+            # Frozen V4.8.2 strict critical-field improvement, against composed fallback.
+            if set(after.critical_missing_fields)<set(composed.critical_missing_fields):
+                info=deepcopy(fresh);accepted=True;path='yahoo.fresh_get_info'
+                source={key:path+'.'+key for key in info}
+                recovered=sorted(set(composed.critical_missing_fields)-set(after.critical_missing_fields))
+                recovery_result='RECOVERED_HEALTHY' if after.overall_state=='HEALTHY' else 'RECOVERED_PARTIAL'
+                acceptance_reason='CRITICAL_FIELD_HEALTH_IMPROVED';state.recovery_successes+=1
+                used=[];currency_sources={};validation='PRIMARY_DIRECT' if currency(info.get('currency')) else 'UNRESOLVED'
+            else:recovery_result='REJECT_NO_HEALTH_IMPROVEMENT';acceptance_reason='NO_CRITICAL_FIELD_HEALTH_IMPROVEMENT'
     final=health(ticker,info,policy=policy)
+    pin_owned_info_alias(t,info)
     if validation in ('CURRENCY_PROVIDER_CONFLICT','LISTING_IDENTITY_CONFLICT'):
         final=health(ticker,info,policy=policy)
     meta={'input_resilience_policy_version':VERSION,'fundamentals_acquisition_id':str(uuid4()),
         'acquired_at':acquired,'source_path':path,'health_state':final.overall_state,
         'critical_missing_fields':list(final.critical_missing_fields),
         'primary_health':before.to_dict(),'final_health':final.to_dict(),
-        'fresh_recovery_attempted':recovery,'fresh_recovery_reason':list(before.critical_missing_fields) if recovery else [],
-        'fresh_recovery_result':'ACCEPT_RECOVERY' if accepted else 'REJECT_NO_HEALTH_IMPROVEMENT' if recovery else 'NOT_ATTEMPTED',
+        'fresh_recovery_attempted':recovery,'fresh_recovery_reason':[decision['reason']],
+        'fresh_recovery_result':recovery_result,
+        'provider_recovery_decision':decision,'primary_exception_category':primary_category,
+        'primary_exception_class':errors.get('yahoo.get_info'),'primary_exception_transient':primary_transient,
+        'fresh_recovery_trigger':decision['trigger_type'],'fresh_recovery_trigger_reason':decision['trigger_reason'],
+        'fresh_recovery_started_at':recovery_started,'fresh_recovery_completed_at':recovery_completed,
+        'fresh_recovery_exception_category':exception_taxonomy.get('yahoo.fresh_get_info'),
+        'fresh_recovery_health':recovery_health,'recovery_payload_accepted':accepted,
+        'recovery_acceptance_reason':acceptance_reason,
+        'provider_attempts':{'yahoo_get_info_primary':calls.get('yahoo.get_info',0),
+            'yahoo_get_info_recovery':calls.get('yahoo.fresh_get_info',0),
+            'yahoo_get_info_total':calls.get('yahoo.get_info',0)+calls.get('yahoo.fresh_get_info',0)},
+        'rate_limit_observed':primary_category=='TRANSIENT_RATE_LIMIT' or exception_taxonomy.get('yahoo.fresh_get_info')=='TRANSIENT_RATE_LIMIT',
+        'batch_cooldown_applied':primary_cooldown or recovery_cooldown,
+        'primary_provider_status':'PRIMARY_UNAVAILABLE_RATE_LIMIT' if primary_category=='TRANSIENT_RATE_LIMIT' else 'PRIMARY_HEALTHY' if before.overall_state=='HEALTHY' else 'PRIMARY_DEGRADED',
+        'provider_recovery_status':'RECOVERY_HEALTHY' if accepted and final.overall_state=='HEALTHY' else 'RECOVERY_RATE_LIMITED' if recovery_result=='RECOVERY_RATE_LIMITED' else 'RECOVERY_DEGRADED' if recovery else 'RECOVERY_NOT_NEEDED' if not needs_recovery else 'RECOVERY_NOT_ALLOWED',
         'fresh_recovery_used':accepted,'quote_currency_source':source.get('currency'),
         'quote_currency_fallback_used':'quote_currency' in used,'quote_currency_validation':validation,
         'quote_currency_direct_sources':currency_sources,'split_source':source.get('lastSplitFactor'),
@@ -273,9 +339,12 @@ _SCOPE=ContextVar('fundamentals_request_scope',default=None)
 
 
 @contextmanager
-def acquisition_batch(batch_id=None,*,force_refresh=False,simulation=False):
+def acquisition_batch(batch_id=None,*,force_refresh=False,simulation=False,sleep_fn=None,clock_fn=None):
+    state=BatchProviderRateLimitState()
+    if sleep_fn is not None:state.sleep_fn=sleep_fn
+    if clock_fn is not None:state.clock_fn=clock_fn
     context={'batch_id':batch_id or str(uuid4()),'request_scope_cache':{},'force_refresh':force_refresh,
-        'simulation':simulation}
+        'simulation':simulation,'provider_rate_limit_state':state}
     token=_SCOPE.set(context)
     try:yield context
     finally:_SCOPE.reset(token)
@@ -305,6 +374,22 @@ class RawAcquisitionCache:
             old=entry
             if hit:
                 info=deepcopy(entry['info']);t=RecordingTicker(recorded=entry['recorded']);meta=deepcopy(entry['meta'])
+                meta['origin_provider_recovery']={k:deepcopy(meta.get(k)) for k in ('provider_attempts','primary_health',
+                    'primary_exception_category','primary_exception_class','fresh_recovery_attempted','fresh_recovery_result','fresh_recovery_used')}
+                meta.update(provider_attempts={'yahoo_get_info_primary':0,'yahoo_get_info_recovery':0,'yahoo_get_info_total':0},
+                    primary_exception_category=None,primary_exception_class=None,primary_exception_transient=False,
+                    fresh_recovery_attempted=False,fresh_recovery_used=False,fresh_recovery_result='RECOVERY_NOT_NEEDED',
+                    fresh_recovery_reason=['CACHE_HIT_NO_NEW_ACQUISITION'],fresh_recovery_trigger=None,
+                    fresh_recovery_trigger_reason='CACHE_HIT_NO_NEW_ACQUISITION',fresh_recovery_started_at=None,
+                    fresh_recovery_completed_at=None,fresh_recovery_exception_category=None,fresh_recovery_health=None,
+                    recovery_payload_accepted=False,recovery_acceptance_reason='CACHE_HIT_NO_NEW_ACQUISITION',
+                    rate_limit_observed=False,batch_cooldown_applied=False,provider_recovery_status='RECOVERY_NOT_NEEDED',
+                    provider_recovery_decision={'triggered':False,'recovery_allowed':False,'reason':'CACHE_HIT_NO_NEW_ACQUISITION',
+                        'trigger_type':None,'attempt_number':0,'max_attempts':1})
+                meta['provider_health']['recovery_attempted']=False
+                meta['provider_health']['recovery_succeeded']=False
+                meta['primary_health']=deepcopy(meta['final_health'])
+                meta['primary_provider_status']='PRIMARY_HEALTHY' if meta['health_state']=='HEALTHY' else 'PRIMARY_DEGRADED'
                 if not simulation:
                     k='healthy_cache_hit_count' if meta['health_state']=='HEALTHY' else 'degraded_cache_hit_count' if meta['health_state'] in ('DEGRADED','UNAVAILABLE') else None
                     if k:self.counters[k]+=1

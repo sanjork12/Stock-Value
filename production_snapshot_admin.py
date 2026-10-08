@@ -219,9 +219,11 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
             if key not in scope['request_scope_cache']:
                 scope['request_scope_cache'][key]=deepcopy(fundamentals_loader(ticker))
             return deepcopy(scope['request_scope_cache'][key])
-        return _run_batch_impl(client,user_id,secrets,history_loader=history_loader,
+        report=_run_batch_impl(client,user_id,secrets,history_loader=history_loader,
             fundamentals_loader=scoped_fundamentals,display_resolver=display_resolver,
             reference_loader=reference_loader,input_batch_id=scope['batch_id'])
+        report['provider_rate_limit_summary']=scope['provider_rate_limit_state'].summary()
+        return report
 
 
 def _run_batch_impl(client,user_id,secrets,*,history_loader,fundamentals_loader,display_resolver=None,reference_loader=None,input_batch_id=None):
@@ -409,6 +411,10 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
             st.json(stock.get('capital_structure_overlay',{}))
     audits=governance_audit_rows(report)
     st.markdown('**Production Input Wiring Trace**')
+    rate_summary=report.get('provider_rate_limit_summary') or {}
+    st.caption('Yahoo Rate-Limit Summary')
+    st.json({key:rate_summary.get(key) for key in ('rate_limit_observed','primary_rate_limit_count',
+        'recovery_attempts','recovery_successes','recovery_rate_limit_count','cooldown_events','total_cooldown_seconds')})
     st.dataframe([wiring_summary(stock) for stock in report['stocks']],hide_index=True,use_container_width=True)
     st.markdown('**Enterprise-Aware Valuation Experiment**')
     st.caption('DIAGNOSTIC ONLY · 企业价值方法不进入生产 blend、可靠性或 Last Reliable；不是推荐估值。')
