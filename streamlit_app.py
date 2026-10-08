@@ -1440,6 +1440,8 @@ if not st.session_state.get("_profile_ensured"):
 # Temporary diagnostics: fail closed locally; admin email is verified server-side.
 audit_admin = is_cloud_runtime() and verified_admin(db, user_id, st.secrets.get("ADMIN_EMAIL"))
 if not audit_admin:
+    st.session_state.pop("_v481_open", None)
+    st.session_state.pop("_v481_result", None)
     st.session_state.pop("_v45_export_open", None)
     st.session_state.pop("_v45_export_result", None)
     st.session_state.pop("_peer_diagnostic_open", None)
@@ -1463,23 +1465,32 @@ with header_right:
     with st.popover(f"{email_prefix} ▼", help=user_email or "账户"):
         st.caption("已登录")
         st.write(user_email)
+        if audit_admin and st.button("Cloud Input Resilience Audit", use_container_width=True, key="menu_v481_audit"):
+            for diagnostic in ("_v45_export_open", "_finnhub_audit_open", "_financial_diagnostic_open", "_peer_diagnostic_open"):
+                st.session_state.pop(diagnostic, None)
+            st.session_state._v481_open = True
+            st.rerun()
         if audit_admin and st.button("Finnhub 能力诊断", use_container_width=True, key="menu_finnhub_audit"):
+            st.session_state.pop("_v481_open", None)
             st.session_state.pop("_v45_export_open", None)
             st.session_state.pop("_peer_diagnostic_open", None)
             st.session_state._finnhub_audit_open = True
             st.rerun()
         if audit_admin and st.button("财务输入诊断", use_container_width=True, key="menu_financial_diagnostic"):
+            st.session_state.pop("_v481_open", None)
             st.session_state.pop("_v45_export_open", None)
             st.session_state.pop("_peer_diagnostic_open", None)
             st.session_state._financial_diagnostic_open = True
             st.rerun()
         if audit_admin and st.button("Peer 估值诊断", use_container_width=True, key="menu_peer_diagnostic"):
+            st.session_state.pop("_v481_open", None)
             st.session_state.pop("_v45_export_open", None)
             st.session_state.pop("_finnhub_audit_open", None)
             st.session_state.pop("_financial_diagnostic_open", None)
             st.session_state._peer_diagnostic_open = True
             st.rerun()
         if audit_admin and st.button("V4.5 估值结构导出", use_container_width=True, key="menu_v45_export"):
+            st.session_state.pop("_v481_open", None)
             for diagnostic in ("_finnhub_audit_open", "_financial_diagnostic_open", "_peer_diagnostic_open"):
                 st.session_state.pop(diagnostic, None)
             st.session_state._v45_export_open = True
@@ -1499,6 +1510,11 @@ with header_right:
             _delete_remember_cookie(cookie_manager, "logout_delete_cookie")
             clear_auth_session()
             st.rerun()
+
+if st.session_state.get("_v481_open"):
+    from input_resilience_admin import render_input_resilience
+    render_input_resilience(st, db, user_id)
+    st.stop()
 
 if st.session_state.get("_v45_export_open"):
     v45_reference_rows = {}

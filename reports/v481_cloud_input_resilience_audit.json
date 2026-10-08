@@ -1,0 +1,34 @@
+{
+  "version": "v4.8.1",
+  "mode": "SOURCE_AUDIT_AND_DIAGNOSTIC_IMPLEMENTATION",
+  "cloud_runtime_evidence": "PENDING_ADMIN_EXECUTION",
+  "cloud_observations": null,
+  "local_fixture_results_are_cloud_evidence": false,
+  "reported_failure_pattern": {
+    "GOOG_MSFT_ORCL_AMZN": "INELIGIBLE_PROXY_ONLY_VALUATION",
+    "NVDA": "INELIGIBLE_UNAVAILABLE_VALUATION",
+    "common_missing": ["forward_eps", "quote_currency", "financial_currency"],
+    "NVDA_additional_missing": ["split_context"]
+  },
+  "source_confirmed_findings": {
+    "nonempty_partial_get_info_skips_info_alternative": true,
+    "production_fundamentals_cache_ttl_seconds": 900,
+    "production_history_cache_ttl_seconds": 900,
+    "degraded_yahoo_cache_amplification": "POSSIBLE_NOT_RUNTIME_CONFIRMED",
+    "finnhub_profile_ttl_seconds": 86400,
+    "finnhub_metric_ttl_seconds": 28800,
+    "finnhub_quote_ttl_seconds": 600,
+    "admin_session_batch_ttl": null,
+    "production_http_repetition": "UNKNOWN"
+  },
+  "diagnostic_paths": ["yahoo.info", "yahoo.get_info", "yahoo.fast_info", "yahoo.history_metadata", "yahoo.financials", "yahoo.income_stmt", "yahoo.cashflow", "yahoo.balance_sheet", "yahoo.splits", "yahoo.history_actions", "finnhub.profile", "finnhub.metric", "finnhub.quote"],
+  "cloud_export": "v481_cloud_input_resilience.json",
+  "production_fallback_implemented": false,
+  "production_logic_modified": false,
+  "database_writes": false,
+  "forward_eps_derived_production_eligible": false,
+  "financial_currency_inference_allowed": false,
+  "last_reliable_used_as_calculation_input": false,
+  "recommendation": "COLLECT_CLOUD_EVIDENCE_BEFORE_V4_8_2",
+  "tests": {"new_tests": 25, "total": 689, "failures": 0, "errors": 0, "streamlit_widget_check": "PASS"}
+}
