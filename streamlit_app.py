@@ -48,6 +48,7 @@ try:
     )
     from finnhub_admin_diagnostics import is_cloud_runtime, verified_admin, render_diagnostics
     from financial_forensics_admin import render_financial_diagnostics
+    from peer_diagnostic_admin import render_peer_diagnostics
     from market_reference_provider import format_consensus_target
     from analysis_service import (
         analyze_ticker,
@@ -1438,6 +1439,8 @@ if not st.session_state.get("_profile_ensured"):
 # Temporary diagnostics: fail closed locally; admin email is verified server-side.
 audit_admin = is_cloud_runtime() and verified_admin(db, user_id, st.secrets.get("ADMIN_EMAIL"))
 if not audit_admin:
+    st.session_state.pop("_peer_diagnostic_open", None)
+    st.session_state.pop("_peer_diagnostic_result", None)
     st.session_state.pop("_finnhub_audit_open", None)
     st.session_state.pop("_finnhub_audit_result", None)
     st.session_state.pop("_financial_diagnostic_open", None)
@@ -1458,10 +1461,17 @@ with header_right:
         st.caption("已登录")
         st.write(user_email)
         if audit_admin and st.button("Finnhub 能力诊断", use_container_width=True, key="menu_finnhub_audit"):
+            st.session_state.pop("_peer_diagnostic_open", None)
             st.session_state._finnhub_audit_open = True
             st.rerun()
         if audit_admin and st.button("财务输入诊断", use_container_width=True, key="menu_financial_diagnostic"):
+            st.session_state.pop("_peer_diagnostic_open", None)
             st.session_state._financial_diagnostic_open = True
+            st.rerun()
+        if audit_admin and st.button("Peer 估值诊断", use_container_width=True, key="menu_peer_diagnostic"):
+            st.session_state.pop("_finnhub_audit_open", None)
+            st.session_state.pop("_financial_diagnostic_open", None)
+            st.session_state._peer_diagnostic_open = True
             st.rerun()
         if st.button("账户设置", use_container_width=True, key="menu_account_settings"):
             st.session_state.account_open = True
@@ -1478,6 +1488,10 @@ with header_right:
             _delete_remember_cookie(cookie_manager, "logout_delete_cookie")
             clear_auth_session()
             st.rerun()
+
+if st.session_state.get("_peer_diagnostic_open"):
+    render_peer_diagnostics(st, db, user_id)
+    st.stop()
 
 if st.session_state.get("_finnhub_audit_open"):
     render_diagnostics(st, db, user_id)

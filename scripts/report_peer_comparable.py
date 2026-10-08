@@ -95,16 +95,24 @@ def _composition(peer,provider):
     return rows
 
 
-def build_report(*, provider=None, financial_loader=None, references=None):
+def build_report(*, provider=None, financial_loader=None, references=None, tickers=None, internal_results=None):
     provider = ReviewProvider(provider or get_finnhub_provider())
     configured = provider.configured()
     rows, details = [], []
-    for ticker in SAMPLES:
+    selected=list(dict.fromkeys(canonical(t) for t in (tickers if tickers is not None else SAMPLES)))
+    if any(t not in SAMPLES for t in selected):raise ValueError('Unsupported diagnostic ticker')
+    for ticker in selected:
         financials = {}
         status = 'NOT_CONFIGURED'
         internal = None
         blend = {}
-        if configured and financial_loader is None:
+        if internal_results is not None:
+            result=(internal_results or {}).get(ticker) or {}
+            financials=deepcopy(result.get('financials') or {})
+            blend=deepcopy(result.get('blend') or {})
+            internal=number(result.get('fair_value'))
+            status='AVAILABLE' if internal is not None else 'TARGET_FINANCIALS_UNAVAILABLE'
+        elif configured and financial_loader is None:
             status = 'TARGET_INPUT_SNAPSHOT_REQUIRED'
         elif configured:
             try:

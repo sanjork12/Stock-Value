@@ -467,7 +467,7 @@ def _load_statement(ticker: str, t, stage: str, attrs: tuple[str, ...], methods:
     return None
 
 
-def get_live_fundamentals(ticker: str):
+def get_live_fundamentals(ticker: str, *, allow_estimates=True):
     t = _yfinance().Ticker(ticker)
     info = _merge_ticker_info(ticker, t)
 
@@ -563,7 +563,7 @@ def get_live_fundamentals(ticker: str):
             statement_eps_source = "ni_over_diluted_shares"
     forward_eps_source = "ticker.info.forwardEps" if forward_eps and forward_eps > 0 else None
     trailing_eps_source = "ticker.info.trailingEps" if trailing_eps and trailing_eps > 0 else None
-    if forward_eps is None or forward_eps <= 0:
+    if allow_estimates and (forward_eps is None or forward_eps <= 0):
         estimated = _forward_eps_from_estimates(ticker, t)
         if estimated:
             forward_eps = estimated
