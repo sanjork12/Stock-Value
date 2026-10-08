@@ -1,0 +1,440 @@
+{
+  "audit_version": "V4.5",
+  "generated_at": "2026-10-08T11:05:59.590174+00:00",
+  "scope": "READ_ONLY_AUDIT_NO_CALIBRATION",
+  "evidence_status": "PARTIAL_SOURCE_AUDIT",
+  "stocks": [
+    {
+      "ticker": "GOOG",
+      "source_findings": {
+        "known": "Mega-cap override with ticker PE range 20–26 (mid 23); same class as MSFT, different ticker overlay. No segment-level Cloud/YouTube/advertising valuation.",
+        "candidates": [
+          "MULTIPLE_ASSUMPTION",
+          "MODEL_CORRELATION",
+          "BUSINESS_MIX"
+        ],
+        "unresolved": "Need actual EPS/source, Growth PE floor/cap, DCF FCF/share bridge and exclusions to identify the downward driver. Lower than benchmark is not proof of undervaluation bias."
+      },
+      "source_profile": {
+        "ticker": "GOOG",
+        "sector": null,
+        "industry": null,
+        "business_model": "mega_cap_tech",
+        "valuation_class": "mega_cap_tech",
+        "valuation_class_label": "Mega-Cap Tech",
+        "profitability_state": "unprofitable",
+        "cyclicality": "low",
+        "optionality_level": "low",
+        "preferred_models": [
+          "forward_pe",
+          "normalized_fcf_dcf",
+          "growth_adjusted_pe"
+        ],
+        "excluded_models": [],
+        "model_weights": {
+          "forward_pe": 0.35,
+          "normalized_fcf_dcf": 0.4,
+          "growth_adjusted_pe": 0.25
+        },
+        "confidence_policy": "medium_high",
+        "source": "override"
+      },
+      "source_assumptions": {
+        "preferred": [
+          "forward_pe",
+          "normalized_fcf_dcf",
+          "growth_adjusted_pe"
+        ],
+        "excluded": [],
+        "weights": {
+          "forward_pe": 0.35,
+          "normalized_fcf_dcf": 0.4,
+          "growth_adjusted_pe": 0.25
+        },
+        "pe_range": [
+          20,
+          26
+        ],
+        "norm_growth": 0.12,
+        "peg_target": 1.6,
+        "growth_pe_cap": 32,
+        "dcf_growth": 0.11,
+        "max_sustainable_growth": 0.16,
+        "confidence_policy": "medium_high",
+        "ev_ebitda_range": [
+          14,
+          22
+        ],
+        "sales_multiple_range": [
+          4,
+          8
+        ]
+      },
+      "direction_classification": "NOT_ESTABLISHED",
+      "direction_reason": "No validated captured model/input evidence; benchmark gap cannot establish structural bias.",
+      "captured_audit": {
+        "ticker": "GOOG",
+        "status": "CLOUD_MODEL_INPUT_SNAPSHOT_REQUIRED",
+        "exact_root_cause": null,
+        "waterfall": null,
+        "sensitivity": null
+      }
+    },
+    {
+      "ticker": "MSFT",
+      "source_findings": {
+        "known": "Ticker PE 26–32 (mid 29); Forward PE and Growth PE share EPS, with implied forward/trailing growth also entering Growth PE. DCF fixed growth is 11%, not observed earnings_growth.",
+        "candidates": [
+          "EPS_FORECAST",
+          "MODEL_CORRELATION",
+          "GROWTH_DOUBLE_COUNT"
+        ],
+        "unresolved": "Cannot identify largest positive contribution or validate EPS forecast without captured models. Shared signals are a risk, not evidence of a numeric forecast error."
+      },
+      "source_profile": {
+        "ticker": "MSFT",
+        "sector": null,
+        "industry": null,
+        "business_model": "mega_cap_tech",
+        "valuation_class": "mega_cap_tech",
+        "valuation_class_label": "Mega-Cap Tech",
+        "profitability_state": "unprofitable",
+        "cyclicality": "low",
+        "optionality_level": "low",
+        "preferred_models": [
+          "forward_pe",
+          "normalized_fcf_dcf",
+          "growth_adjusted_pe"
+        ],
+        "excluded_models": [],
+        "model_weights": {
+          "forward_pe": 0.35,
+          "normalized_fcf_dcf": 0.4,
+          "growth_adjusted_pe": 0.25
+        },
+        "confidence_policy": "medium_high",
+        "source": "override"
+      },
+      "source_assumptions": {
+        "preferred": [
+          "forward_pe",
+          "normalized_fcf_dcf",
+          "growth_adjusted_pe"
+        ],
+        "excluded": [],
+        "weights": {
+          "forward_pe": 0.35,
+          "normalized_fcf_dcf": 0.4,
+          "growth_adjusted_pe": 0.25
+        },
+        "pe_range": [
+          26,
+          32
+        ],
+        "norm_growth": 0.12,
+        "peg_target": 1.6,
+        "growth_pe_cap": 32,
+        "dcf_growth": 0.11,
+        "max_sustainable_growth": 0.14,
+        "confidence_policy": "medium_high",
+        "ev_ebitda_range": [
+          14,
+          22
+        ],
+        "sales_multiple_range": [
+          4,
+          8
+        ]
+      },
+      "direction_classification": "NOT_ESTABLISHED",
+      "direction_reason": "No validated captured model/input evidence; benchmark gap cannot establish structural bias.",
+      "captured_audit": {
+        "ticker": "MSFT",
+        "status": "CLOUD_MODEL_INPUT_SNAPSHOT_REQUIRED",
+        "exact_root_cause": null,
+        "waterfall": null,
+        "sensitivity": null
+      }
+    },
+    {
+      "ticker": "ORCL",
+      "source_findings": {
+        "known": "Mature-growth override, PE 18–26 (mid 22), fixed DCF growth 10%. Preferred models are Forward PE/DCF/Growth PE; no EV/EBITDA primitive in the internal preferred set. DCF explicitly computes enterprise + cash − debt, then divides by canonical enterprise shares.",
+        "candidates": [
+          "CAPITAL_STRUCTURE",
+          "MODEL_CORRELATION",
+          "DCF_ASSUMPTION"
+        ],
+        "unresolved": "Correct bridge syntax does not validate the actual cash/debt values or FCFF basis. EPS P/E has no extra debt subtraction; whether leverage is reflected economically requires input/source validation."
+      },
+      "source_profile": {
+        "ticker": "ORCL",
+        "sector": null,
+        "industry": null,
+        "business_model": "mature_growth",
+        "valuation_class": "mature_growth",
+        "valuation_class_label": "Mature Growth",
+        "profitability_state": "unprofitable",
+        "cyclicality": "low",
+        "optionality_level": "low",
+        "preferred_models": [
+          "forward_pe",
+          "normalized_fcf_dcf",
+          "growth_adjusted_pe"
+        ],
+        "excluded_models": [],
+        "model_weights": {
+          "forward_pe": 0.4,
+          "normalized_fcf_dcf": 0.35,
+          "growth_adjusted_pe": 0.25
+        },
+        "confidence_policy": "medium",
+        "source": "override"
+      },
+      "source_assumptions": {
+        "preferred": [
+          "forward_pe",
+          "normalized_fcf_dcf",
+          "growth_adjusted_pe"
+        ],
+        "excluded": [],
+        "weights": {
+          "forward_pe": 0.4,
+          "normalized_fcf_dcf": 0.35,
+          "growth_adjusted_pe": 0.25
+        },
+        "pe_range": [
+          18,
+          26
+        ],
+        "norm_growth": 0.1,
+        "peg_target": 1.5,
+        "growth_pe_cap": 28,
+        "dcf_growth": 0.1,
+        "max_sustainable_growth": 0.14,
+        "confidence_policy": "medium",
+        "ev_ebitda_range": [
+          10,
+          16
+        ],
+        "sales_multiple_range": [
+          3,
+          6
+        ]
+      },
+      "direction_classification": "NOT_ESTABLISHED",
+      "direction_reason": "No validated captured model/input evidence; benchmark gap cannot establish structural bias.",
+      "captured_audit": {
+        "ticker": "ORCL",
+        "status": "CLOUD_MODEL_INPUT_SNAPSHOT_REQUIRED",
+        "exact_root_cause": null,
+        "waterfall": null,
+        "sensitivity": null
+      }
+    },
+    {
+      "ticker": "NVDA",
+      "source_findings": {
+        "known": "Semiconductor-growth override, PE 20–28 (mid 24), normalized growth base 16%/cap 18%, fixed DCF growth 12%. Forecast EPS and implied EPS growth are shared between PE primitives.",
+        "candidates": [
+          "EPS_FORECAST",
+          "GROWTH_DOUBLE_COUNT",
+          "MODEL_CORRELATION"
+        ],
+        "unresolved": "No automatic forward-PE multiple expansion from live growth. DCF fixed growth is a separate assumption; triple counting of one live signal is not established."
+      },
+      "source_profile": {
+        "ticker": "NVDA",
+        "sector": null,
+        "industry": null,
+        "business_model": "semiconductor_growth",
+        "valuation_class": "semiconductor_growth",
+        "valuation_class_label": "Semiconductor Growth",
+        "profitability_state": "unprofitable",
+        "cyclicality": "medium",
+        "optionality_level": "low",
+        "preferred_models": [
+          "forward_pe",
+          "growth_adjusted_pe",
+          "normalized_fcf_dcf"
+        ],
+        "excluded_models": [],
+        "model_weights": {
+          "forward_pe": 0.35,
+          "growth_adjusted_pe": 0.3,
+          "normalized_fcf_dcf": 0.35
+        },
+        "confidence_policy": "medium",
+        "source": "override"
+      },
+      "source_assumptions": {
+        "preferred": [
+          "forward_pe",
+          "growth_adjusted_pe",
+          "normalized_fcf_dcf"
+        ],
+        "excluded": [],
+        "weights": {
+          "forward_pe": 0.35,
+          "growth_adjusted_pe": 0.3,
+          "normalized_fcf_dcf": 0.35
+        },
+        "pe_range": [
+          20,
+          28
+        ],
+        "norm_growth": 0.16,
+        "peg_target": 1.3,
+        "growth_pe_cap": 28,
+        "dcf_growth": 0.12,
+        "max_sustainable_growth": 0.18,
+        "confidence_policy": "medium",
+        "ev_ebitda_range": [
+          16,
+          24
+        ],
+        "sales_multiple_range": [
+          8,
+          14
+        ]
+      },
+      "direction_classification": "NOT_ESTABLISHED",
+      "direction_reason": "No validated captured model/input evidence; benchmark gap cannot establish structural bias.",
+      "captured_audit": {
+        "ticker": "NVDA",
+        "status": "CLOUD_MODEL_INPUT_SNAPSHOT_REQUIRED",
+        "exact_root_cause": null,
+        "waterfall": null,
+        "sensitivity": null
+      }
+    },
+    {
+      "ticker": "AMZN",
+      "source_findings": {
+        "known": "Mega-cap override, PE 26–32 (mid 29), normalized growth base 14%/cap 16%, fixed DCF growth 12%. Company-level Peer is ineligible and cannot enter diagnostic internal blend.",
+        "candidates": [
+          "MODEL_APPLICABILITY",
+          "MODEL_CORRELATION",
+          "WEIGHTING"
+        ],
+        "unresolved": "An internal fair near benchmark does not establish healthy model independence. Need captured applicability/outlier/weights/dispersion; do not assume DCF is included or healthy."
+      },
+      "source_profile": {
+        "ticker": "AMZN",
+        "sector": null,
+        "industry": null,
+        "business_model": "mega_cap_tech",
+        "valuation_class": "mega_cap_tech",
+        "valuation_class_label": "Mega-Cap Tech",
+        "profitability_state": "unprofitable",
+        "cyclicality": "low",
+        "optionality_level": "low",
+        "preferred_models": [
+          "forward_pe",
+          "normalized_fcf_dcf",
+          "growth_adjusted_pe"
+        ],
+        "excluded_models": [],
+        "model_weights": {
+          "forward_pe": 0.35,
+          "normalized_fcf_dcf": 0.4,
+          "growth_adjusted_pe": 0.25
+        },
+        "confidence_policy": "medium_high",
+        "source": "override"
+      },
+      "source_assumptions": {
+        "preferred": [
+          "forward_pe",
+          "normalized_fcf_dcf",
+          "growth_adjusted_pe"
+        ],
+        "excluded": [],
+        "weights": {
+          "forward_pe": 0.35,
+          "normalized_fcf_dcf": 0.4,
+          "growth_adjusted_pe": 0.25
+        },
+        "pe_range": [
+          26,
+          32
+        ],
+        "norm_growth": 0.14,
+        "peg_target": 1.6,
+        "growth_pe_cap": 32,
+        "dcf_growth": 0.12,
+        "max_sustainable_growth": 0.16,
+        "confidence_policy": "medium_high",
+        "ev_ebitda_range": [
+          14,
+          22
+        ],
+        "sales_multiple_range": [
+          4,
+          8
+        ]
+      },
+      "direction_classification": "NOT_ESTABLISHED",
+      "direction_reason": "No validated captured model/input evidence; benchmark gap cannot establish structural bias.",
+      "captured_audit": {
+        "ticker": "AMZN",
+        "status": "CLOUD_MODEL_INPUT_SNAPSHOT_REQUIRED",
+        "exact_root_cause": null,
+        "waterfall": null,
+        "sensitivity": null
+      }
+    }
+  ],
+  "growth_findings": [
+    "Forward PE and Growth PE share the same EPS basis.",
+    "Growth PE combines fixed norm_growth with eligible live earnings_growth and implied forward/trailing EPS growth, then caps it.",
+    "Forward PE multiple is fixed by ticker/class; no live-growth multiple expansion.",
+    "DCF projects FCF using fixed class/ticker growth with a mature-growth fade and fixed terminal growth; no live earnings_growth or explicit revenue/margin model.",
+    "Weighted blending shared-signal models can overrepresent one expectation; this is qualitative correlation, not proven arithmetic double/triple counting."
+  ],
+  "recommended_experiments": [
+    "Capture same-run normalized inputs, source timestamps and full internal blend before any calibration.",
+    "Separate EPS-level and EPS-growth sensitivity; compare linked Forward PE/Growth PE contributions without changing weights.",
+    "In isolated experiments, assess correlated-model weight concentration; do not activate changes.",
+    "Validate capex/FCF normalization, levered versus unlevered cashflow basis, debt bridge and canonical shares.",
+    "Run segment/business-mix scenarios separately from company-level baseline, without fitting to benchmark.",
+    "Inspect ticker overlays versus class assumptions and floor/cap saturation before proposing class-specific experiments."
+  ],
+  "post_hoc_only": [
+    {
+      "ticker": "GOOG",
+      "user_reported_cloud_fair": 253.81,
+      "benchmark": 345,
+      "gap_pct": -26.43188405797101,
+      "scope": "User supplied approximate final values; never audit/model/sensitivity inputs"
+    },
+    {
+      "ticker": "MSFT",
+      "user_reported_cloud_fair": 657.04,
+      "benchmark": 544,
+      "gap_pct": 20.77941176470588,
+      "scope": "User supplied approximate final values; never audit/model/sensitivity inputs"
+    },
+    {
+      "ticker": "ORCL",
+      "user_reported_cloud_fair": 237.71,
+      "benchmark": 180,
+      "gap_pct": 32.06111111111112,
+      "scope": "User supplied approximate final values; never audit/model/sensitivity inputs"
+    },
+    {
+      "ticker": "NVDA",
+      "user_reported_cloud_fair": 358.45,
+      "benchmark": 300,
+      "gap_pct": 19.48333333333332,
+      "scope": "User supplied approximate final values; never audit/model/sensitivity inputs"
+    },
+    {
+      "ticker": "AMZN",
+      "user_reported_cloud_fair": 290.44,
+      "benchmark": 285,
+      "gap_pct": 1.908771929824571,
+      "scope": "User supplied approximate final values; never audit/model/sensitivity inputs"
+    }
+  ]
+}
