@@ -117,6 +117,8 @@ def project_snapshot(live,displayed,observed):
         'analysis_generated_at':live.get('valuation_run_at'),'source_status':source,
         'current_price':live.get('price'),'fair_value':displayed.get('fair_value'),
         'production_analysis_fair':displayed.get('fair_value'),'financials':financials,
+        'reliability_governance_audit':deepcopy(display_blend.get('reliability_governance_audit')),
+        'structural_governance':deepcopy(display_blend.get('structural_governance')),
         'normalized_inputs':normalized_inputs,'applicability':applicability,'models':models,
         'blend':display_blend,'live_blend':live_blend,
         'models_before_outlier':observed.get('models_before_outlier',{}),
@@ -208,7 +210,9 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
     st.caption('同批串行生产分析 · 只读 · 不写快照或更新 Last Reliable · Peer diagnostic only')
     if st.button('返回',key='v45_export_back'):
         st.session_state.pop('_v45_export_open',None);st.rerun()
-    if st.button('运行五股生产分析快照',key='v45_export_run'):
+    run_v45=st.button('运行五股生产分析快照',key='v45_export_run')
+    run_v46=st.button('V4.6 Reliability Governance Audit',key='v46_export_run')
+    if run_v45 or run_v46:
         st.session_state.pop('_v45_export_result',None)
         try:
             with st.spinner('正在捕获五股生产分析…'):
@@ -260,5 +264,14 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
             st.warning(stock['ticker']+' — Independent cash-flow family suppressed')
         with st.expander(stock['ticker']+' — independent evidence governance'):
             st.json(evidence)
+    st.markdown('**V4.6 Reliability Governance Audit**')
+    audits=[{'ticker':s['ticker'],'source_status':s.get('source_status'),
+        **(s.get('reliability_governance_audit') or {'status':'NO_LIVE_GOVERNANCE_AUDIT'})} for s in report['stocks']]
+    st.dataframe([{k:a.get(k) for k in ('ticker','source_status','fair_before','fair_after','fair_unchanged',
+        'reliability_before','reliability_after','confidence_before','confidence_after','precise_exit_before','precise_exit_after')} for a in audits],
+        hide_index=True,use_container_width=True)
+    st.download_button('下载 V4.6 Governance JSON',snapshot_json({'batch_id':report['batch_id'],
+        'generated_at':report['generated_at'],'mode':'read_only_diagnostic','reliability_governance_version':'v4.6','stocks':audits}),
+        'v46_cloud_reliability_governance.json','application/json',key='v46_export_json')
     st.download_button('下载 V4.5 JSON',snapshot_json(report),'v45_cloud_production_analysis.json','application/json',key='v45_export_json')
     st.download_button('下载模型贡献 CSV',csv_payload(report),'v45_cloud_model_contributions.csv','text/csv',key='v45_export_csv')

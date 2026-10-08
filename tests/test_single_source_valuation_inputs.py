@@ -131,7 +131,10 @@ class SingleSourceInputTests(unittest.TestCase):
         helper=peer_tests.DiagnosticIsolationTests()
         for ticker,expected in baseline.items():
             with self.subTest(ticker=ticker):
-                output=internal_snapshot(helper.without_peer(ticker))
+                # Freeze the pre-V4.6 valuation payload; reliability/confidence
+                # changes are separately covered by production governance tests.
+                with patch('production_reliability_governance.govern_blend',side_effect=lambda t,f,b:b):
+                    output=internal_snapshot(helper.without_peer(ticker))
                 digest=hashlib.sha256(json.dumps(output,sort_keys=True).encode()).hexdigest()
                 self.assertEqual(digest,expected)
 

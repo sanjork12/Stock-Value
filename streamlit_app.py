@@ -1664,6 +1664,8 @@ if page == "自选股":
                 continue
             from last_reliable_valuation import render_cache_notice
             render_cache_notice(st, r)
+            from production_reliability_governance import render_structural_notice
+            render_structural_notice(st, r)
             if auto_save and r.get("price") is not None:
                 save_snapshot(db, user_id, r)
             conf_u = str(r.get("confidence") or "").upper()
@@ -1970,6 +1972,8 @@ elif page == "单股分析":
     if r:
         from last_reliable_valuation import render_cache_notice
         render_cache_notice(st, r)
+        from production_reliability_governance import render_structural_notice
+        render_structural_notice(st, r)
         if r.get("snapshot_error"):
             st.error(r["snapshot_error"])
         elif r.get("analysis_error") and r.get("price") is None:

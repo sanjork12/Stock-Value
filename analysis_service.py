@@ -400,6 +400,10 @@ def analyze_ticker(
             )
             blend["exit_zone"] = exit_zone
 
+    if not historical and blend and blend.get("fair") is not None:
+        from production_reliability_governance import govern_blend
+        blend = govern_blend(ticker, financials or {}, blend)
+        exit_zone = blend.get("exit_zone")
     display_name = (financials or {}).get("long_name") or NAMES.get(ticker, ticker)
     reliability = (blend or {}).get("reliability") or {}
     if blend:
@@ -451,6 +455,8 @@ def analyze_ticker(
         "overall_confidence": (blend or {}).get("overall_confidence") or (blend or {}).get("confidence"),
         "model_version": (blend or {}).get("model_version") if historical else ((blend or {}).get("model_version") or MODEL_VERSION),
         "reliability_score": reliability.get("reliability_score"),
+        "structural_governance": (blend or {}).get("structural_governance"),
+        "reliability_governance_version": (blend or {}).get("reliability_governance_version"),
         "dispersion_pct": reliability.get("dispersion_pct") if reliability.get("dispersion_pct") is not None else (blend or {}).get("dispersion"),
         "volatility_1y": (blend or {}).get("volatility_1y"),
         "cycle": (blend or {}).get("cycle"),
@@ -752,6 +758,8 @@ def build_snapshot_record(user_id: str, r: dict) -> dict:
         "deep_high": _bound("deep", 1),
         "status": r.get("recommendation"),
         "raw": {
+            "structural_governance": blend.get("structural_governance"),
+            "reliability_governance_version": blend.get("reliability_governance_version"),
             "last_reliable": reliable_snapshot(r),
             "note": r.get("note"),
             "valuation_class": r.get("valuation_class"),

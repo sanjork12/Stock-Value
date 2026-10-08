@@ -18,6 +18,7 @@ DISPLAY_FIELDS = (
     'recommendation', 'state', 'cycle', 'model_version', 'valuation_class',
     'overall_confidence', 'valuation_low', 'valuation_mid', 'valuation_high',
     'hide_precise_trading_zones',
+    'structural_governance', 'reliability_governance_version',
 )
 # Combined missing/nonpositive reasons require positive prior and absent current
 # inputs; negative/zero values are deliberately not treated as missing.

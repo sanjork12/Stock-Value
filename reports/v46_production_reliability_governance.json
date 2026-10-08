@@ -1,0 +1,398 @@
+{
+  "reliability_governance_version": "v4.6",
+  "production_fair_policy": "UNCHANGED",
+  "evidence_note": "Default report reuses approximate prior Cloud model observations, not a new Cloud execution. No missing capital/EPS/reliability values are invented.",
+  "penalties": {
+    "NONE": 0,
+    "LOW": -5,
+    "MODERATE": -10,
+    "HIGH": -15,
+    "CRITICAL": -20
+  },
+  "ceilings": {
+    "NONE": "NONE",
+    "LOW": "HIGH",
+    "MODERATE": "MEDIUM",
+    "HIGH": "MEDIUM",
+    "CRITICAL": "LOW"
+  },
+  "stocks": [
+    {
+      "ticker": "GOOG",
+      "evidence": "user_supplied_approximate_Cloud_model_observations",
+      "fair_before": 253.81,
+      "fair_after": 253.81,
+      "fair_unchanged": true,
+      "reliability_before": null,
+      "reliability_after": null,
+      "confidence_before": null,
+      "confidence_after": null,
+      "precise_exit_before": null,
+      "precise_exit_after": null,
+      "structural_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 2,
+        "observed_family_count": 2,
+        "independent_family_count": 2,
+        "effective_independent_model_count": 2.25,
+        "observed_effective_independent_model_count": 2.25,
+        "family_suppression_status": "NONE",
+        "suppressed_families": [],
+        "suppressed_models": [],
+        "suppression_materiality": "NOT_APPLICABLE",
+        "suppressed_family_materiality": "NOT_APPLICABLE",
+        "production_vs_conflict_preserving_difference_pct": null,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "DIVERSIFIED_EVIDENCE",
+        "correlated_family_dominance": false,
+        "production_fair_dependency": "DIVERSIFIED",
+        "structural_gaps": [],
+        "cross_family_status": "CROSS_FAMILY_DISAGREEMENT",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "CROSS_FAMILY_CONFLICT",
+        "cross_family_conflict_preservation_required": false,
+        "hypothetical_guard_action": "REVIEW_ONLY",
+        "structural_valuation_readiness": "ACCEPTABLE_WITH_CONFLICT",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT",
+        "severity": "MODERATE",
+        "structural_penalty": -10,
+        "secondary_penalty": 0,
+        "total_structural_penalty": -10,
+        "penalties": [
+          {
+            "code": "cross_family_conflict",
+            "delta": -10,
+            "role": "primary"
+          }
+        ],
+        "confidence_ceiling": "MEDIUM",
+        "precise_exit_block": true,
+        "warnings": [
+          "CROSS_FAMILY_DISAGREEMENT"
+        ],
+        "structural_explanation": "当前估值由不同估值家族支持，但其中值存在显著冲突，结构可靠性受限。",
+        "penalty_overlap_guard": {
+          "overlap_detected": false,
+          "suppressed_secondary_penalties": []
+        },
+        "reliability_governance_version": "v4.6"
+      },
+      "validation_note": "Policy preview only; no original reliability/exit records. Exact before/after requires the Cloud audit."
+    },
+    {
+      "ticker": "MSFT",
+      "evidence": "user_supplied_approximate_Cloud_model_observations",
+      "fair_before": 657.05,
+      "fair_after": 657.05,
+      "fair_unchanged": true,
+      "reliability_before": null,
+      "reliability_after": null,
+      "confidence_before": null,
+      "confidence_after": null,
+      "precise_exit_before": null,
+      "precise_exit_after": null,
+      "structural_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 1,
+        "observed_family_count": 2,
+        "independent_family_count": 2,
+        "effective_independent_model_count": 1.25,
+        "observed_effective_independent_model_count": 2.25,
+        "family_suppression_status": "INDEPENDENT_FAMILY_SUPPRESSED",
+        "suppressed_families": [
+          "CASH_FLOW_INTRINSIC"
+        ],
+        "suppressed_models": [
+          {
+            "model": "normalized_fcf_dcf",
+            "family": "CASH_FLOW_INTRINSIC",
+            "reason": "outlier_vs_other_models"
+          }
+        ],
+        "suppression_materiality": "HIGH",
+        "suppressed_family_materiality": "HIGH",
+        "production_vs_conflict_preserving_difference_pct": 32.40632406802349,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "DIVERSIFIED_BUT_SUPPRESSED",
+        "correlated_family_dominance": true,
+        "production_fair_dependency": "SUPPRESSED_CROSS_FAMILY_CONFLICT",
+        "structural_gaps": [],
+        "cross_family_status": "CROSS_FAMILY_DISAGREEMENT",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+        "cross_family_conflict_preservation_required": true,
+        "hypothetical_guard_action": "REQUIRE_CROSS_FAMILY_REVIEW",
+        "structural_valuation_readiness": "CROSS_FAMILY_CONFLICT_SUPPRESSED",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT",
+        "severity": "CRITICAL",
+        "structural_penalty": -20,
+        "secondary_penalty": 0,
+        "total_structural_penalty": -20,
+        "penalties": [
+          {
+            "code": "independent_family_suppressed",
+            "delta": -20,
+            "role": "primary"
+          }
+        ],
+        "confidence_ceiling": "LOW",
+        "precise_exit_block": true,
+        "warnings": [
+          "STRUCTURAL_EVIDENCE_CONCENTRATION",
+          "CROSS_FAMILY_DISAGREEMENT",
+          "INDEPENDENT_FAMILY_SUPPRESSED",
+          "HIGH_MATERIALITY_FAMILY_CONFLICT"
+        ],
+        "structural_explanation": "存在被 production outlier 规则排除的独立现金流估值家族，且其与当前 earnings-family 估值存在高物质性冲突。当前 fair 未因此调整，但精确退出价格已禁用。",
+        "penalty_overlap_guard": {
+          "overlap_detected": false,
+          "suppressed_secondary_penalties": []
+        },
+        "reliability_governance_version": "v4.6"
+      },
+      "validation_note": "Policy preview only; no original reliability/exit records. Exact before/after requires the Cloud audit."
+    },
+    {
+      "ticker": "ORCL",
+      "evidence": "user_supplied_approximate_Cloud_model_observations",
+      "fair_before": 237.75,
+      "fair_after": 237.75,
+      "fair_unchanged": true,
+      "reliability_before": null,
+      "reliability_after": null,
+      "confidence_before": null,
+      "confidence_after": null,
+      "precise_exit_before": null,
+      "precise_exit_after": null,
+      "structural_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 1,
+        "observed_family_count": 1,
+        "independent_family_count": 1,
+        "effective_independent_model_count": 1.25,
+        "observed_effective_independent_model_count": 1.25,
+        "family_suppression_status": "NONE",
+        "suppressed_families": [],
+        "suppressed_models": [],
+        "suppression_materiality": "NOT_APPLICABLE",
+        "suppressed_family_materiality": "NOT_APPLICABLE",
+        "production_vs_conflict_preserving_difference_pct": null,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "WEAKLY_INDEPENDENT_EVIDENCE",
+        "correlated_family_dominance": true,
+        "production_fair_dependency": "HIGHLY_CONCENTRATED",
+        "structural_gaps": [],
+        "cross_family_status": "SINGLE_FAMILY_ONLY",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+        "cross_family_conflict_preservation_required": false,
+        "hypothetical_guard_action": "REQUIRE_INDEPENDENT_FAMILY_REVIEW",
+        "structural_valuation_readiness": "CONCENTRATED",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT",
+        "severity": "LOW",
+        "structural_penalty": -5,
+        "secondary_penalty": 0,
+        "total_structural_penalty": -5,
+        "penalties": [
+          {
+            "code": "structural_concentration",
+            "delta": -5,
+            "role": "primary"
+          }
+        ],
+        "confidence_ceiling": "HIGH",
+        "precise_exit_block": false,
+        "warnings": [
+          "STRUCTURAL_EVIDENCE_CONCENTRATION"
+        ],
+        "structural_explanation": "当前估值主要由同一模型家族支持，独立证据有限。",
+        "penalty_overlap_guard": {
+          "overlap_detected": false,
+          "suppressed_secondary_penalties": []
+        },
+        "reliability_governance_version": "v4.6"
+      },
+      "validation_note": "Policy preview only; no original reliability/exit records. Exact before/after requires the Cloud audit."
+    },
+    {
+      "ticker": "NVDA",
+      "evidence": "user_supplied_approximate_Cloud_model_observations",
+      "fair_before": 358.45,
+      "fair_after": 358.45,
+      "fair_unchanged": true,
+      "reliability_before": null,
+      "reliability_after": null,
+      "confidence_before": null,
+      "confidence_after": null,
+      "precise_exit_before": null,
+      "precise_exit_after": null,
+      "structural_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 1,
+        "observed_family_count": 1,
+        "independent_family_count": 1,
+        "effective_independent_model_count": 1.25,
+        "observed_effective_independent_model_count": 1.25,
+        "family_suppression_status": "NONE",
+        "suppressed_families": [],
+        "suppressed_models": [],
+        "suppression_materiality": "NOT_APPLICABLE",
+        "suppressed_family_materiality": "NOT_APPLICABLE",
+        "production_vs_conflict_preserving_difference_pct": null,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "WEAKLY_INDEPENDENT_EVIDENCE",
+        "correlated_family_dominance": true,
+        "production_fair_dependency": "HIGHLY_CONCENTRATED",
+        "structural_gaps": [],
+        "cross_family_status": "SINGLE_FAMILY_ONLY",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+        "cross_family_conflict_preservation_required": false,
+        "hypothetical_guard_action": "REQUIRE_INDEPENDENT_FAMILY_REVIEW",
+        "structural_valuation_readiness": "CONCENTRATED",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT",
+        "severity": "LOW",
+        "structural_penalty": -5,
+        "secondary_penalty": 0,
+        "total_structural_penalty": -5,
+        "penalties": [
+          {
+            "code": "structural_concentration",
+            "delta": -5,
+            "role": "primary"
+          }
+        ],
+        "confidence_ceiling": "HIGH",
+        "precise_exit_block": false,
+        "warnings": [
+          "STRUCTURAL_EVIDENCE_CONCENTRATION"
+        ],
+        "structural_explanation": "当前估值主要由同一模型家族支持，独立证据有限。",
+        "penalty_overlap_guard": {
+          "overlap_detected": false,
+          "suppressed_secondary_penalties": []
+        },
+        "reliability_governance_version": "v4.6"
+      },
+      "validation_note": "Policy preview only; no original reliability/exit records. Exact before/after requires the Cloud audit."
+    },
+    {
+      "ticker": "AMZN",
+      "evidence": "user_supplied_approximate_Cloud_model_observations",
+      "fair_before": 290.44,
+      "fair_after": 290.44,
+      "fair_unchanged": true,
+      "reliability_before": null,
+      "reliability_after": null,
+      "confidence_before": null,
+      "confidence_after": null,
+      "precise_exit_before": null,
+      "precise_exit_after": null,
+      "structural_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 1,
+        "observed_family_count": 1,
+        "independent_family_count": 1,
+        "effective_independent_model_count": 1.25,
+        "observed_effective_independent_model_count": 1.25,
+        "family_suppression_status": "NONE",
+        "suppressed_families": [],
+        "suppressed_models": [],
+        "suppression_materiality": "NOT_APPLICABLE",
+        "suppressed_family_materiality": "NOT_APPLICABLE",
+        "production_vs_conflict_preserving_difference_pct": null,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "WEAKLY_INDEPENDENT_EVIDENCE",
+        "correlated_family_dominance": true,
+        "production_fair_dependency": "HIGHLY_CONCENTRATED",
+        "structural_gaps": [
+          "CAPEX_DISTORTION_REMOVES_INDEPENDENT_CASH_FLOW_CONFIRMATION"
+        ],
+        "cross_family_status": "SINGLE_FAMILY_ONLY",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+        "cross_family_conflict_preservation_required": false,
+        "hypothetical_guard_action": "REQUIRE_INDEPENDENT_FAMILY_REVIEW",
+        "structural_valuation_readiness": "CONCENTRATED_WITH_STRUCTURAL_GAP",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT",
+        "severity": "MODERATE",
+        "structural_penalty": -10,
+        "secondary_penalty": 0,
+        "total_structural_penalty": -10,
+        "penalties": [
+          {
+            "code": "structural_gap",
+            "delta": -10,
+            "role": "primary"
+          }
+        ],
+        "confidence_ceiling": "MEDIUM",
+        "precise_exit_block": true,
+        "warnings": [
+          "STRUCTURAL_EVIDENCE_CONCENTRATION",
+          "INDEPENDENT_CASH_FLOW_CONFIRMATION_MISSING"
+        ],
+        "structural_explanation": "当前估值主要由同一模型家族支持，独立证据有限。资本开支失真限制了独立现金流确认。",
+        "penalty_overlap_guard": {
+          "overlap_detected": true,
+          "suppressed_secondary_penalties": [
+            {
+              "code": "structural_gap",
+              "reason": "already_captured_by_primary"
+            }
+          ]
+        },
+        "reliability_governance_version": "v4.6"
+      },
+      "validation_note": "Policy preview only; no original reliability/exit records. Exact before/after requires the Cloud audit."
+    }
+  ]
+}

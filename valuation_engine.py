@@ -2171,7 +2171,7 @@ def reliability_from_snapshot(snap: dict | None) -> dict | None:
     raw = snap.get("raw") if isinstance(snap.get("raw"), dict) else {}
     payload = snap.get("reliability_json") or raw.get("reliability_json")
     if isinstance(payload, dict) and payload:
-        return payload
+        return {"structural_governance": None, **payload}
     score = snap.get("reliability_score")
     if score is None:
         score = raw.get("reliability_score")
@@ -2302,6 +2302,8 @@ def reconstruct_blend_from_snapshot(snap: dict | None) -> dict | None:
         "specialized": str(conf or "").upper() == "SPECIALIZED",
         "included": included,
         "reliability": reliability,
+        "structural_governance": reliability.get("structural_governance"),
+        "reliability_governance_version": reliability.get("reliability_governance_version"),
         "dispersion": snap.get("dispersion_pct") if snap.get("dispersion_pct") is not None else raw.get("dispersion_pct"),
         "volatility_1y": snap.get("volatility_1y") if snap.get("volatility_1y") is not None else raw.get("volatility_1y"),
         "cycle": raw.get("cycle"),

@@ -39,7 +39,8 @@ class DiagnosticIsolationTests(unittest.TestCase):
     def test_01_nvda_diagnostic_on_off_identical(self):
         off,on=self.assert_isolated('NVDA',True)
         self.assertIsNotNone(off['fair_value'])
-        self.assertEqual(off['confidence'],'MEDIUM')
+        self.assertEqual(off['blend']['reliability_governance_audit']['confidence_before'],'MEDIUM')
+        self.assertIn(off['confidence'],('MEDIUM','LOW'))
 
     def test_02_avgo_diagnostic_on_off_identical(self):
         off,on=self.assert_isolated('AVGO',True)

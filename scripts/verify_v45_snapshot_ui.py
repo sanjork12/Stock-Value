@@ -40,7 +40,18 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
         assert all('calibration_eligibility_reasons' in s for s in report['stocks'])
         if report['batch_calibration_eligibility']=='INELIGIBLE':
             assert any('本批次仅用于输入降级诊断，不应用于估值校准。' in w.value for w in app.warning)
-        assert len(app.get('download_button'))==2
+        assert len(app.get('download_button'))==3
+        assert any('V4.6 Reliability Governance Audit' in element.value for element in app.markdown)
+        import production_snapshot_admin as admin
+        admin._LAST_RUN.clear()
+        next(b for b in app.button if b.label=='V4.6 Reliability Governance Audit').click().run()
+        assert not app.exception
+        governance_report=app.session_state['_v45_export_result']['report']
+        assert len(governance_report['stocks'])==5
+        for stock in governance_report['stocks']:
+            audit=stock.get('reliability_governance_audit')
+            if audit:
+                assert audit['fair_unchanged'] and all(audit['invariants'].values())
         app.secrets['ADMIN_EMAIL']='ordinary@test.com'
         app.run();assert not app.exception
         assert len(app.get('download_button'))==0
