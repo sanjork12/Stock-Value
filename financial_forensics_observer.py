@@ -69,6 +69,9 @@ def observe_info(path,raw,status='AVAILABLE'):
 
 
 def observe_statement(stage,path,frame,status='AVAILABLE'):
+    # Independent opt-in diagnostic observer; consumes the already loaded frame only.
+    from enterprise_evidence import observe_statement_values
+    observe_statement_values(stage,path,frame)
     data=_OBSERVER.get()
     if data is None:return
     try:

@@ -1,0 +1,223 @@
+{
+  "version": "v5.0",
+  "mode": "DIAGNOSTIC_EVIDENCE_INFRASTRUCTURE_SOURCE_AUDIT",
+  "baseline_commit": "ee3f4d9a0d761ae6f8c4d1fccedce804a5f21cd4",
+  "user_reported_healthy_cloud_batch": "d5286861-5bc1-4f0f-a019-a5aa17690093",
+  "cloud_validation_status": "PENDING_FULL_SAME_BATCH_INPUT_AND_NEW_CLOUD_RUN",
+  "evidence_boundary": "Only user-reported batch eligibility and V4.9 labels are available. No Cloud historical series, actual coverage scores or V5 suitability deltas are invented.",
+  "architecture": "Existing annual statement observer -> per-stock evidence_snapshot -> pure structural evidence -> private V4.9 adapter rerun -> admin-only JSON/CSV. Zero added provider requests.",
+  "policy_thresholds": {
+    "min_annual_period_gap_days": 270,
+    "highly_heterogeneous_material_segments": 4,
+    "min_annual_observations": 3,
+    "max_annual_observations": 5,
+    "ebitda_cv_stable": 0.25,
+    "ebitda_cv_moderate": 0.5,
+    "ebitda_cv_volatile": 1.0,
+    "margin_stable_spread": 0.05,
+    "margin_moderate_spread": 0.1,
+    "margin_trend_slope": 0.015,
+    "high_margin": 0.25,
+    "low_margin": 0.1,
+    "revenue_discontinuity_growth": 1.0,
+    "revenue_growth_swing": 0.4,
+    "growth_elevated": 0.1,
+    "growth_possible": 0.25,
+    "growth_material": 0.5,
+    "capex_revenue_bands": [
+      0.05,
+      0.15,
+      0.3
+    ],
+    "capex_ocf_bands": [
+      0.3,
+      0.7,
+      1.0
+    ],
+    "leverage_bands": [
+      1.0,
+      2.0,
+      3.5
+    ],
+    "da_revenue_bands": [
+      0.05,
+      0.15
+    ],
+    "sbc_revenue_bands": [
+      0.02,
+      0.05,
+      0.1
+    ],
+    "sbc_ebitda_bands": [
+      0.1,
+      0.25,
+      0.5
+    ],
+    "sbc_ocf_bands": [
+      0.1,
+      0.25,
+      0.5
+    ],
+    "segment_material_share": 0.1,
+    "segment_margin_dispersion": 0.15,
+    "segment_growth_dispersion": 0.4,
+    "unusual_items_revenue_materiality": 0.05,
+    "basis_asof_max_days": 550,
+    "coverage_high": 85,
+    "coverage_medium": 70,
+    "coverage_low": 50
+  },
+  "evidence_coverage_weights": {
+    "ebitda": 15,
+    "revenue": 15,
+    "margin_history": 15,
+    "capital_intensity": 15,
+    "business_mix": 15,
+    "accounting": 10,
+    "metric_basis": 10,
+    "growth_cycle": 5
+  },
+  "evidence_status_vocabulary": [
+    "SUPPORTED",
+    "PARTIALLY_SUPPORTED",
+    "UNSUPPORTED",
+    "INSUFFICIENT_EVIDENCE",
+    "NOT_APPLICABLE"
+  ],
+  "audit_status_vocabulary": [
+    "V5_EVIDENCE_ELIGIBLE",
+    "V5_EVIDENCE_PARTIAL",
+    "V5_EVIDENCE_INSUFFICIENT",
+    "V5_INPUT_STATE_INELIGIBLE"
+  ],
+  "sources": {
+    "history": "Already-loaded Yahoo annual income/cashflow statement whitelisted lines; existing normalized historical margins/EPS/cashflows fallback only.",
+    "business_mix": "Explicit internal metadata or complete operating segments, optional fully governed curated evidence; no company/ticker inference.",
+    "metric_basis": "Explicit existing provenance and reported periods; ambiguous provider current/TTM labels remain UNKNOWN.",
+    "curated_company_entries_added": 0,
+    "network_providers_added": 0
+  },
+  "v49_weights_and_thresholds_changed": false,
+  "production_integration_performed": false,
+  "frozen_files": {
+    "valuation_engine.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "f25b7bbb5c9ca0fc3b99dc6ffaa55dd14bdbb4bb518937dde09f73084c167430"
+    },
+    "valuation_primitives.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "7d2c551b7ee5321869b3147dc06cd6a5aadbf00e90481afec2fb67315b62b83a"
+    },
+    "financial_normalization.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "6273f6ca22e142173faf521710bae32673ed05b2015ab8af63fd5ebffa4dd35f"
+    },
+    "calibration_snapshot_guard.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "99704d73ed08a833c68b8018af4bc1191a7b1b954ba9de163b3e18016a918be9"
+    },
+    "production_reliability_governance.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "791c967f754308534c63fce948961876768b7496b2fbeb939411140a30beba59"
+    },
+    "capital_structure_overlay.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "87d9839b604d3da51a34f046e34d5b5930c0d1d4e360ab28f4b224017642f0d9"
+    },
+    "enterprise_aware_experiment.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "8f73a9cfd5c3e70543f6b8da13abd6310a547359949ce24115672acf84b778d8"
+    },
+    "fundamental_acquisition.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "abc864f998922d04c034e6b01c210de964165bc7e69b3bf0782fda9ca33ef7f8"
+    },
+    "production_input_wiring.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "d3f97a8606b67bc27f917b2a46c6a84127c0a47f7d029bf6be2455ceb57fb57f"
+    },
+    "mag7_monitor.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "40346405bdd04feb064a4da0de38ea81bb48657b0e1a282f56abe358435821bc"
+    },
+    "last_reliable_valuation.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "b4a1d5631756474bb992960fa1b65858ed1d0438c0a1248019ac185d76d6d23c"
+    },
+    "peer_comparable.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "872ee9d6701ea38abb1384c0837fc3baa68a1fa3abcf0bb9ab0e9c49a782eea4"
+    },
+    "streamlit_app.py": {
+      "unchanged": true,
+      "sha256_lf_normalized": "3e3ee0894d1a31663b42e96934db87f92b241e993c09590099b6db6154458eff"
+    }
+  },
+  "tests": {
+    "new": 88,
+    "total": 915,
+    "failures": 0,
+    "errors": 0,
+    "real_widget": "PASS"
+  },
+  "five_stock_evidence_results": [
+    {
+      "ticker": "GOOG",
+      "before_company_level_user_reported": "CONDITIONAL",
+      "before_production_candidate_user_reported": "NO",
+      "before_readiness_user_reported": "DIAGNOSTIC_ONLY",
+      "evidence_coverage_score": null,
+      "evidence_coverage_band": null,
+      "v49_after": null,
+      "status": "PENDING_ELIGIBLE_CLOUD_EVIDENCE_EXPORT"
+    },
+    {
+      "ticker": "MSFT",
+      "before_company_level_user_reported": "NOT_PREFERRED",
+      "before_production_candidate_user_reported": "NO",
+      "before_readiness_user_reported": "DIAGNOSTIC_ONLY",
+      "evidence_coverage_score": null,
+      "evidence_coverage_band": null,
+      "v49_after": null,
+      "status": "PENDING_ELIGIBLE_CLOUD_EVIDENCE_EXPORT"
+    },
+    {
+      "ticker": "ORCL",
+      "before_company_level_user_reported": "NOT_PREFERRED",
+      "before_production_candidate_user_reported": "NO",
+      "before_readiness_user_reported": "DIAGNOSTIC_ONLY",
+      "evidence_coverage_score": null,
+      "evidence_coverage_band": null,
+      "v49_after": null,
+      "status": "PENDING_ELIGIBLE_CLOUD_EVIDENCE_EXPORT"
+    },
+    {
+      "ticker": "NVDA",
+      "before_company_level_user_reported": "NOT_PREFERRED",
+      "before_production_candidate_user_reported": "NO",
+      "before_readiness_user_reported": "DIAGNOSTIC_ONLY",
+      "evidence_coverage_score": null,
+      "evidence_coverage_band": null,
+      "v49_after": null,
+      "status": "PENDING_ELIGIBLE_CLOUD_EVIDENCE_EXPORT"
+    },
+    {
+      "ticker": "AMZN",
+      "before_company_level_user_reported": "NOT_PREFERRED",
+      "before_production_candidate_user_reported": "NO",
+      "before_readiness_user_reported": "DIAGNOSTIC_ONLY",
+      "evidence_coverage_score": null,
+      "evidence_coverage_band": null,
+      "v49_after": null,
+      "status": "PENDING_ELIGIBLE_CLOUD_EVIDENCE_EXPORT"
+    }
+  ],
+  "remaining_unknowns": [
+    "Company operating segments/business mix if no explicit source",
+    "EBITDA/SBC missing statement lines",
+    "Exact provider metric as-of/basis if not captured explicitly",
+    "Accounting distortion absence without direct unusual-item coverage"
+  ],
+  "recommendation": "D. Keep Enterprise Multiple diagnostic-only; defer the V5.1 promotion/research choice until actual V5 Cloud evidence is available.",
+  "commit_hash": "Resolve using git log -1 --format=%H -- reports/v50_enterprise_evidence_completion.json; final answer supplies exact local commit."
+}

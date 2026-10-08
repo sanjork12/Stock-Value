@@ -2,6 +2,7 @@
 from enterprise_family_suitability import attach_report, audit_export, csv_export, summary as suitability_summary
 from copy import deepcopy
 from production_input_wiring import build_trace, summary as wiring_summary
+from enterprise_evidence import observe_enterprise_statements, evidence_snapshot, complete_report, export_report as evidence_export, export_csv as evidence_csv, summary as evidence_summary
 from datetime import date,datetime,timezone
 import csv
 import io
@@ -84,7 +85,9 @@ def readonly_display(live,load_snapshot):
 def capture_analysis(ticker,*,history_loader,fundamentals_loader,display_resolver=None):
     observed={}
     def observed_fundamentals(t):
-        result=fundamentals_loader(t)
+        with observe_enterprise_statements(t) as historical:
+            result=fundamentals_loader(t)
+        observed['historical_evidence']=deepcopy(historical)
         observed['acquired_inputs']=deepcopy(result)
         return result
     def outliers(models):
@@ -116,6 +119,7 @@ def capture_analysis(ticker,*,history_loader,fundamentals_loader,display_resolve
                  peer_mode='diagnostic')
     displayed=display_resolver(deepcopy(live)) if display_resolver else deepcopy(live)
     stock=project_snapshot(live,displayed,observed)
+    stock['evidence_snapshot']=evidence_snapshot(stock,observed.get('historical_evidence'))
     stock['production_input_trace']=build_trace(ticker,observed.get('acquired_inputs') or {},
         observed.get('normalized_inputs') or {},stock.get('normalized_inputs') or {})
     return stock
@@ -423,6 +427,24 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
         'v49_enterprise_family_suitability_audit.json','application/json',key='v49_export_json')
     st.download_button('下载 V4.9 Suitability CSV',csv_export(report),
         'v49_enterprise_family_suitability_audit.csv','text/csv',key='v49_export_csv')
+    st.markdown('**Enterprise Evidence Completion**')
+    st.caption('V5.0 · DIAGNOSTIC ONLY · 复用当前批次年度报表；覆盖率不是 suitability 或准确度。')
+    if st.button('运行 V5.0 Evidence Completion',key='v50_evidence_run'):
+        saved['report']=complete_report(report)
+        st.session_state['_v45_export_result']=saved
+        report=saved['report']
+    if report.get('enterprise_evidence_version')=='v5.0':
+        if any((stock.get('enterprise_structural_evidence') or {}).get('audit_status')=='V5_INPUT_STATE_INELIGIBLE' for stock in report['stocks']):
+            st.warning('V5 输入状态或批次身份不合格：仅展示证据结构，不生成正式 completion 或生产候选结论。')
+        st.dataframe([evidence_summary(stock) for stock in report['stocks']],hide_index=True,use_container_width=True)
+        for stock in report['stocks']:
+            with st.expander(stock['ticker']+' — V5.0 evidence / provenance / delta'):
+                st.json({key:stock.get(key) for key in ('enterprise_structural_evidence','evidence_snapshot',
+                    'v49_before','v49_after','v49_evidence_delta')})
+        st.download_button('下载 V5.0 Evidence JSON',snapshot_json(evidence_export(report)),
+            'v50_enterprise_evidence_completion.json','application/json',key='v50_export_json')
+        st.download_button('下载 V5.0 Evidence CSV',evidence_csv(report),
+            'v50_enterprise_evidence_completion.csv','text/csv',key='v50_export_csv')
     st.caption('Governance: Applied to production reliability · Scope: Reliability / Confidence / Precise Exit · Fair value effect: None（新生成的 live 治理结果）')
     st.dataframe([{k:a.get(k) for k in ('ticker','source_status','fair_before','fair_after','fair_unchanged',
         'reliability_before','reliability_after','confidence_before','confidence_after','precise_exit_before','precise_exit_after',

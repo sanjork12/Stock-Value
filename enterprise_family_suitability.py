@@ -71,7 +71,8 @@ def evidence(stock,vclass):
         'revenue_interpretable','scalable_operating_economics','margin_regime',
         'sbc_distortion','unusual_da_economics','accounting_distortion',
         'financial_balance_sheet_model','non_operating_revenue','operating_fundamentals_primary_value_driver',
-        'cycle_normalized_ebitda','enterprise_input_basis_compatible','ebitda_metric_basis','revenue_metric_basis')
+        'cycle_normalized_ebitda','enterprise_input_basis_compatible','ebitda_metric_basis','revenue_metric_basis',
+        'growth_regime_mismatch_flag','growth_regime_known','capital_intensity_assessment')
     flags={k:{'value':explicit(k)[0],'source':explicit(k)[1]} for k in keys}
     val=lambda k:flags[k]['value']
     mix='UNKNOWN'
@@ -87,6 +88,8 @@ def evidence(stock,vclass):
     growth='MATERIAL' if maximum is not None and maximum>=.5 else 'POSSIBLE' if (
         maximum is not None and maximum>=.25 or vclass in ('semiconductor_growth','high_growth_software','pre_profit_growth')
         or val('margin_regime')=='TRANSITIONAL') else False
+    if val('growth_regime_known') is True:
+        growth=val('growth_regime_mismatch_flag');growth_known=True
     capex=fnum(f.get('normalized_capex',f.get('capital_expenditure')))
     if capex is None:capex=fnum(f.get('capital_expenditure_raw'))
     capex=abs(capex) if capex is not None else None
@@ -95,9 +98,13 @@ def evidence(stock,vclass):
         'HIGH' if (capex_revenue is not None and capex_revenue>.15 or capex_ocf is not None and capex_ocf>.7) else
         'MODERATE' if (capex_revenue is not None and capex_revenue>.05 or capex_ocf is not None and capex_ocf>.3) else
         'LOW' if capex_revenue is not None or capex_ocf is not None else 'UNKNOWN')
+    if val('capital_intensity_assessment') in ('LOW','MODERATE','HIGH','VERY_HIGH'):
+        capint=val('capital_intensity_assessment')
     ebitda_margin=ratio(f.get('ebitda'),f.get('revenue'));opmargin=fnum(f.get('operating_margin'))
     gross=fnum(f.get('gross_margin'))
     stable=val('ebitda_stable') is True or val('margin_regime') in ('STABLE','STABLE_HIGH_MARGIN','STABLE_MODERATE_MARGIN')
+    # Explicit V5 historical instability must not be overwritten by a margin proxy.
+    if structural.get('_evidence_policy_version')=='v5.0' and val('ebitda_stable') is False:stable=False
     if val('margin_regime')=='TRANSITIONAL':margin='TRANSITIONAL'
     elif val('unusual_da_economics') is True or any(v is not None and (v>1 or v<0) for v in (ebitda_margin,opmargin,gross)):margin='UNUSUAL'
     elif (opmargin is not None and opmargin<.1) or (ebitda_margin is not None and ebitda_margin<.1):margin='LOW_MARGIN'

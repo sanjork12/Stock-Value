@@ -53,6 +53,18 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
         assert len(app.get('download_button'))==5
         assert any('V4.6 Reliability Governance Audit' in element.value for element in app.markdown)
         import production_snapshot_admin as admin
+        before_v50=deepcopy(app.session_state['_v45_export_result']['report'])
+        with patch.object(admin,'capture_analysis',side_effect=AssertionError('Evidence completion must not fetch')):
+            next(b for b in app.button if b.label=='运行 V5.0 Evidence Completion').click().run()
+        assert not app.exception
+        v50=app.session_state['_v45_export_result']['report']
+        assert v50['batch_id']==before_v50['batch_id']
+        assert len(app.get('download_button'))==7
+        for old,new in zip(before_v50['stocks'],v50['stocks']):
+            assert old['normalized_inputs']==new['normalized_inputs']
+            assert old['live_blend']==new['live_blend']
+            assert 'enterprise_structural_evidence' in new and 'v49_evidence_delta' in new
+        assert any('Enterprise Evidence Completion' in x.value for x in app.markdown)
         previous_batch=app.session_state['_v45_export_result']['report']['batch_id']
         admin._LAST_RUN.clear()
         next(b for b in app.button if b.label=='运行五股生产分析快照').click().run()
@@ -85,6 +97,9 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
             audit=stock.get('reliability_governance_audit')
             if audit:
                 assert audit['fair_unchanged'] and all(audit['invariants'].values())
+        with patch.object(admin,'capture_analysis',side_effect=AssertionError('V5 must not fetch')):
+            next(b for b in app.button if b.label=='运行 V5.0 Evidence Completion').click().run()
+        assert not app.exception and len(app.get('download_button'))==7
         app.secrets['ADMIN_EMAIL']='ordinary@test.com'
         app.run();assert not app.exception
         assert len(app.get('download_button'))==0
