@@ -180,6 +180,10 @@ def render_peer_diagnostics(st,client,user_id,*,internal_loader=None):
     st.markdown('**Peer pipeline 阶段计数**')
     st.caption('目标输入阻止执行的阶段显示为空；每个 multiple 的独立尝试见逐股 trace。')
     st.dataframe(pipeline_summary(report),hide_index=True,use_container_width=True)
+    st.markdown('**独立逐倍数审计**')
+    st.dataframe([{k:v for k,v in a.items() if k not in ('peer_trace','engine_attempts','warnings')}
+        for detail in report['peer_results'] for a in detail.get('post_data_audit',{}).get('attempts',[])],
+        hide_index=True,use_container_width=True)
     st.caption('Internal vs Peer % = (Peer Mid / Internal Fair − 1) × 100；benchmark 仅作事后比较。')
     st.dataframe(summary_rows(report),hide_index=True,use_container_width=True)
     for row,detail in zip(report['comparison'],report['peer_results']):
@@ -194,6 +198,7 @@ def render_peer_diagnostics(st,client,user_id,*,internal_loader=None):
                       'Internal vs Benchmark %':row['internal_error_pct'],'Peer vs Benchmark %':row['peer_error_pct']})
             if not detail['valid']:st.info('Peer 不可用：'+row['diagnostic_status'])
             st.json({'pipeline_trace':detail.get('pipeline_trace')})
+            st.json({'post_data_audit':detail.get('post_data_audit')})
             st.markdown('**Peers Included**')
             included=[{k:p[k] for k in ('ticker','multiple_value','growth_pct','margin_pct','market_cap_usd_millions')}
                       for p in detail['composition'] if p['included']]

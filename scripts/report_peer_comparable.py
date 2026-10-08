@@ -152,6 +152,8 @@ def build_report(*, provider=None, financial_loader=None, references=None, ticke
             review_eligible=bool(peer.valid and len(peer.peers_included)>=3 and peer.dispersion is not None
                                 and peer.dispersion<=.6 and peer.peer_group!='commerce_platform')))
         detail=peer.to_dict()
+        from peer_post_data_audit import audit_multiples
+        detail['post_data_audit']=audit_multiples(ticker,financials,infer_valuation_class(ticker,financials),provider)
         detail['composition']=_composition(peer,provider)
         detail['multiple_policy']='first valid multiple; alternatives are sequential attempts, never a combined blend'
         detail['review_eligibility_note']='Report-only minimum: >=3 peers, IQR/median <=60%, no aggregate commerce mix. Not a production parameter change.'
