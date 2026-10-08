@@ -16,6 +16,7 @@ from valuation_calibration_audit import clone,TICKERS
 from finnhub_admin_diagnostics import is_cloud_runtime,verified_admin
 from financial_forensics_admin import _secret_strings
 from financial_forensics import snapshot_json
+from calibration_snapshot_guard import calibration_eligibility,batch_eligibility,reference_snapshot
 
 _LOCK=threading.Lock()
 _LAST_RUN={}
@@ -138,7 +139,7 @@ def _public(value):
     return None  # Never stringify unexpected objects/provider clients.
 
 
-def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,display_resolver=None):
+def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,display_resolver=None,reference_loader=None):
     if not is_cloud_runtime() or not verified_admin(client,user_id,secrets.get('ADMIN_EMAIL')):
         raise PermissionError('Cloud admin only')
     if not _LOCK.acquire(blocking=False):raise RuntimeError('Busy')
@@ -153,11 +154,21 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
                     fundamentals_loader=fundamentals_loader,display_resolver=display_resolver)
             except Exception:
                 stock={'ticker':ticker,'capture_status':'FAILED','analysis_generated_at':datetime.now(timezone.utc).isoformat()}
+            reference=None
+            reference_status='NOT_REQUESTED'
+            if reference_loader:
+                try:
+                    reference=reference_snapshot(reference_loader(ticker),ticker)
+                    reference_status='AVAILABLE' if reference else 'NO_DATA'
+                except Exception:reference_status='READ_UNAVAILABLE'
+            stock.update(calibration_eligibility(stock,reference))
+            stock['reference_snapshot_read_status']=reference_status
             stock.update(batch_id=batch_id,batch_generated_at=stamp)
             stocks.append(stock)
-        report={'schema_version':'v4.5','batch_id':batch_id,'batch_generated_at':stamp,'generated_at':stamp,
+        report={'schema_version':'v4.5.0','batch_id':batch_id,'batch_generated_at':stamp,'generated_at':stamp,
             'mode':'read_only_diagnostic','execution':'serial single Cloud batch; underlying cached input ages may differ',
             'stocks':stocks}
+        report.update(batch_eligibility(stocks,TICKERS))
         return json.loads(snapshot_json(_public(report),_secret_strings(secrets)))
     finally:_LOCK.release()
 
@@ -171,7 +182,7 @@ def csv_payload(report):
     return buffer.getvalue().encode('utf-8-sig')
 
 
-def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loader,display_resolver=None):
+def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loader,display_resolver=None,reference_loader=None):
     if not is_cloud_runtime() or not verified_admin(client,user_id,st.secrets.get('ADMIN_EMAIL')):
         st.session_state.pop('_v45_export_open',None);st.session_state.pop('_v45_export_result',None)
         st.error('无权访问 V4.5 估值结构导出。');return
@@ -184,7 +195,7 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
         try:
             with st.spinner('正在捕获五股生产分析…'):
                 report=run_batch(client,user_id,st.secrets,history_loader=history_loader,
-                    fundamentals_loader=fundamentals_loader,display_resolver=display_resolver)
+                    fundamentals_loader=fundamentals_loader,display_resolver=display_resolver,reference_loader=reference_loader)
             st.session_state['_v45_export_result']={'owner':str(user_id),'report':report}
         except PermissionError:st.error('无权运行。')
         except RuntimeError:st.warning('诊断正在运行或过于频繁，请稍后重试。')
@@ -194,8 +205,15 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
     if saved.get('owner')!=str(user_id):
         st.session_state.pop('_v45_export_result',None);return
     report=saved['report']
+    st.markdown('**Calibration Batch Status**')
+    st.write(report.get('batch_calibration_eligibility','INELIGIBLE'))
+    if report.get('batch_calibration_eligibility')!='ELIGIBLE':
+        st.warning('本批次仅用于输入降级诊断，不应用于估值校准。')
+        for reason in report.get('batch_reasons',[]):
+            st.write(str(reason['ticker'])+' — '+reason['status']+'：'+', '.join(reason['reasons']))
     st.caption('Batch: '+report['batch_id']+' · '+report['batch_generated_at'])
-    st.dataframe([{k:stock.get(k) for k in ('ticker','fair_value','source_status','capture_status','input_blend_alignment')}
+    st.dataframe([{k:stock.get(k) for k in ('ticker','fair_value','source_status','capture_status','input_blend_alignment',
+        'calibration_eligibility','calibration_eligibility_reasons','transient_input_degradation')}
         for stock in report['stocks']],hide_index=True,use_container_width=True)
     st.info('如显示 cached_last_reliable，当前 live inputs 与历史 blend 分开导出，不可将两者用于同一轮校准。')
     st.download_button('下载 V4.5 JSON',snapshot_json(report),'v45_cloud_production_analysis.json','application/json',key='v45_export_json')

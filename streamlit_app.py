@@ -1501,6 +1501,20 @@ with header_right:
             st.rerun()
 
 if st.session_state.get("_v45_export_open"):
+    v45_reference_rows = {}
+    def v45_reference_readonly(ticker):
+        if ticker not in v45_reference_rows:
+            from datetime import timedelta
+            from calibration_snapshot_guard import reference_snapshot
+            today_row = get_cloud_snapshot(db, user_id, ticker, date.today().isoformat())
+            current_ref = reference_snapshot(today_row, ticker)
+            if current_ref and current_ref.get('healthy_reference'):
+                v45_reference_rows[ticker] = today_row
+            else:
+                prior_row = get_cloud_snapshot(db, user_id, ticker, (date.today()-timedelta(days=1)).isoformat())
+                prior_ref = reference_snapshot(prior_row, ticker)
+                v45_reference_rows[ticker] = prior_row if prior_ref and prior_ref.get('healthy_reference') else today_row
+        return v45_reference_rows[ticker]
     def v45_display_readonly(live):
         from production_snapshot_admin import readonly_display
         try:
@@ -1511,7 +1525,8 @@ if st.session_state.get("_v45_export_open"):
                 raise
             return dict(live, source_status='live', reliable_cache_status='storage_unavailable')
     render_snapshot_export(st, db, user_id, history_loader=history_cached,
-                           fundamentals_loader=fundamentals_cached, display_resolver=v45_display_readonly)
+                           fundamentals_loader=fundamentals_cached, display_resolver=v45_display_readonly,
+                           reference_loader=v45_reference_readonly)
     st.stop()
 
 if st.session_state.get("_peer_diagnostic_open"):

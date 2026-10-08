@@ -29,6 +29,11 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
         report=app.session_state['_v45_export_result']['report']
         assert len(report['stocks'])==5
         assert all(s['capture_status']=='COMPLETE' for s in report['stocks'])
+        assert report['batch_calibration_eligibility'] in ('ELIGIBLE','INELIGIBLE')
+        assert any('Calibration Batch Status' in element.value for element in app.markdown)
+        assert all('calibration_eligibility_reasons' in s for s in report['stocks'])
+        if report['batch_calibration_eligibility']=='INELIGIBLE':
+            assert any('本批次仅用于输入降级诊断，不应用于估值校准。' in w.value for w in app.warning)
         assert len(app.get('download_button'))==2
         app.secrets['ADMIN_EMAIL']='ordinary@test.com'
         app.run();assert not app.exception

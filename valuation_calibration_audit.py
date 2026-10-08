@@ -102,6 +102,12 @@ def audit_analysis(ticker,result):
     """
     if result.get('source_status','live')!='live':
         return {'ticker':ticker,'status':'NEEDS_ORIGINAL_RELIABLE_INPUTS','reason':'cached display cannot be paired with current live inputs'}
+    from calibration_snapshot_guard import calibration_eligibility
+    governance=calibration_eligibility(result,result.get('reference_snapshot'))
+    if result.get('calibration_eligibility',governance['calibration_eligibility'])!='ELIGIBLE' or governance['calibration_eligibility']!='ELIGIBLE':
+        return {'ticker':ticker,'status':'CALIBRATION_INPUT_INELIGIBLE',
+                **governance,'sensitivity':None,'models':None,
+                'reason':'Degraded data-state may be diagnosed but must not be used for calibration.'}
     f=NormalizedFinancialInputs(deepcopy(result.get('normalized_inputs',result['financials'])))
     blend=deepcopy(result['blend'])
     profile=engine.build_profile(ticker,f)
