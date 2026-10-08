@@ -37,6 +37,8 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
         assert all('experimental_family_blend' in s for s in report['stocks'])
         assert any('Independent Evidence & Family Suppression' in element.value for element in app.markdown)
         assert all('independent_evidence_governance' in s for s in report['stocks'])
+        assert any('Capital Structure Overlay' in element.value for element in app.markdown)
+        assert all('capital_structure_overlay' in s for s in report['stocks'])
         assert all('calibration_eligibility_reasons' in s for s in report['stocks'])
         if report['batch_calibration_eligibility']=='INELIGIBLE':
             assert any('本批次仅用于输入降级诊断，不应用于估值校准。' in w.value for w in app.warning)

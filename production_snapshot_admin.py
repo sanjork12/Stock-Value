@@ -21,6 +21,7 @@ from model_family_governance import governance_audit
 from experimental_family_blend import family_blend_experiment,experiment_summary
 from independent_evidence_governance import independent_evidence_audit,EXPORT_FIELDS
 from production_reliability_governance import VERSION as GOVERNANCE_VERSION
+from capital_structure_overlay import capital_overlay,overlay_summary
 
 _LOCK=threading.Lock()
 _LAST_RUN={}
@@ -171,6 +172,7 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
             stock['correlation_cross_family_governance']=governance_audit(stock)
             stock['experimental_family_blend']=family_blend_experiment(stock)
             stock['independent_evidence_governance']=independent_evidence_audit(stock)
+            stock['capital_structure_overlay']=capital_overlay(stock)
             stock['reference_snapshot_read_status']=reference_status
             stock.update(batch_id=batch_id,batch_generated_at=stamp)
             stocks.append(stock)
@@ -191,15 +193,19 @@ def csv_payload(report):
     experimental_fields=tuple('experimental_family_blend.'+key for key in ('A_fair','B_fair','C_fair',
         'A_difference_pct','B_difference_pct','C_difference_pct','family_weighting_sensitivity','family_weighting_governance','experiment_status'))
     evidence_fields=tuple('independent_evidence_governance.'+key for key in EXPORT_FIELDS)
-    fields+=experimental_fields+evidence_fields
+    overlay_fields=tuple('capital_structure_overlay.'+key for key in ('applicable','reason','overlay_role',
+        'net_debt','net_debt_to_market_cap','net_debt_to_ebitda','interest_coverage','production_fair',
+        'earnings_family_fair','burden_score','burden_band','burden_overlay_fair','ev_bridge_fair','consistency_status','governance'))
+    fields+=experimental_fields+evidence_fields+overlay_fields
     writer=csv.DictWriter(buffer,fieldnames=fields);writer.writeheader()
     for stock in report['stocks']:
         governance=stock.get('correlation_cross_family_governance',{})
         for model in stock.get('models',[]):writer.writerow({'ticker':stock['ticker'],
-            **{k:model.get(k) for k in fields if k!='ticker' and k not in summary_fields and k not in experimental_fields and k not in evidence_fields},
+            **{k:model.get(k) for k in fields if k!='ticker' and k not in summary_fields and k not in experimental_fields and k not in evidence_fields and k not in overlay_fields},
             **{k:governance.get(k) for k in summary_fields},
             **{k:experiment_summary(stock).get(k.split('.',1)[1]) for k in experimental_fields},
-            **{k:stock.get('independent_evidence_governance',{}).get(k.split('.',1)[1]) for k in evidence_fields}})
+            **{k:stock.get('independent_evidence_governance',{}).get(k.split('.',1)[1]) for k in evidence_fields},
+            **{k:overlay_summary(stock).get(k.split('.',1)[1]) for k in overlay_fields}})
     return buffer.getvalue().encode('utf-8-sig')
 
 
@@ -281,6 +287,12 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
         with st.expander(stock['ticker']+' — independent evidence governance'):
             st.json(evidence)
     st.markdown('**V4.6 Reliability Governance Audit**')
+    st.markdown('**Capital Structure Overlay**')
+    st.caption('DIAGNOSTIC ONLY · 资本结构实验不改变生产估值、可靠性或交易区间。')
+    st.dataframe([overlay_summary(stock) for stock in report['stocks']],hide_index=True,use_container_width=True)
+    for stock in report['stocks']:
+        with st.expander(stock['ticker']+' — capital structure overlay'):
+            st.json(stock.get('capital_structure_overlay',{}))
     audits=governance_audit_rows(report)
     st.caption('Governance: Applied to production reliability · Scope: Reliability / Confidence / Precise Exit · Fair value effect: None（新生成的 live 治理结果）')
     st.dataframe([{k:a.get(k) for k in ('ticker','source_status','fair_before','fair_after','fair_unchanged',

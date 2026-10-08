@@ -1,0 +1,349 @@
+{
+  "version": "V4.7",
+  "scope": "DIAGNOSTIC_ONLY_NO_PRODUCTION_EFFECT",
+  "evidence_note": "Default input contains prior approximate Cloud model mids but lacks actual capital structure inputs. It is not a fresh Cloud capture. No financial values are estimated.",
+  "score_weights": {
+    "net_debt_to_market_cap": 0.35,
+    "net_debt_to_ebitda": 0.3,
+    "interest_coverage": 0.2,
+    "enterprise_multiple_stretch": 0.15
+  },
+  "component_band_scores": {
+    "LOW": 0.0,
+    "MODERATE": 35.0,
+    "HIGH": 70.0,
+    "VERY_HIGH": 100.0,
+    "NET_CASH": 0.0,
+    "STRONG": 0.0,
+    "ADEQUATE": 35.0,
+    "WEAK": 70.0,
+    "VERY_WEAK": 100.0,
+    "BELOW_RANGE": 0.0,
+    "WITHIN_RANGE": 0.0,
+    "ABOVE_RANGE": 60.0,
+    "FAR_ABOVE_RANGE": 100.0
+  },
+  "discount_fractions": {
+    "LOW": 0.0,
+    "MODERATE": 0.05,
+    "HIGH": 0.1,
+    "VERY_HIGH": 0.15
+  },
+  "stocks": [
+    {
+      "ticker": "GOOG",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "capital_structure_overlay": {
+        "applicability": {
+          "applicable": false,
+          "reasons": [
+            "profitability_unconfirmed_or_nonpositive",
+            "missing_or_negative_cash_debt",
+            "missing_or_nonpositive_market_cap",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_nonpositive_canonical_shares"
+          ],
+          "profitability_source": "trailing_eps",
+          "currency_safe": false
+        },
+        "overlay_role": "SECONDARY_DIAGNOSTIC",
+        "inputs": {
+          "cash": null,
+          "total_debt": null,
+          "market_cap": null,
+          "ebitda": null,
+          "revenue": null,
+          "interest_expense": null,
+          "ebit": null,
+          "canonical_shares": null,
+          "net_income": null,
+          "trailing_eps": null,
+          "net_debt": null,
+          "enterprise_value": null,
+          "quote_currency": null,
+          "financial_currency": null
+        },
+        "input_reasons": {
+          "cash": "missing_or_nonfinite",
+          "total_debt": "missing_or_nonfinite",
+          "market_cap": "missing_or_nonfinite",
+          "ebitda": "missing_or_nonfinite",
+          "revenue": "missing_or_nonfinite",
+          "interest_expense": "missing_or_nonfinite",
+          "ebit": "missing_or_nonfinite",
+          "canonical_shares": "missing_or_nonfinite",
+          "net_income": "missing_or_nonfinite",
+          "trailing_eps": "missing_or_nonfinite",
+          "net_debt": "missing_cash_or_debt",
+          "enterprise_value": "missing_market_cap_or_net_debt"
+        },
+        "production_fair": 253.81,
+        "earnings_family_fair": 329.87166666666667,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {},
+        "bands": {},
+        "burden_score": null,
+        "burden_band": "UNAVAILABLE",
+        "score_components": {},
+        "score_components_used": [],
+        "burden_overlay_fair": null,
+        "ev_bridge_fair": null,
+        "consistency_status": "UNAVAILABLE",
+        "governance": "UNAVAILABLE"
+      }
+    },
+    {
+      "ticker": "MSFT",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "capital_structure_overlay": {
+        "applicability": {
+          "applicable": false,
+          "reasons": [
+            "profitability_unconfirmed_or_nonpositive",
+            "missing_or_negative_cash_debt",
+            "missing_or_nonpositive_market_cap",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_nonpositive_canonical_shares"
+          ],
+          "profitability_source": "trailing_eps",
+          "currency_safe": false
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": null,
+          "total_debt": null,
+          "market_cap": null,
+          "ebitda": null,
+          "revenue": null,
+          "interest_expense": null,
+          "ebit": null,
+          "canonical_shares": null,
+          "net_income": null,
+          "trailing_eps": null,
+          "net_debt": null,
+          "enterprise_value": null,
+          "quote_currency": null,
+          "financial_currency": null
+        },
+        "input_reasons": {
+          "cash": "missing_or_nonfinite",
+          "total_debt": "missing_or_nonfinite",
+          "market_cap": "missing_or_nonfinite",
+          "ebitda": "missing_or_nonfinite",
+          "revenue": "missing_or_nonfinite",
+          "interest_expense": "missing_or_nonfinite",
+          "ebit": "missing_or_nonfinite",
+          "canonical_shares": "missing_or_nonfinite",
+          "net_income": "missing_or_nonfinite",
+          "trailing_eps": "missing_or_nonfinite",
+          "net_debt": "missing_cash_or_debt",
+          "enterprise_value": "missing_market_cap_or_net_debt"
+        },
+        "production_fair": 657.05,
+        "earnings_family_fair": 657.0441666666667,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {},
+        "bands": {},
+        "burden_score": null,
+        "burden_band": "UNAVAILABLE",
+        "score_components": {},
+        "score_components_used": [],
+        "burden_overlay_fair": null,
+        "ev_bridge_fair": null,
+        "consistency_status": "UNAVAILABLE",
+        "governance": "UNAVAILABLE"
+      }
+    },
+    {
+      "ticker": "ORCL",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "capital_structure_overlay": {
+        "applicability": {
+          "applicable": false,
+          "reasons": [
+            "profitability_unconfirmed_or_nonpositive",
+            "missing_or_negative_cash_debt",
+            "missing_or_nonpositive_market_cap",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_nonpositive_canonical_shares"
+          ],
+          "profitability_source": "trailing_eps",
+          "currency_safe": false
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": null,
+          "total_debt": null,
+          "market_cap": null,
+          "ebitda": null,
+          "revenue": null,
+          "interest_expense": null,
+          "ebit": null,
+          "canonical_shares": null,
+          "net_income": null,
+          "trailing_eps": null,
+          "net_debt": null,
+          "enterprise_value": null,
+          "quote_currency": null,
+          "financial_currency": null
+        },
+        "input_reasons": {
+          "cash": "missing_or_nonfinite",
+          "total_debt": "missing_or_nonfinite",
+          "market_cap": "missing_or_nonfinite",
+          "ebitda": "missing_or_nonfinite",
+          "revenue": "missing_or_nonfinite",
+          "interest_expense": "missing_or_nonfinite",
+          "ebit": "missing_or_nonfinite",
+          "canonical_shares": "missing_or_nonfinite",
+          "net_income": "missing_or_nonfinite",
+          "trailing_eps": "missing_or_nonfinite",
+          "net_debt": "missing_cash_or_debt",
+          "enterprise_value": "missing_market_cap_or_net_debt"
+        },
+        "production_fair": 237.75,
+        "earnings_family_fair": 237.74923076923076,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {},
+        "bands": {},
+        "burden_score": null,
+        "burden_band": "UNAVAILABLE",
+        "score_components": {},
+        "score_components_used": [],
+        "burden_overlay_fair": null,
+        "ev_bridge_fair": null,
+        "consistency_status": "UNAVAILABLE",
+        "governance": "UNAVAILABLE"
+      }
+    },
+    {
+      "ticker": "NVDA",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "capital_structure_overlay": {
+        "applicability": {
+          "applicable": false,
+          "reasons": [
+            "profitability_unconfirmed_or_nonpositive",
+            "missing_or_negative_cash_debt",
+            "missing_or_nonpositive_market_cap",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_nonpositive_canonical_shares"
+          ],
+          "profitability_source": "trailing_eps",
+          "currency_safe": false
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": null,
+          "total_debt": null,
+          "market_cap": null,
+          "ebitda": null,
+          "revenue": null,
+          "interest_expense": null,
+          "ebit": null,
+          "canonical_shares": null,
+          "net_income": null,
+          "trailing_eps": null,
+          "net_debt": null,
+          "enterprise_value": null,
+          "quote_currency": null,
+          "financial_currency": null
+        },
+        "input_reasons": {
+          "cash": "missing_or_nonfinite",
+          "total_debt": "missing_or_nonfinite",
+          "market_cap": "missing_or_nonfinite",
+          "ebitda": "missing_or_nonfinite",
+          "revenue": "missing_or_nonfinite",
+          "interest_expense": "missing_or_nonfinite",
+          "ebit": "missing_or_nonfinite",
+          "canonical_shares": "missing_or_nonfinite",
+          "net_income": "missing_or_nonfinite",
+          "trailing_eps": "missing_or_nonfinite",
+          "net_debt": "missing_cash_or_debt",
+          "enterprise_value": "missing_market_cap_or_net_debt"
+        },
+        "production_fair": 358.45,
+        "earnings_family_fair": 358.44384615384615,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {},
+        "bands": {},
+        "burden_score": null,
+        "burden_band": "UNAVAILABLE",
+        "score_components": {},
+        "score_components_used": [],
+        "burden_overlay_fair": null,
+        "ev_bridge_fair": null,
+        "consistency_status": "UNAVAILABLE",
+        "governance": "UNAVAILABLE"
+      }
+    },
+    {
+      "ticker": "AMZN",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "capital_structure_overlay": {
+        "applicability": {
+          "applicable": false,
+          "reasons": [
+            "profitability_unconfirmed_or_nonpositive",
+            "missing_or_negative_cash_debt",
+            "missing_or_nonpositive_market_cap",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_nonpositive_canonical_shares"
+          ],
+          "profitability_source": "trailing_eps",
+          "currency_safe": false
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": null,
+          "total_debt": null,
+          "market_cap": null,
+          "ebitda": null,
+          "revenue": null,
+          "interest_expense": null,
+          "ebit": null,
+          "canonical_shares": null,
+          "net_income": null,
+          "trailing_eps": null,
+          "net_debt": null,
+          "enterprise_value": null,
+          "quote_currency": null,
+          "financial_currency": null
+        },
+        "input_reasons": {
+          "cash": "missing_or_nonfinite",
+          "total_debt": "missing_or_nonfinite",
+          "market_cap": "missing_or_nonfinite",
+          "ebitda": "missing_or_nonfinite",
+          "revenue": "missing_or_nonfinite",
+          "interest_expense": "missing_or_nonfinite",
+          "ebit": "missing_or_nonfinite",
+          "canonical_shares": "missing_or_nonfinite",
+          "net_income": "missing_or_nonfinite",
+          "trailing_eps": "missing_or_nonfinite",
+          "net_debt": "missing_cash_or_debt",
+          "enterprise_value": "missing_market_cap_or_net_debt"
+        },
+        "production_fair": 290.44,
+        "earnings_family_fair": 290.44666666666666,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {},
+        "bands": {},
+        "burden_score": null,
+        "burden_band": "UNAVAILABLE",
+        "score_components": {},
+        "score_components_used": [],
+        "burden_overlay_fair": null,
+        "ev_bridge_fair": null,
+        "consistency_status": "UNAVAILABLE",
+        "governance": "UNAVAILABLE"
+      }
+    }
+  ]
+}
