@@ -133,10 +133,10 @@ class PeerComparableTests(unittest.TestCase):
         self.assertEqual(r.exclusion_reasons['AMD'],'missing_or_nonpositive_market_cap')
 
     def test_extreme_growth_and_profitability_excluded(self):
-        self.provider.metrics['AMD']['Revenue Growth TTM YoY']=200
+        self.provider.metrics['AMD']['Revenue Growth TTM YoY']=10000
         self.provider.metrics['MRVL']['TTM PE']=-5
         r=self.calc(financials={**FIN,'revenue':None})
-        self.assertIn('extreme_difference',r.exclusion_reasons['AMD'])
+        self.assertEqual('comparability_weight_below_floor',r.exclusion_reasons['AMD'])
         self.assertEqual(r.exclusion_reasons['MRVL'],'noncomparable_profitability_basis')
 
     def test_memory_storage_not_comparable(self):
@@ -265,6 +265,10 @@ class PeerComparableTests(unittest.TestCase):
                            ('MSFT','mega_cap_tech'),('GOOG','mega_cap_tech'),('AMZN','mega_cap_tech')]:
             with self.subTest(ticker=ticker):
                 r=self.calc(ticker,cls)
+                if ticker=='AMZN':
+                    self.assertFalse(r.valid)
+                    self.assertEqual(r.eligibility,'NOT_ELIGIBLE')
+                    continue
                 self.assertTrue(r.valid)
                 self.assertGreaterEqual(len(r.peers_included),3)
 

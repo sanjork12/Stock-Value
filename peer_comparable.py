@@ -48,6 +48,56 @@ WEIGHTS = {'mega_cap_tech':.15,'semiconductor_growth':.20,'mature_growth':.20,
 MULTIPLE_KEYS = {'Forward P/E':'Forward PE','P/E TTM':'TTM PE','P/B':'P/B',
                  'EV/EBITDA':'EV/EBITDA TTM','EV/Revenue':'EV/Revenue TTM'}
 MAX_DATA_AGE_HOURS = 72
+peer_eligibility_by_class = {
+    'mature_growth':'ELIGIBLE','enterprise_software':'ELIGIBLE',
+    'semiconductor_growth':'ELIGIBLE_WITH_WEIGHTED_COMPARABILITY',
+    'mega_cap_tech':'REVIEW_BY_BUSINESS_MODEL','commerce_platform':'NOT_ELIGIBLE',
+    'digital_advertising':'DIAGNOSTIC_ONLY','bank':'ELIGIBLE',
+    'high_growth_software':'DIAGNOSTIC_ONLY','cyclical_semiconductor':'DIAGNOSTIC_ONLY',
+    'specialized':'NOT_ELIGIBLE'}
+COMPARABILITY_FLOOR = .25
+
+
+def eligibility_policy(ticker, valuation_class, group):
+    if canonical(ticker)=='AMZN' or group=='commerce_platform' or valuation_class=='specialized':
+        return 'NOT_ELIGIBLE'
+    if group in ('enterprise_software','digital_advertising'):
+        return peer_eligibility_by_class[group]
+    policy=peer_eligibility_by_class.get(valuation_class,'NOT_ELIGIBLE')
+    if policy=='REVIEW_BY_BUSINESS_MODEL':
+        return 'DIAGNOSTIC_ONLY' if group in ('consumer_devices',) else 'NOT_ELIGIBLE'
+    return policy
+
+
+def similarity_scores(target_growth, peer_growth, target_margin, peer_margin, target_cap, peer_cap, business=1.0):
+    """Fixed scales: growth 200pp, margin 100pp, size 10 natural-log units.
+
+    Missing data never receives an imputed similarity. Benchmarks are absent.
+    """
+    if any(number(x) is None for x in (target_growth,peer_growth,target_margin,peer_margin)) or not _positive(target_cap) or not _positive(peer_cap):
+        return dict(growth_similarity_score=0.,margin_similarity_score=0.,size_similarity_score=0.,business_model_score=business,comparability_weight=0.)
+    growth=1/(1+abs(target_growth-peer_growth)/200)
+    margin=1/(1+abs(target_margin-peer_margin)/100)
+    size=1/(1+abs(math.log(target_cap/peer_cap))/10)
+    return dict(growth_similarity_score=growth,margin_similarity_score=margin,
+                size_similarity_score=size,business_model_score=business,
+                comparability_weight=business*growth*margin*size)
+
+
+def weighted_quantile(values, weights, fraction):
+    """Interpolate normalized weight midpoints; equal weights reproduce quantile."""
+    pairs=sorted(zip(values,weights))
+    if not pairs or any(w<=0 for _,w in pairs):raise ValueError('Positive weights required')
+    if len(pairs)==1:return pairs[0][0]
+    centers=[];total=0.
+    for _,w in pairs:
+        centers.append(total+w/2);total+=w
+    positions=[(c-centers[0])/(centers[-1]-centers[0]) for c in centers]
+    for i in range(1,len(pairs)):
+        if fraction<=positions[i]:
+            alpha=(fraction-positions[i-1])/(positions[i]-positions[i-1])
+            return pairs[i-1][0]+alpha*(pairs[i][0]-pairs[i-1][0])
+    return pairs[-1][0]
 
 
 @dataclass
@@ -75,6 +125,15 @@ class PeerComparableResult:
     dispersion: float | None = None
     warnings: list = field(default_factory=list)
     provenance: dict = field(default_factory=lambda: {'source':'Finnhub','endpoints':['stock/profile2','stock/metric']})
+    eligibility: str = 'NOT_ELIGIBLE'
+    raw_peer_count: int = 0
+    effective_peer_count: float = 0.
+    peer_scores: dict = field(default_factory=dict)
+    weighted_low: float | None = None
+    weighted_median: float | None = None
+    weighted_high: float | None = None
+    primary_peer_multiple: str | None = None
+    alternate_valid_multiples: list = field(default_factory=list)
 
     def to_dict(self):
         return asdict(self)
@@ -168,6 +227,10 @@ def _freshness(response, now):
 def calculate_peer_comparable(ticker, financials, valuation_class, *, provider=None, now=None, peer_tickers=None):
     r = PeerComparableResult(canonical(ticker),valuation_class)
     r.peer_group = group_for(ticker, valuation_class)
+    r.eligibility=eligibility_policy(ticker,valuation_class,r.peer_group)
+    if r.eligibility=='NOT_ELIGIBLE':
+        r.warnings.append('heterogeneous_business_mix' if r.peer_group=='commerce_platform' else 'peer_class_not_eligible')
+        return r
     if not r.peer_group:
         r.warnings.append('unsupported_business_model');return r
     r.applicable = True
@@ -228,7 +291,7 @@ def calculate_peer_comparable(ticker, financials, valuation_class, *, provider=N
         if not metric_inputs:
             attempts.append({'multiple':multiple,'reason':'missing_or_unsafe_target_metric'});continue
         key = MULTIPLE_KEYS[multiple]
-        reasons, included, values = {}, [], {}
+        reasons, included, values, scores = {}, [], {}, {}
         tm = target_metrics
         for t in r.peers_considered:
             rec = records[t]
@@ -250,10 +313,15 @@ def calculate_peer_comparable(ticker, financials, valuation_class, *, provider=N
             if not reason and not cap:reason = 'missing_or_nonpositive_market_cap'
             value = _positive(m.get(key))
             if not reason and not value:reason = 'missing_or_nonpositive_selected_multiple'
-            for field, maximum in [('Revenue Growth TTM YoY',50),('Operating Margin TTM',25)]:
+            for field in ('Revenue Growth TTM YoY','Operating Margin TTM'):
                 a,b = number(tm.get(field)),number(m.get(field))
                 if not reason and (a is None or b is None):reason = 'missing_comparability_'+field
-                if not reason and abs(a-b)>maximum:reason = 'extreme_difference_'+field
+            score=similarity_scores(number(tm.get('Revenue Growth TTM YoY')),number(m.get('Revenue Growth TTM YoY')),
+                number(tm.get('Operating Margin TTM')),number(m.get('Operating Margin TTM')),
+                _positive(target['profile'].get('marketCapitalization')) or _positive(tm.get('Market Capitalization')),cap,
+                .85 if family!=r.peer_group else 1.)
+            scores[t]=score
+            if not reason and score['comparability_weight']<COMPARABILITY_FLOOR:reason='comparability_weight_below_floor'
             if not reason and multiple in ('Forward P/E','P/E TTM','EV/EBITDA') and (not _positive(m.get('TTM PE')) or not _positive(tm.get('TTM PE'))):
                 reason = 'noncomparable_profitability_basis'
             if not reason and multiple == 'EV/Revenue' and (number(tm.get('Operating Margin TTM')) > 0) != (number(m.get('Operating Margin TTM')) > 0):
@@ -272,15 +340,24 @@ def calculate_peer_comparable(ticker, financials, valuation_class, *, provider=N
             for t,value in list(values.items()):
                 if value < max(0,q1-1.5*spread) or value > q3+1.5*spread or value > center*3 or value < center/3:
                     reasons[t] = 'peer_excluded_as_outlier';values.pop(t);included.remove(t)
-        attempts.append({'multiple':multiple,'included':included,'excluded':reasons})
+        effective=sum(scores[t]['comparability_weight'] for t in included)
+        attempts.append({'multiple':multiple,'included':included,'excluded':reasons,
+                         'peer_scores':scores,'raw_peer_count':len(included),'effective_peer_count':effective})
         r.selected_multiple = multiple
         r.target_multiple = number(tm.get(key))
         r.target_metric,r.target_metric_value,enterprise = metric_inputs
         r.peers_included,r.exclusion_reasons,r.peers_excluded = included,reasons,list(reasons)
-        if len(values) < 3:continue
+        r.raw_peer_count,r.effective_peer_count,r.peer_scores=len(included),effective,scores
+        r.peer_q1=r.peer_median=r.peer_q3=None
+        r.weighted_low=r.weighted_median=r.weighted_high=r.dispersion=None
+        if len(values) < 3 or effective<2:
+            if len(values)>=3:r.warnings.append(multiple+':effective_peer_count_below_two')
+            continue
         vals = list(values.values())
         r.peer_q1,r.peer_median,r.peer_q3 = quantile(vals,.25),median(vals),quantile(vals,.75)
-        r.dispersion = (r.peer_q3-r.peer_q1)/r.peer_median
+        ws=[scores[t]['comparability_weight'] for t in values]
+        r.weighted_low,r.weighted_median,r.weighted_high=[weighted_quantile(vals,ws,q) for q in (.25,.5,.75)]
+        r.dispersion = (r.weighted_high-r.weighted_low)/r.weighted_median
         adjustment = 1.0
         if multiple == 'P/B':
             target_roe = _positive(financials.get('roe'))
@@ -289,7 +366,7 @@ def calculate_peer_comparable(ticker, financials, valuation_class, *, provider=N
             peer_roe = median(records[t]['metrics']['ROE TTM'] for t in included)/100
             adjustment = max(.75,min(1.25,target_roe/peer_roe))
             r.provenance['roe_adjustment'] = {'target_roe':target_roe,'peer_median_roe':peer_roe,'factor':adjustment,'bounds':[.75,1.25]}
-        prices = [r.target_metric_value*x*adjustment for x in (r.peer_q1,r.peer_median,r.peer_q3)]
+        prices = [r.target_metric_value*x*adjustment for x in (r.weighted_low,r.weighted_median,r.weighted_high)]
         if enterprise:
             cash,debt,shares = enterprise
             prices = [(ev+cash-debt)/shares for ev in prices]
@@ -298,16 +375,20 @@ def calculate_peer_comparable(ticker, financials, valuation_class, *, provider=N
             r.warnings.append('nonpositive_equity_value');continue
         r.low,r.mid,r.high = prices
         r.valid = True
-        r.confidence = 'HIGH' if len(values)>=5 and r.dispersion<.25 else 'LOW' if r.dispersion>.6 else 'MEDIUM'
+        r.confidence = 'HIGH' if effective>=4 and r.dispersion<.25 else 'LOW' if effective<2.5 or r.dispersion>.6 else 'MEDIUM'
+        data_complete=all(not records[t].get('reason') for t in r.peers_considered)
+        if not data_complete and r.confidence=='HIGH':r.confidence='MEDIUM'
+        if any(scores[t]['business_model_score']<1 for t in included):r.confidence='LOW'
         if r.peer_group in ('commerce_platform','consumer_devices'):
             r.confidence = 'LOW';r.warnings.append('heterogeneous_business_mix')
         r.provenance['peer_multiples'] = values
+        r.primary_peer_multiple=multiple
         break
     r.provenance['selection_attempts'] = attempts
     r.provenance['target_metric_source'] = financials.get('forward_eps_source') if r.selected_multiple=='Forward P/E' else 'existing_normalized_financials'
     r.warnings.append('fetched_at_is_retrieval_time_not_fundamental_period')
     if not r.valid:
-        r.warnings.append('fewer_than_three_comparable_peers_or_unsafe_target_inputs')
+        r.warnings.append('insufficient_raw_or_effective_peers_or_unsafe_target_inputs')
         if not r.selected_multiple:
             r.peers_excluded = list(r.peers_considered)
             r.exclusion_reasons = {t:records[t].get('reason','missing_or_unsafe_target_metric') for t in r.peers_considered}

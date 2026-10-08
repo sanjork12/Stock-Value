@@ -61,6 +61,7 @@ def run_cloud_peer_diagnostic(client,user_id,secrets,tickers,*,provider=None,int
             'historical_discrepancy_cause':'previous diagnostic disabled earnings-estimate EPS and bypassed production cache/fallback'} for t in selected]
         for row,detail in zip(report['comparison'],report['peer_results']):
             status='AVAILABLE' if detail['valid'] and len(detail['peers_included'])>=3 else 'INSUFFICIENT_VALID_PEERS'
+            if detail.get('eligibility')=='NOT_ELIGIBLE':status='NOT_ELIGIBLE'
             if not report['live_finnhub_configured']:status='NOT_CONFIGURED'
             else:
                 observed=[entry.get(key) for entry in detail.get('provenance',{}).values() if isinstance(entry,dict)
@@ -87,7 +88,12 @@ def summary_rows(report):
              'Peer Confidence':r['peer_confidence'],'Selected Multiple':r['selected_multiple'],
              'Peers Included':r['peers_included'],'Internal vs Peer %':r['difference_pct'],
              'Internal vs Benchmark %':r['internal_error_pct'],'Peer vs Benchmark %':r['peer_error_pct'],
-             'Status':r['diagnostic_status']} for r in report['comparison']]
+             'Status':r['diagnostic_status'],
+             'Peer Eligibility':d.get('eligibility'),'Raw Peers':d.get('raw_peer_count'),
+             'Effective Peer Count':d.get('effective_peer_count'),'Unweighted Median':d.get('peer_median'),
+             'Weighted Median':d.get('weighted_median'),
+             'Alternate Valid Multiples':';'.join(d.get('alternate_valid_multiples',[]))}
+            for r,d in zip(report['comparison'],report['peer_results'])]
 
 
 def download_payloads(report):
@@ -196,6 +202,10 @@ def render_peer_diagnostics(st,client,user_id,*,internal_loader=None):
                       'Peer Median':detail['peer_median'],'Peer Q3':detail['peer_q3'],
                       'Peer vs Internal %':row['difference_pct'],'External Benchmark':row['external_benchmark'],
                       'Internal vs Benchmark %':row['internal_error_pct'],'Peer vs Benchmark %':row['peer_error_pct']})
+            st.write({k:detail.get(k) for k in ('eligibility','raw_peer_count','effective_peer_count','peer_scores',
+                'peer_median','weighted_low','weighted_median','weighted_high','primary_peer_multiple','alternate_valid_multiples')})
+            if detail.get('eligibility')=='NOT_ELIGIBLE' and row['ticker']=='AMZN':
+                st.info('Peer Comparable: Not applicable — heterogeneous business mix')
             if not detail['valid']:st.info('Peer 不可用：'+row['diagnostic_status'])
             st.json({'pipeline_trace':detail.get('pipeline_trace')})
             st.json({'post_data_audit':detail.get('post_data_audit')})

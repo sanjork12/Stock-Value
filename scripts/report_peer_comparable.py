@@ -154,7 +154,10 @@ def build_report(*, provider=None, financial_loader=None, references=None, ticke
         detail=peer.to_dict()
         from peer_post_data_audit import audit_multiples
         detail['post_data_audit']=audit_multiples(ticker,financials,infer_valuation_class(ticker,financials),provider)
+        detail['alternate_valid_multiples']=[a['Multiple'] for a in detail['post_data_audit']['attempts']
+            if a['Status']=='VALID' and a['Multiple']!=peer.selected_multiple]
         detail['composition']=_composition(peer,provider)
+        for member in detail['composition']:member.update(peer.peer_scores.get(member['ticker'],{}))
         detail['multiple_policy']='first valid multiple; alternatives are sequential attempts, never a combined blend'
         detail['review_eligibility_note']='Report-only minimum: >=3 peers, IQR/median <=60%, no aggregate commerce mix. Not a production parameter change.'
         details.append(detail)
