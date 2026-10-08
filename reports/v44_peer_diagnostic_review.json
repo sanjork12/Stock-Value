@@ -1,0 +1,1389 @@
+{
+  "generated_at": "2026-10-07T21:28:25.913073+00:00",
+  "mode": "diagnostic",
+  "live_finnhub_configured": false,
+  "caveat": "User-supplied internal context is not a current recalculation. Unavailable values are not inferred.",
+  "comparison": [
+    {
+      "ticker": "NVDA",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 300,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": 358.45,
+      "warnings": "target_reference_NOT_CONFIGURED",
+      "current_internal_fair": null,
+      "current_internal_low": null,
+      "current_internal_high": null,
+      "peer_valid": false,
+      "peer_confidence": "UNAVAILABLE",
+      "peer_group": "semiconductor_growth",
+      "peer_q1": null,
+      "peer_median": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "peer_fair_low": null,
+      "peer_fair_mid": null,
+      "peer_fair_high": null,
+      "peer_dispersion": null,
+      "peers_considered": "AVGO;AMD;MRVL",
+      "peers_excluded": "AVGO;AMD;MRVL",
+      "peer_direction": "UNAVAILABLE",
+      "difference_dollars": null,
+      "difference_pct": null,
+      "internal_error_pct": null,
+      "peer_error_pct": null,
+      "review_eligible": false
+    },
+    {
+      "ticker": "ORCL",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 180,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": 237.71,
+      "warnings": "target_reference_NOT_CONFIGURED",
+      "current_internal_fair": null,
+      "current_internal_low": null,
+      "current_internal_high": null,
+      "peer_valid": false,
+      "peer_confidence": "UNAVAILABLE",
+      "peer_group": "enterprise_software",
+      "peer_q1": null,
+      "peer_median": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "peer_fair_low": null,
+      "peer_fair_mid": null,
+      "peer_fair_high": null,
+      "peer_dispersion": null,
+      "peers_considered": "MSFT;CRM;NOW;SAP;IBM",
+      "peers_excluded": "MSFT;CRM;NOW;SAP;IBM",
+      "peer_direction": "UNAVAILABLE",
+      "difference_dollars": null,
+      "difference_pct": null,
+      "internal_error_pct": null,
+      "peer_error_pct": null,
+      "review_eligible": false
+    },
+    {
+      "ticker": "MSFT",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 544,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": 657.04,
+      "warnings": "target_reference_NOT_CONFIGURED",
+      "current_internal_fair": null,
+      "current_internal_low": null,
+      "current_internal_high": null,
+      "peer_valid": false,
+      "peer_confidence": "UNAVAILABLE",
+      "peer_group": "enterprise_software",
+      "peer_q1": null,
+      "peer_median": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "peer_fair_low": null,
+      "peer_fair_mid": null,
+      "peer_fair_high": null,
+      "peer_dispersion": null,
+      "peers_considered": "ORCL;CRM;NOW;SAP;IBM",
+      "peers_excluded": "ORCL;CRM;NOW;SAP;IBM",
+      "peer_direction": "UNAVAILABLE",
+      "difference_dollars": null,
+      "difference_pct": null,
+      "internal_error_pct": null,
+      "peer_error_pct": null,
+      "review_eligible": false
+    },
+    {
+      "ticker": "GOOG",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 345,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": 253.81,
+      "warnings": "target_reference_NOT_CONFIGURED",
+      "current_internal_fair": null,
+      "current_internal_low": null,
+      "current_internal_high": null,
+      "peer_valid": false,
+      "peer_confidence": "UNAVAILABLE",
+      "peer_group": "digital_advertising",
+      "peer_q1": null,
+      "peer_median": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "peer_fair_low": null,
+      "peer_fair_mid": null,
+      "peer_fair_high": null,
+      "peer_dispersion": null,
+      "peers_considered": "META;TTD;PINS;SNAP",
+      "peers_excluded": "META;TTD;PINS;SNAP",
+      "peer_direction": "UNAVAILABLE",
+      "difference_dollars": null,
+      "difference_pct": null,
+      "internal_error_pct": null,
+      "peer_error_pct": null,
+      "review_eligible": false
+    },
+    {
+      "ticker": "AMZN",
+      "target_data_status": "NOT_CONFIGURED",
+      "current_internal_mid": null,
+      "peer_low": null,
+      "peer_mid": null,
+      "peer_high": null,
+      "confidence": "UNAVAILABLE",
+      "selected_multiple": null,
+      "peers_included": "",
+      "external_benchmark": 285,
+      "benchmark_direction": "UNAVAILABLE",
+      "user_supplied_internal_context": 290.44,
+      "warnings": "target_reference_NOT_CONFIGURED",
+      "current_internal_fair": null,
+      "current_internal_low": null,
+      "current_internal_high": null,
+      "peer_valid": false,
+      "peer_confidence": "UNAVAILABLE",
+      "peer_group": "commerce_platform",
+      "peer_q1": null,
+      "peer_median": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "peer_fair_low": null,
+      "peer_fair_mid": null,
+      "peer_fair_high": null,
+      "peer_dispersion": null,
+      "peers_considered": "BABA;JD;MELI;EBAY",
+      "peers_excluded": "BABA;JD;MELI;EBAY",
+      "peer_direction": "UNAVAILABLE",
+      "difference_dollars": null,
+      "difference_pct": null,
+      "internal_error_pct": null,
+      "peer_error_pct": null,
+      "review_eligible": false
+    }
+  ],
+  "peer_results": [
+    {
+      "target_ticker": "NVDA",
+      "valuation_class": "semiconductor_growth",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "semiconductor_growth",
+      "peers_considered": [
+        "AVGO",
+        "AMD",
+        "MRVL"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "AVGO",
+        "AMD",
+        "MRVL"
+      ],
+      "exclusion_reasons": {
+        "AVGO": "NOT_CONFIGURED",
+        "AMD": "NOT_CONFIGURED",
+        "MRVL": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T21:28:25.910756+00:00",
+        "NVDA": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "AVGO": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "AMD": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "MRVL": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      },
+      "composition": [
+        {
+          "ticker": "AVGO",
+          "valuation_class": "semiconductor_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "AMD",
+          "valuation_class": "semiconductor_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "MRVL",
+          "valuation_class": "semiconductor_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        }
+      ],
+      "multiple_policy": "first valid multiple; alternatives are sequential attempts, never a combined blend",
+      "review_eligibility_note": "Report-only minimum: >=3 peers, IQR/median <=60%, no aggregate commerce mix. Not a production parameter change."
+    },
+    {
+      "target_ticker": "ORCL",
+      "valuation_class": "mature_growth",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "enterprise_software",
+      "peers_considered": [
+        "MSFT",
+        "CRM",
+        "NOW",
+        "SAP",
+        "IBM"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "MSFT",
+        "CRM",
+        "NOW",
+        "SAP",
+        "IBM"
+      ],
+      "exclusion_reasons": {
+        "MSFT": "NOT_CONFIGURED",
+        "CRM": "NOT_CONFIGURED",
+        "NOW": "NOT_CONFIGURED",
+        "SAP": "NOT_CONFIGURED",
+        "IBM": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T21:28:25.911298+00:00",
+        "ORCL": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "MSFT": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "CRM": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "NOW": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "SAP": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "IBM": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      },
+      "composition": [
+        {
+          "ticker": "MSFT",
+          "valuation_class": "mega_cap_tech",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "CRM",
+          "valuation_class": "mature_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "NOW",
+          "valuation_class": "high_growth_software",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "SAP",
+          "valuation_class": "mature_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "IBM",
+          "valuation_class": "mature_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        }
+      ],
+      "multiple_policy": "first valid multiple; alternatives are sequential attempts, never a combined blend",
+      "review_eligibility_note": "Report-only minimum: >=3 peers, IQR/median <=60%, no aggregate commerce mix. Not a production parameter change."
+    },
+    {
+      "target_ticker": "MSFT",
+      "valuation_class": "mega_cap_tech",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "enterprise_software",
+      "peers_considered": [
+        "ORCL",
+        "CRM",
+        "NOW",
+        "SAP",
+        "IBM"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "ORCL",
+        "CRM",
+        "NOW",
+        "SAP",
+        "IBM"
+      ],
+      "exclusion_reasons": {
+        "ORCL": "NOT_CONFIGURED",
+        "CRM": "NOT_CONFIGURED",
+        "NOW": "NOT_CONFIGURED",
+        "SAP": "NOT_CONFIGURED",
+        "IBM": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T21:28:25.911944+00:00",
+        "MSFT": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "ORCL": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "CRM": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "NOW": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "SAP": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "IBM": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      },
+      "composition": [
+        {
+          "ticker": "ORCL",
+          "valuation_class": "mature_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "CRM",
+          "valuation_class": "mature_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "NOW",
+          "valuation_class": "high_growth_software",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "SAP",
+          "valuation_class": "mature_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "IBM",
+          "valuation_class": "mature_growth",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        }
+      ],
+      "multiple_policy": "first valid multiple; alternatives are sequential attempts, never a combined blend",
+      "review_eligibility_note": "Report-only minimum: >=3 peers, IQR/median <=60%, no aggregate commerce mix. Not a production parameter change."
+    },
+    {
+      "target_ticker": "GOOG",
+      "valuation_class": "mega_cap_tech",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "digital_advertising",
+      "peers_considered": [
+        "META",
+        "TTD",
+        "PINS",
+        "SNAP"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "META",
+        "TTD",
+        "PINS",
+        "SNAP"
+      ],
+      "exclusion_reasons": {
+        "META": "NOT_CONFIGURED",
+        "TTD": "NOT_CONFIGURED",
+        "PINS": "NOT_CONFIGURED",
+        "SNAP": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T21:28:25.912043+00:00",
+        "GOOG": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "META": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "TTD": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "PINS": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "SNAP": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      },
+      "composition": [
+        {
+          "ticker": "META",
+          "valuation_class": "mega_cap_tech",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "TTD",
+          "valuation_class": "consumer_platform",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "PINS",
+          "valuation_class": "consumer_platform",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "SNAP",
+          "valuation_class": "consumer_platform",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        }
+      ],
+      "multiple_policy": "first valid multiple; alternatives are sequential attempts, never a combined blend",
+      "review_eligibility_note": "Report-only minimum: >=3 peers, IQR/median <=60%, no aggregate commerce mix. Not a production parameter change."
+    },
+    {
+      "target_ticker": "AMZN",
+      "valuation_class": "mega_cap_tech",
+      "valid": false,
+      "applicable": true,
+      "peer_group": "commerce_platform",
+      "peers_considered": [
+        "BABA",
+        "JD",
+        "MELI",
+        "EBAY"
+      ],
+      "peers_included": [],
+      "peers_excluded": [
+        "BABA",
+        "JD",
+        "MELI",
+        "EBAY"
+      ],
+      "exclusion_reasons": {
+        "BABA": "NOT_CONFIGURED",
+        "JD": "NOT_CONFIGURED",
+        "MELI": "NOT_CONFIGURED",
+        "EBAY": "NOT_CONFIGURED"
+      },
+      "selected_multiple": null,
+      "target_multiple": null,
+      "peer_median": null,
+      "peer_q1": null,
+      "peer_q3": null,
+      "target_metric": null,
+      "target_metric_value": null,
+      "low": null,
+      "mid": null,
+      "high": null,
+      "confidence": "UNAVAILABLE",
+      "dispersion": null,
+      "warnings": [
+        "target_reference_NOT_CONFIGURED"
+      ],
+      "provenance": {
+        "source": "Finnhub",
+        "endpoints": [
+          "stock/profile2",
+          "stock/metric"
+        ],
+        "fetched_at": "2026-10-07T21:28:25.912567+00:00",
+        "AMZN": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "BABA": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "JD": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "MELI": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        },
+        "EBAY": {
+          "source": "Finnhub",
+          "profile_fetched_at": null,
+          "metrics_fetched_at": null,
+          "peer_data_age_hours": null,
+          "profile_status": "NOT_CONFIGURED",
+          "metrics_status": null
+        }
+      },
+      "composition": [
+        {
+          "ticker": "BABA",
+          "valuation_class": "consumer_platform",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "JD",
+          "valuation_class": "consumer_platform",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "MELI",
+          "valuation_class": "consumer_platform",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        },
+        {
+          "ticker": "EBAY",
+          "valuation_class": "consumer_platform",
+          "class_scope": "peer-only classification used by the existing model",
+          "multiple_value": null,
+          "multiple_values": {
+            "Forward P/E": null,
+            "P/E TTM": null,
+            "P/B": null,
+            "EV/EBITDA": null,
+            "EV/Revenue": null
+          },
+          "growth_pct": null,
+          "margin_pct": null,
+          "market_cap_usd_millions": null,
+          "included": false,
+          "exclusion_reason": "NOT_CONFIGURED",
+          "sources": {
+            "profile": {
+              "source": "Finnhub Company Profile",
+              "status": "NOT_CONFIGURED",
+              "fetched_at": null
+            },
+            "metrics": {
+              "source": "Finnhub Basic Financials",
+              "status": "NOT_REQUESTED",
+              "fetched_at": null
+            }
+          },
+          "data_age_hours": null
+        }
+      ],
+      "multiple_policy": "first valid multiple; alternatives are sequential attempts, never a combined blend",
+      "review_eligibility_note": "Report-only minimum: >=3 peers, IQR/median <=60%, no aggregate commerce mix. Not a production parameter change."
+    }
+  ],
+  "review_status": "PENDING_CLOUD_EVIDENCE",
+  "reviewed_commit": "1726299fd0af36beb0988bffc7d7406273220ef6",
+  "reference_context_source": "User-supplied approximate values; not live observations",
+  "reference_context": {
+    "NVDA": {
+      "internal_context": 358.45,
+      "external_benchmark": 300
+    },
+    "ORCL": {
+      "internal_context": 237.71,
+      "external_benchmark": 180
+    },
+    "AMZN": {
+      "internal_context": 290.44,
+      "external_benchmark": 285
+    },
+    "MSFT": {
+      "internal_context": 657.04,
+      "external_benchmark": 544
+    },
+    "GOOG": {
+      "internal_context": 253.81,
+      "external_benchmark": 345
+    }
+  },
+  "peer_api_endpoints_allowed": [
+    "stock/profile2",
+    "stock/metric"
+  ],
+  "benchmark_used_for_model_calculation": false,
+  "tests": {
+    "passed": 414,
+    "failures": 0,
+    "errors": 0
+  },
+  "recommendations": {
+    "NVDA": {
+      "decision": "REVISE",
+      "basis": "Structural review only; live performance not verified",
+      "activate": false
+    },
+    "ORCL": {
+      "decision": "REVISE",
+      "basis": "Structural review only; live performance not verified",
+      "activate": false
+    },
+    "AMZN": {
+      "decision": "REVISE",
+      "basis": "Structural review only; live performance not verified",
+      "activate": false
+    },
+    "MSFT": {
+      "decision": "REVISE",
+      "basis": "Structural review only; live performance not verified",
+      "activate": false
+    },
+    "GOOG": {
+      "decision": "REVISE",
+      "basis": "Structural review only; live performance not verified",
+      "activate": false
+    }
+  }
+}
