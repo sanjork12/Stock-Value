@@ -1,0 +1,333 @@
+{
+  "version": "v4.9",
+  "mode": "SOURCE_AUDIT_CLOUD_VALIDATION_PENDING",
+  "baseline_commit": "842c7d2e7bcd6f772553cd7c71a79aac196ba6f6",
+  "cloud_input_status": "No complete same-batch ELIGIBLE Cloud financial JSON supplied; no actual scores or candidates asserted.",
+  "class_policy_proposal": [
+    {
+      "valuation_class": "mega_cap_tech",
+      "ev_ebitda_base_fit": "STRONG",
+      "ev_revenue_base_fit": "MODERATE",
+      "company_level_base_fit": "MODERATE",
+      "class_rationale": "Profitable operating scale can anchor EBITDA; revenue requires margin/mix evidence.",
+      "rationale": "Profitable operating scale can anchor EBITDA; revenue requires margin/mix evidence.",
+      "preferred_methods": [
+        "EV_EBITDA"
+      ],
+      "allowed_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "blocked_methods": [],
+      "default_aggregation_policy": "WEIGHTED_METHOD_PRIORITY_REQUIRED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "mature_growth",
+      "ev_ebitda_base_fit": "STRONG",
+      "ev_revenue_base_fit": "WEAK",
+      "company_level_base_fit": "MODERATE",
+      "class_rationale": "Mature profits favour EBITDA; sales alone omits operating margin and reinvestment.",
+      "rationale": "Mature profits favour EBITDA; sales alone omits operating margin and reinvestment.",
+      "preferred_methods": [
+        "EV_EBITDA"
+      ],
+      "allowed_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "blocked_methods": [],
+      "default_aggregation_policy": "WEIGHTED_METHOD_PRIORITY_REQUIRED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "semiconductor_growth",
+      "ev_ebitda_base_fit": "MODERATE",
+      "ev_revenue_base_fit": "MODERATE",
+      "company_level_base_fit": "MODERATE",
+      "class_rationale": "Both scale anchors require growth-regime and cycle evidence; agreement is not validation.",
+      "rationale": "Both scale anchors require growth-regime and cycle evidence; agreement is not validation.",
+      "preferred_methods": [],
+      "allowed_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "blocked_methods": [],
+      "default_aggregation_policy": "INSUFFICIENT_EVIDENCE",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "cyclical_semiconductor",
+      "ev_ebitda_base_fit": "WEAK",
+      "ev_revenue_base_fit": "WEAK",
+      "company_level_base_fit": "WEAK",
+      "class_rationale": "Spot EBITDA and sales may share cycle distortion; normalized operating evidence is required.",
+      "rationale": "Spot EBITDA and sales may share cycle distortion; normalized operating evidence is required.",
+      "preferred_methods": [],
+      "allowed_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "blocked_methods": [],
+      "default_aggregation_policy": "INSUFFICIENT_EVIDENCE",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "bank",
+      "ev_ebitda_base_fit": "BLOCKED",
+      "ev_revenue_base_fit": "BLOCKED",
+      "company_level_base_fit": "BLOCKED",
+      "class_rationale": "Funding liabilities and financial assets are operating inputs; ordinary industrial EV bridges are inappropriate.",
+      "rationale": "Funding liabilities and financial assets are operating inputs; ordinary industrial EV bridges are inappropriate.",
+      "preferred_methods": [],
+      "allowed_methods": [],
+      "blocked_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "default_aggregation_policy": "COMPANY_LEVEL_AGGREGATION_NOT_RECOMMENDED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "fintech_exchange",
+      "ev_ebitda_base_fit": "MODERATE",
+      "ev_revenue_base_fit": "WEAK",
+      "company_level_base_fit": "WEAK",
+      "class_rationale": "Operating exchange economics may support EBITDA; balance-sheet exposure and revenue basis require explicit evidence.",
+      "rationale": "Operating exchange economics may support EBITDA; balance-sheet exposure and revenue basis require explicit evidence.",
+      "preferred_methods": [],
+      "allowed_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "blocked_methods": [],
+      "default_aggregation_policy": "WEIGHTED_METHOD_PRIORITY_REQUIRED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "crypto_treasury",
+      "ev_ebitda_base_fit": "BLOCKED",
+      "ev_revenue_base_fit": "BLOCKED",
+      "company_level_base_fit": "BLOCKED",
+      "class_rationale": "Asset/NAV exposure is not anchored by operating EBITDA or sales.",
+      "rationale": "Asset/NAV exposure is not anchored by operating EBITDA or sales.",
+      "preferred_methods": [],
+      "allowed_methods": [],
+      "blocked_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "default_aggregation_policy": "COMPANY_LEVEL_AGGREGATION_NOT_RECOMMENDED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "high_growth_software",
+      "ev_ebitda_base_fit": "WEAK",
+      "ev_revenue_base_fit": "STRONG",
+      "company_level_base_fit": "MODERATE",
+      "class_rationale": "Revenue can describe scalable operating scale; EBITDA may reflect transitional margins/SBC.",
+      "rationale": "Revenue can describe scalable operating scale; EBITDA may reflect transitional margins/SBC.",
+      "preferred_methods": [
+        "EV_REVENUE"
+      ],
+      "allowed_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "blocked_methods": [],
+      "default_aggregation_policy": "WEIGHTED_METHOD_PRIORITY_REQUIRED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "pre_profit_growth",
+      "ev_ebitda_base_fit": "WEAK",
+      "ev_revenue_base_fit": "MODERATE",
+      "company_level_base_fit": "WEAK",
+      "class_rationale": "Positive interpretable revenue can be conditional evidence; nonmeaningful/nonpositive EBITDA is blocked.",
+      "rationale": "Positive interpretable revenue can be conditional evidence; nonmeaningful/nonpositive EBITDA is blocked.",
+      "preferred_methods": [],
+      "allowed_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "blocked_methods": [],
+      "default_aggregation_policy": "WEIGHTED_METHOD_PRIORITY_REQUIRED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "space_optionality",
+      "ev_ebitda_base_fit": "BLOCKED",
+      "ev_revenue_base_fit": "BLOCKED",
+      "company_level_base_fit": "BLOCKED",
+      "class_rationale": "Operating multiples cannot anchor specialized optionality without an explicitly different class policy.",
+      "rationale": "Operating multiples cannot anchor specialized optionality without an explicitly different class policy.",
+      "preferred_methods": [],
+      "allowed_methods": [],
+      "blocked_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "default_aggregation_policy": "COMPANY_LEVEL_AGGREGATION_NOT_RECOMMENDED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "auto_optionality",
+      "ev_ebitda_base_fit": "BLOCKED",
+      "ev_revenue_base_fit": "BLOCKED",
+      "company_level_base_fit": "BLOCKED",
+      "class_rationale": "Specialized optionality requires separate operating/optionality evidence, not company-level multiples.",
+      "rationale": "Specialized optionality requires separate operating/optionality evidence, not company-level multiples.",
+      "preferred_methods": [],
+      "allowed_methods": [],
+      "blocked_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "default_aggregation_policy": "COMPANY_LEVEL_AGGREGATION_NOT_RECOMMENDED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "consumer_platform",
+      "ev_ebitda_base_fit": "MODERATE",
+      "ev_revenue_base_fit": "WEAK",
+      "company_level_base_fit": "WEAK",
+      "class_rationale": "Class raises a question about margin interpretation; actual heterogeneity requires explicit metadata.",
+      "rationale": "Class raises a question about margin interpretation; actual heterogeneity requires explicit metadata.",
+      "preferred_methods": [],
+      "allowed_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "blocked_methods": [],
+      "default_aggregation_policy": "WEIGHTED_METHOD_PRIORITY_REQUIRED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "generic_profitable",
+      "ev_ebitda_base_fit": "STRONG",
+      "ev_revenue_base_fit": "WEAK",
+      "company_level_base_fit": "MODERATE",
+      "class_rationale": "Interpretable recurring profit may support EBITDA; sales needs additional margin evidence.",
+      "rationale": "Interpretable recurring profit may support EBITDA; sales needs additional margin evidence.",
+      "preferred_methods": [
+        "EV_EBITDA"
+      ],
+      "allowed_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "blocked_methods": [],
+      "default_aggregation_policy": "WEIGHTED_METHOD_PRIORITY_REQUIRED",
+      "proposal_only": true,
+      "production_config_modified": false
+    },
+    {
+      "valuation_class": "unsupported_specialized",
+      "ev_ebitda_base_fit": "BLOCKED",
+      "ev_revenue_base_fit": "BLOCKED",
+      "company_level_base_fit": "BLOCKED",
+      "class_rationale": "No governed operating-multiple applicability policy exists for this specialized class.",
+      "rationale": "No governed operating-multiple applicability policy exists for this specialized class.",
+      "preferred_methods": [],
+      "allowed_methods": [],
+      "blocked_methods": [
+        "EV_EBITDA",
+        "EV_REVENUE"
+      ],
+      "default_aggregation_policy": "COMPANY_LEVEL_AGGREGATION_NOT_RECOMMENDED",
+      "proposal_only": true,
+      "production_config_modified": false
+    }
+  ],
+  "score_component_maxima": {
+    "class_fit": 25,
+    "input_quality": 20,
+    "economic_interpretability": 20,
+    "business_mix_fit": 15,
+    "growth_regime_fit": 10,
+    "consistency_support": 10
+  },
+  "company_candidate_policy": {
+    "YES": "Two structurally supported valid direct-input methods, consistent spread, explicit simple mix, no growth mismatch; recommendation only.",
+    "REVIEW": "Conditional but evidenced method suitability; no production integration.",
+    "NO": "Hard blocked, not preferred, missing required evidence or ineligible batch."
+  },
+  "five_stock_post_hoc_observations": [
+    {
+      "ticker": "GOOG",
+      "production_fair_supplied": 253.81,
+      "enterprise_mid_supplied": 246.75,
+      "spread_pct_supplied": 14.64,
+      "source": "user-provided historical Cloud observation; excluded from calculations",
+      "audit_status": "PENDING_ELIGIBLE_CLOUD_INPUT",
+      "ev_ebitda_score": null,
+      "ev_revenue_score": null,
+      "production_candidate": null
+    },
+    {
+      "ticker": "MSFT",
+      "production_fair_supplied": 657.05,
+      "enterprise_mid_supplied": 362.49,
+      "spread_pct_supplied": 55.92,
+      "source": "user-provided historical Cloud observation; excluded from calculations",
+      "audit_status": "PENDING_ELIGIBLE_CLOUD_INPUT",
+      "ev_ebitda_score": null,
+      "ev_revenue_score": null,
+      "production_candidate": null
+    },
+    {
+      "ticker": "ORCL",
+      "production_fair_supplied": 237.75,
+      "enterprise_mid_supplied": 83.54,
+      "spread_pct_supplied": 49.22,
+      "source": "user-provided historical Cloud observation; excluded from calculations",
+      "audit_status": "PENDING_ELIGIBLE_CLOUD_INPUT",
+      "ev_ebitda_score": null,
+      "ev_revenue_score": null,
+      "production_candidate": null
+    },
+    {
+      "ticker": "NVDA",
+      "production_fair_supplied": 358.45,
+      "enterprise_mid_supplied": 153.34,
+      "spread_pct_supplied": 18.71,
+      "source": "user-provided historical Cloud observation; excluded from calculations",
+      "audit_status": "PENDING_ELIGIBLE_CLOUD_INPUT",
+      "ev_ebitda_score": null,
+      "ev_revenue_score": null,
+      "production_candidate": null
+    },
+    {
+      "ticker": "AMZN",
+      "production_fair_supplied": 290.44,
+      "enterprise_mid_supplied": 344.75,
+      "spread_pct_supplied": 43.39,
+      "source": "user-provided historical Cloud observation; excluded from calculations",
+      "audit_status": "PENDING_ELIGIBLE_CLOUD_INPUT",
+      "ev_ebitda_score": null,
+      "ev_revenue_score": null,
+      "production_candidate": null
+    }
+  ],
+  "production_invariants": "Only enterprise_family_suitability sidecar and version marker are appended to copied admin batch. No production module modified.",
+  "tests": {
+    "unittest_count": 799,
+    "failures": 0,
+    "errors": 0,
+    "new_tests": 65,
+    "widget_check": "PASS"
+  },
+  "commit_hash": "Resolve with git log -1 --format=%H -- reports/v49_enterprise_family_suitability_audit.json; final response supplies exact commit."
+}

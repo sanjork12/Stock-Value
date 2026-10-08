@@ -46,7 +46,9 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
         assert all('calibration_eligibility_reasons' in s for s in report['stocks'])
         if report['batch_calibration_eligibility']=='INELIGIBLE':
             assert any('本批次仅用于输入降级诊断，不应用于估值校准。' in w.value for w in app.warning)
-        assert len(app.get('download_button'))==3
+        assert all('enterprise_family_suitability' in s for s in report['stocks'])
+        assert any('V4.9 Enterprise Family Suitability Audit' in e.value for e in app.markdown)
+        assert len(app.get('download_button'))==5
         assert any('V4.6 Reliability Governance Audit' in element.value for element in app.markdown)
         import production_snapshot_admin as admin
         legacy=deepcopy(app.session_state['_v45_export_result'])

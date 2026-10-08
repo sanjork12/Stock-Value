@@ -1,4 +1,5 @@
 """Temporary Cloud production snapshot export; request-local observation only."""
+from enterprise_family_suitability import attach_report, audit_export, csv_export, summary as suitability_summary
 from copy import deepcopy
 from datetime import date,datetime,timezone
 import csv
@@ -247,6 +248,7 @@ def _run_batch_impl(client,user_id,secrets,*,history_loader,fundamentals_loader,
                 else 'UNOBSERVED' if any(s['batch_input_health']=='UNOBSERVED' for s in stocks)
                 else 'PARTIAL' if any(s['batch_input_health']=='PARTIAL' for s in stocks) else 'HEALTHY'}
         report.update(batch_eligibility(stocks,TICKERS))
+        report=attach_report(report)
         return json.loads(snapshot_json(_public(report),_secret_strings(secrets)))
     finally:_LOCK.release()
 
@@ -321,7 +323,7 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
     if not saved:return
     if saved.get('owner')!=str(user_id):
         st.session_state.pop('_v45_export_result',None);return
-    report=prepare_enterprise_report(saved['report'])
+    report=attach_report(prepare_enterprise_report(saved['report']))
     saved['report']=report
     st.session_state['_v45_export_result']=saved
     if report['enterprise_experiment_wiring']['repaired_tickers']:
@@ -382,6 +384,22 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
     for stock in report['stocks']:
         with st.expander(stock['ticker']+' — enterprise-aware inputs / models'):
             st.json(stock.get('enterprise_aware_experiment',{}))
+    st.markdown('**V4.9 Enterprise Family Suitability Audit**')
+    st.caption('DIAGNOSTIC ONLY · 方法适用性不代表估值准确；UNKNOWN 需要证据，不改变 V4.8 聚合。')
+    st.dataframe([suitability_summary(stock) for stock in report['stocks']],hide_index=True,use_container_width=True)
+    for stock in report['stocks']:
+        audit=stock['enterprise_family_suitability']
+        with st.expander(stock['ticker']+' — V4.9 suitability evidence'):
+            st.json({k:audit[k] for k in ('audit_status','enterprise_method_class_policy','ev_ebitda','ev_revenue',
+                'company_level','primary_disagreement_driver','disagreement_driver_evidence','growth_regime_mismatch_flag',
+                'business_mix_warning','capital_intensity_assessment','margin_structure_assessment')})
+            refs=audit['v48_references']
+            st.json({'v48_raw_values':{k:refs.get(k) for k in ('enterprise_family_mid','enterprise_family_confidence','method_spread_pct','difference_vs_earnings_pct')},
+                'method_mids':{k:(refs.get(k) or {}).get('mid') for k in ('ev_ebitda_model','ev_revenue_model')}})
+    st.download_button('下载 V4.9 Suitability JSON',snapshot_json(audit_export(report)),
+        'v49_enterprise_family_suitability_audit.json','application/json',key='v49_export_json')
+    st.download_button('下载 V4.9 Suitability CSV',csv_export(report),
+        'v49_enterprise_family_suitability_audit.csv','text/csv',key='v49_export_csv')
     st.caption('Governance: Applied to production reliability · Scope: Reliability / Confidence / Precise Exit · Fair value effect: None（新生成的 live 治理结果）')
     st.dataframe([{k:a.get(k) for k in ('ticker','source_status','fair_before','fair_after','fair_unchanged',
         'reliability_before','reliability_after','confidence_before','confidence_after','precise_exit_before','precise_exit_after',
