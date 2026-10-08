@@ -63,7 +63,8 @@ def audit_multiples(ticker, financials, valuation_class, provider):
             'raw_peer_count':result.raw_peer_count,'effective_peer_count':result.effective_peer_count,
             'unweighted_q1':result.peer_q1,'unweighted_median':result.peer_median,'unweighted_q3':result.peer_q3,
             'weighted_low':result.weighted_low,'weighted_median':result.weighted_median,'weighted_high':result.weighted_high,
-            'peer_low':result.low,'peer_mid':result.mid,'peer_high':result.high,'confidence':result.confidence})
+            'peer_low':result.low,'peer_mid':result.mid,'peer_high':result.high,'confidence':result.confidence,
+            'weighted_dispersion':result.dispersion})
     return {'control_flow':'continue on insufficient peers; break only on valid valuation; first successful multiple wins',
         'early_exit_on_first_eligible_multiple':False,
         'target_inputs':{k:financials.get(k) for k in ('forward_eps','forward_eps_source','ebitda','revenue','cash','debt','canonical_shares','canonical_shares_source','quote_currency','financial_currency')},

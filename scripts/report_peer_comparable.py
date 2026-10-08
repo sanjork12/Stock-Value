@@ -156,6 +156,10 @@ def build_report(*, provider=None, financial_loader=None, references=None, ticke
         detail['post_data_audit']=audit_multiples(ticker,financials,infer_valuation_class(ticker,financials),provider)
         detail['alternate_valid_multiples']=[a['Multiple'] for a in detail['post_data_audit']['attempts']
             if a['Status']=='VALID' and a['Multiple']!=peer.selected_multiple]
+        from peer_consistency import cross_multiple_consistency
+        detail.update(cross_multiple_consistency(detail))
+        rows[-1].update({k:detail[k] for k in ('consistency_status','valid_multiple_count',
+            'cross_multiple_spread_pct','max_pairwise_difference_pct','peer_production_eligibility','multiple_results')})
         detail['composition']=_composition(peer,provider)
         for member in detail['composition']:member.update(peer.peer_scores.get(member['ticker'],{}))
         detail['multiple_policy']='first valid multiple; alternatives are sequential attempts, never a combined blend'

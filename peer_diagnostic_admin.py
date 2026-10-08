@@ -76,6 +76,8 @@ def run_cloud_peer_diagnostic(client,user_id,secrets,tickers,*,provider=None,int
                             'difference_dollars','difference_pct','peer_error_pct'):row[key]=None
                 row['peer_valid']=False
                 detail.update(valid=False,low=None,mid=None,high=None)
+                detail['peer_production_eligibility']='DIAGNOSTIC_ONLY'
+                row['peer_production_eligibility']='DIAGNOSTIC_ONLY'
             detail['pipeline_trace']=pipeline_trace(detail)
         # Only projected public data reaches session state or downloads.
         return json.loads(snapshot_json(report,_secret_strings(secrets)))
@@ -92,7 +94,11 @@ def summary_rows(report):
              'Peer Eligibility':d.get('eligibility'),'Raw Peers':d.get('raw_peer_count'),
              'Effective Peer Count':d.get('effective_peer_count'),'Unweighted Median':d.get('peer_median'),
              'Weighted Median':d.get('weighted_median'),
-             'Alternate Valid Multiples':';'.join(d.get('alternate_valid_multiples',[]))}
+             'Alternate Valid Multiples':';'.join(d.get('alternate_valid_multiples',[])),
+             **{k:d.get(k) for k in ('consistency_status','valid_multiple_count','multiple_mid_min',
+                'multiple_mid_median','multiple_mid_max','cross_multiple_spread_pct',
+                'max_pairwise_difference_pct','peer_production_eligibility')},
+             'multiple_results':json.dumps(d.get('multiple_results',[]),ensure_ascii=False)}
             for r,d in zip(report['comparison'],report['peer_results'])]
 
 
@@ -190,7 +196,8 @@ def render_peer_diagnostics(st,client,user_id,*,internal_loader=None):
     st.dataframe([{k:v for k,v in a.items() if k not in ('peer_trace','engine_attempts','warnings')}
         for detail in report['peer_results'] for a in detail.get('post_data_audit',{}).get('attempts',[])],
         hide_index=True,use_container_width=True)
-    st.caption('Internal vs Peer % = (Peer Mid / Internal Fair − 1) × 100；benchmark 仅作事后比较。')
+    st.caption('Internal vs Peer % = (Peer Mid / Internal Fair − 1) × 100；benchmark: POST-HOC ONLY。')
+    st.caption('Consistency spread = (max − min) / median × 100；pairwise = |a − b| / ((a + b) / 2) × 100。REVIEW_ELIGIBLE 仅为未来治理状态，不进入 blend。')
     st.dataframe(summary_rows(report),hide_index=True,use_container_width=True)
     for row,detail in zip(report['comparison'],report['peer_results']):
         with st.expander(row['ticker']+' · '+row['diagnostic_status'],expanded=len(report['comparison'])==1):
@@ -204,6 +211,11 @@ def render_peer_diagnostics(st,client,user_id,*,internal_loader=None):
                       'Internal vs Benchmark %':row['internal_error_pct'],'Peer vs Benchmark %':row['peer_error_pct']})
             st.write({k:detail.get(k) for k in ('eligibility','raw_peer_count','effective_peer_count','peer_scores',
                 'peer_median','weighted_low','weighted_median','weighted_high','primary_peer_multiple','alternate_valid_multiples')})
+            st.write({k:detail.get(k) for k in ('consistency_status','valid_multiple_count','multiple_mid_min',
+                'multiple_mid_median','multiple_mid_max','cross_multiple_spread_pct',
+                'max_pairwise_difference_pct','peer_production_eligibility')})
+            if detail.get('multiple_results'):
+                st.dataframe(detail['multiple_results'],hide_index=True,use_container_width=True)
             if detail.get('eligibility')=='NOT_ELIGIBLE' and row['ticker']=='AMZN':
                 st.info('Peer Comparable: Not applicable — heterogeneous business mix')
             if not detail['valid']:st.info('Peer 不可用：'+row['diagnostic_status'])
@@ -222,5 +234,6 @@ def render_peer_diagnostics(st,client,user_id,*,internal_loader=None):
                      'peer_sources':{p['ticker']:p['sources'] for p in detail['composition']},
                      'provenance':detail['provenance']})
     json_data,csv_data=download_payloads(report)
+    st.caption('External benchmarks — POST-HOC ONLY: NVDA 300 · ORCL 180 · AMZN 285 · MSFT 544 · GOOG 345。不参与 consistency、eligibility 或模型计算。')
     st.download_button('下载 Peer JSON',json_data,'cloud_peer_diagnostic.json','application/json',key='peer_diagnostic_json')
     st.download_button('下载 Peer CSV',csv_data,'cloud_peer_diagnostic.csv','text/csv',key='peer_diagnostic_csv')
