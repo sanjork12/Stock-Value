@@ -20,6 +20,7 @@ from calibration_snapshot_guard import calibration_eligibility,batch_eligibility
 from model_family_governance import governance_audit
 from experimental_family_blend import family_blend_experiment,experiment_summary
 from independent_evidence_governance import independent_evidence_audit,EXPORT_FIELDS
+from production_reliability_governance import VERSION as GOVERNANCE_VERSION
 
 _LOCK=threading.Lock()
 _LAST_RUN={}
@@ -202,6 +203,21 @@ def csv_payload(report):
     return buffer.getvalue().encode('utf-8-sig')
 
 
+def governance_audit_rows(report):
+    """Project saved metadata; never reinterpret or rewrite historical policy."""
+    rows=[]
+    for stock in report['stocks']:
+        audit=deepcopy(stock.get('reliability_governance_audit') or {'status':'NO_LIVE_GOVERNANCE_AUDIT'})
+        governance=stock.get('structural_governance') or audit.get('structural_governance') or {}
+        rows.append({'ticker':stock['ticker'],'source_status':stock.get('source_status'),**audit,
+            'governance_status':governance.get('status'),
+            'governance_scope':governance.get('governance_scope'),
+            'fair_value_effect':governance.get('fair_value_effect'),
+            'production_effect':governance.get('production_effect'),
+            'reliability_governance_version':governance.get('reliability_governance_version')})
+    return rows
+
+
 def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loader,display_resolver=None,reference_loader=None):
     if not is_cloud_runtime() or not verified_admin(client,user_id,st.secrets.get('ADMIN_EMAIL')):
         st.session_state.pop('_v45_export_open',None);st.session_state.pop('_v45_export_result',None)
@@ -265,13 +281,14 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
         with st.expander(stock['ticker']+' — independent evidence governance'):
             st.json(evidence)
     st.markdown('**V4.6 Reliability Governance Audit**')
-    audits=[{'ticker':s['ticker'],'source_status':s.get('source_status'),
-        **(s.get('reliability_governance_audit') or {'status':'NO_LIVE_GOVERNANCE_AUDIT'})} for s in report['stocks']]
+    audits=governance_audit_rows(report)
+    st.caption('Governance: Applied to production reliability · Scope: Reliability / Confidence / Precise Exit · Fair value effect: None（新生成的 live 治理结果）')
     st.dataframe([{k:a.get(k) for k in ('ticker','source_status','fair_before','fair_after','fair_unchanged',
-        'reliability_before','reliability_after','confidence_before','confidence_after','precise_exit_before','precise_exit_after')} for a in audits],
+        'reliability_before','reliability_after','confidence_before','confidence_after','precise_exit_before','precise_exit_after',
+        'governance_status','governance_scope','fair_value_effect','production_effect','reliability_governance_version')} for a in audits],
         hide_index=True,use_container_width=True)
     st.download_button('下载 V4.6 Governance JSON',snapshot_json({'batch_id':report['batch_id'],
-        'generated_at':report['generated_at'],'mode':'read_only_diagnostic','reliability_governance_version':'v4.6','stocks':audits}),
+        'generated_at':report['generated_at'],'mode':'read_only_diagnostic','reliability_governance_version':GOVERNANCE_VERSION,'stocks':audits}),
         'v46_cloud_reliability_governance.json','application/json',key='v46_export_json')
     st.download_button('下载 V4.5 JSON',snapshot_json(report),'v45_cloud_production_analysis.json','application/json',key='v45_export_json')
     st.download_button('下载模型贡献 CSV',csv_payload(report),'v45_cloud_model_contributions.csv','text/csv',key='v45_export_csv')

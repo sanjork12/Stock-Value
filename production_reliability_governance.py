@@ -3,7 +3,14 @@ from copy import deepcopy
 from independent_evidence_governance import independent_evidence_audit
 from valuation_primitives import fnum
 
-VERSION='v4.6'
+VERSION='v4.6.1'
+APPLIED_METADATA={
+    'status':'APPLIED_TO_PRODUCTION_RELIABILITY',
+    'governance_scope':'RELIABILITY_CONFIDENCE_AND_EXIT',
+    'fair_value_effect':'NONE',
+    'production_effect':'RELIABILITY_CONFIDENCE_PRECISE_EXIT',
+    'governance_input_source':'V4.5_STRUCTURAL_GOVERNANCE',
+}
 SEVERITY_RANK={'NONE':0,'LOW':1,'MODERATE':2,'HIGH':3,'CRITICAL':4}
 PENALTIES={'NONE':0,'LOW':-5,'MODERATE':-10,'HIGH':-15,'CRITICAL':-20}
 CEILINGS={'NONE':'NONE','LOW':'HIGH','MODERATE':'MEDIUM','HIGH':'MEDIUM','CRITICAL':'LOW'}
@@ -92,6 +99,7 @@ def govern_blend(ticker,financials,blend):
     rel=out.get('reliability') or {}
     structural=evaluate_structural_governance(g,rel.get('penalties') or [])
     structural['scope']='PRODUCTION_RELIABILITY_CONFIDENCE_AND_EXIT_ONLY'
+    structural.update(APPLIED_METADATA)
     before_score=fnum(rel.get('reliability_score'));before_conf=out.get('confidence')
     score=max(0,min(100,before_score+structural['total_structural_penalty'])) if before_score is not None else None
     # Reuse the unchanged production score thresholds and then apply the ceiling.

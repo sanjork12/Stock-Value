@@ -129,7 +129,7 @@ class ProductionGovernanceTests(unittest.TestCase):
 
     def test_persistence_governance_and_version(self):
         r=analyze('AMZN');record=build_snapshot_record('owner',r)
-        self.assertEqual(record['raw']['reliability_governance_version'],'v4.6')
+        self.assertEqual(record['raw']['reliability_governance_version'],'v4.6.1')
         self.assertEqual(record['raw']['structural_governance'],r['blend']['structural_governance'])
         restored=reconstruct_blend_from_snapshot(record)
         self.assertEqual(restored['structural_governance'],r['blend']['structural_governance'])
