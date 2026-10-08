@@ -83,12 +83,14 @@ def readonly_display(live,load_snapshot):
 
 
 def capture_analysis(ticker,*,history_loader,fundamentals_loader,display_resolver=None):
+    from reporting_basis_resolution import observe_reporting, capture_snapshot as reporting_snapshot
     from enterprise_evidence_closure import observe_basis
     observed={}
     def observed_fundamentals(t):
-        with observe_enterprise_statements(t) as historical, observe_basis(t) as basis_capture:
+        with observe_enterprise_statements(t) as historical, observe_basis(t) as basis_capture, observe_reporting(t) as reporting:
             result=fundamentals_loader(t)
         observed['metric_basis_evidence']=deepcopy(basis_capture)
+        observed['reporting_basis_evidence']=deepcopy(reporting)
         observed['historical_evidence']=deepcopy(historical)
         observed['acquired_inputs']=deepcopy(result)
         return result
@@ -125,6 +127,7 @@ def capture_analysis(ticker,*,history_loader,fundamentals_loader,display_resolve
     stock['metric_basis_evidence_snapshot']=deepcopy(observed.get('metric_basis_evidence') or {})
     stock['metric_basis_evidence_snapshot'].update({k:(stock.get('normalized_inputs') or {}).get(k)
         for k in ('input_batch_id','fundamentals_acquisition_id')})
+    stock['reporting_basis_evidence_snapshot']=reporting_snapshot(stock,observed.get('reporting_basis_evidence'))
     stock['production_input_trace']=build_trace(ticker,observed.get('acquired_inputs') or {},
         observed.get('normalized_inputs') or {},stock.get('normalized_inputs') or {})
     return stock
@@ -475,6 +478,27 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
                 'v51_enterprise_evidence_closure.csv','text/csv',key='v51_export_csv')
     else:
         st.caption('请先运行当前批次 V5.0 Evidence Completion。')
+    from reporting_basis_resolution import resolve_report, summary as reporting_summary, export_report as reporting_export, export_csv as reporting_csv
+    st.markdown('**Reporting Basis Resolution Audit**')
+    st.caption('V5.2 · DIAGNOSTIC ONLY · 仅同批已加载数据；季度报表未加载时保持 unresolved。')
+    if report.get('enterprise_evidence_closure_version')=='v5.1':
+        if st.button('运行 V5.2 Reporting Basis Resolution',key='v52_reporting_run'):
+            saved['report']=resolve_report(report)
+            st.session_state['_v45_export_result']=saved
+            report=saved['report']
+        if report.get('reporting_basis_resolution_version')=='v5.2':
+            if any(not stock['reporting_basis_resolution']['formal_conclusion_allowed'] for stock in report['stocks']):
+                st.warning('V5.2 输入状态或身份尚不合格：仅展示证据结构，不生成正式校准结论。')
+            st.dataframe([reporting_summary(stock) for stock in report['stocks']],hide_index=True,use_container_width=True)
+            for stock in report['stocks']:
+                with st.expander(stock['ticker']+' — V5.2 reporting metadata / resolution / bridge'):
+                    st.json(stock['reporting_basis_resolution'])
+            st.download_button('下载 V5.2 Reporting JSON',snapshot_json(reporting_export(report)),
+                'v52_reporting_basis_resolution.json','application/json',key='v52_export_json')
+            st.download_button('下载 V5.2 Reporting CSV',reporting_csv(report),
+                'v52_reporting_basis_resolution.csv','text/csv',key='v52_export_csv')
+    else:
+        st.caption('请先运行同批 V5.0 和 V5.1。')
     st.caption('Governance: Applied to production reliability · Scope: Reliability / Confidence / Precise Exit · Fair value effect: None（新生成的 live 治理结果）')
     st.dataframe([{k:a.get(k) for k in ('ticker','source_status','fair_before','fair_after','fair_unchanged',
         'reliability_before','reliability_after','confidence_before','confidence_after','precise_exit_before','precise_exit_after',

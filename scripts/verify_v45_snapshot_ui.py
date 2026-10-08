@@ -79,6 +79,15 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
             assert old['live_blend']==new['live_blend']
             assert old['enterprise_structural_evidence']==new['enterprise_structural_evidence']
             assert new['enterprise_evidence_closure']['telemetry']['added_provider_calls']==0
+        with patch.object(admin,'capture_analysis',side_effect=AssertionError('V5.2 must not fetch')):
+            next(b for b in app.button if b.label=='运行 V5.2 Reporting Basis Resolution').click().run()
+        assert not app.exception
+        v52=app.session_state['_v45_export_result']['report']
+        assert v52['batch_id']==v51['batch_id'] and len(app.get('download_button'))==11
+        for old,new in zip(v51['stocks'],v52['stocks']):
+            assert old['normalized_inputs']==new['normalized_inputs'] and old['live_blend']==new['live_blend']
+            assert old['enterprise_evidence_closure']==new['enterprise_evidence_closure']
+            assert new['reporting_basis_resolution']['telemetry']['added_provider_calls']==0
         previous_batch=app.session_state['_v45_export_result']['report']['batch_id']
         admin._LAST_RUN.clear()
         next(b for b in app.button if b.label=='运行五股生产分析快照').click().run()

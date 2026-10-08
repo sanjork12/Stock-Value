@@ -1,0 +1,222 @@
+{
+  "version": "v5.2",
+  "mode": "DIAGNOSTIC_ONLY",
+  "frozen_baseline_commit": "3ac5355ee4c862575c7dfe750025569bb1f10176",
+  "user_reported_cloud_batch": "8413002d-fde6-444f-8837-9e42f17506fd",
+  "cloud_acceptance_status": "PENDING_NEW_CLOUD_EXPORT",
+  "stocks": [
+    {
+      "ticker": "GOOG",
+      "v51_reported_coverage_before": 67.5,
+      "v51_reported_coverage_after": 67.5,
+      "reported_metric_basis_component": 0,
+      "reported_business_mix_component": 0,
+      "v52_basis_results": null,
+      "v52_coverage_after": null,
+      "v49_after": null,
+      "status": "PENDING_SAME_BATCH_METADATA_AND_STATEMENTS"
+    },
+    {
+      "ticker": "MSFT",
+      "v51_reported_coverage_before": 67.5,
+      "v51_reported_coverage_after": 67.5,
+      "reported_metric_basis_component": 0,
+      "reported_business_mix_component": 0,
+      "v52_basis_results": null,
+      "v52_coverage_after": null,
+      "v49_after": null,
+      "status": "PENDING_SAME_BATCH_METADATA_AND_STATEMENTS"
+    },
+    {
+      "ticker": "ORCL",
+      "v51_reported_coverage_before": 67.5,
+      "v51_reported_coverage_after": 67.5,
+      "reported_metric_basis_component": 0,
+      "reported_business_mix_component": 0,
+      "v52_basis_results": null,
+      "v52_coverage_after": null,
+      "v49_after": null,
+      "status": "PENDING_SAME_BATCH_METADATA_AND_STATEMENTS"
+    },
+    {
+      "ticker": "NVDA",
+      "v51_reported_coverage_before": 67.5,
+      "v51_reported_coverage_after": 67.5,
+      "reported_metric_basis_component": 0,
+      "reported_business_mix_component": 0,
+      "v52_basis_results": null,
+      "v52_coverage_after": null,
+      "v49_after": null,
+      "status": "PENDING_SAME_BATCH_METADATA_AND_STATEMENTS"
+    },
+    {
+      "ticker": "AMZN",
+      "v51_reported_coverage_before": 67.5,
+      "v51_reported_coverage_after": 67.5,
+      "reported_metric_basis_component": 0,
+      "reported_business_mix_component": 0,
+      "v52_basis_results": null,
+      "v52_coverage_after": null,
+      "v49_after": null,
+      "status": "PENDING_SAME_BATCH_METADATA_AND_STATEMENTS"
+    }
+  ],
+  "architecture": {
+    "capture": "Opt-in whitelist observation of already-loaded canonical payload and statement frames",
+    "added_provider_calls": 0,
+    "quarterly_requests": "Never added; unavailable frames explicitly remain unresolved",
+    "current_identity": "Same ticker/input_batch_id/fundamentals_acquisition_id; mismatches prevent formal conclusions",
+    "v49_reuse": "Original suitability/method code with private method-specific basis adaptation; no global monkeypatch or scoring edits",
+    "production_values": "Never replaced; reference and current values exported separately"
+  },
+  "policies": {
+    "ttm_match_strong_max": 0.05,
+    "ttm_match_moderate_max": 0.1,
+    "quarters_required": 4,
+    "quarter_gap_days": [
+      75,
+      105
+    ],
+    "cash_debt_near_max": 0.05,
+    "stock_material_difference_min": 0.15,
+    "timing_days": [
+      120,
+      270,
+      550
+    ],
+    "metric_basis_full_credit": 10,
+    "metric_basis_partial_credit": 5,
+    "metric_basis_no_credit": 0,
+    "ambiguity": "Preserve competing plausible TTM/FY evidence; no forced resolution"
+  },
+  "coverage": "Only Metric Basis can change, starting from saved V5.1 score/component; Business Mix unchanged",
+  "production_invariants": [
+    {
+      "file": "valuation_engine.py",
+      "unchanged": true,
+      "baseline_sha256": "f25b7bbb5c9ca0fc3b99dc6ffaa55dd14bdbb4bb518937dde09f73084c167430",
+      "current_sha256": "f25b7bbb5c9ca0fc3b99dc6ffaa55dd14bdbb4bb518937dde09f73084c167430"
+    },
+    {
+      "file": "valuation_primitives.py",
+      "unchanged": true,
+      "baseline_sha256": "7d2c551b7ee5321869b3147dc06cd6a5aadbf00e90481afec2fb67315b62b83a",
+      "current_sha256": "7d2c551b7ee5321869b3147dc06cd6a5aadbf00e90481afec2fb67315b62b83a"
+    },
+    {
+      "file": "financial_normalization.py",
+      "unchanged": true,
+      "baseline_sha256": "6273f6ca22e142173faf521710bae32673ed05b2015ab8af63fd5ebffa4dd35f",
+      "current_sha256": "6273f6ca22e142173faf521710bae32673ed05b2015ab8af63fd5ebffa4dd35f"
+    },
+    {
+      "file": "analysis_service.py",
+      "unchanged": true,
+      "baseline_sha256": "8d0634adb97cd57a1e8098d5dcdcaf8b9a0cf5c4d6a7ff6adc5d7141cb00f84e",
+      "current_sha256": "8d0634adb97cd57a1e8098d5dcdcaf8b9a0cf5c4d6a7ff6adc5d7141cb00f84e"
+    },
+    {
+      "file": "calibration_snapshot_guard.py",
+      "unchanged": true,
+      "baseline_sha256": "99704d73ed08a833c68b8018af4bc1191a7b1b954ba9de163b3e18016a918be9",
+      "current_sha256": "99704d73ed08a833c68b8018af4bc1191a7b1b954ba9de163b3e18016a918be9"
+    },
+    {
+      "file": "enterprise_evidence.py",
+      "unchanged": true,
+      "baseline_sha256": "aada0a02e74a6b62ecab3985b5f469e21fd0e8278bcb6b3a8d656c6d0787f3df",
+      "current_sha256": "aada0a02e74a6b62ecab3985b5f469e21fd0e8278bcb6b3a8d656c6d0787f3df"
+    },
+    {
+      "file": "enterprise_evidence_policy.py",
+      "unchanged": true,
+      "baseline_sha256": "e5c7baed4e78088f692d09f69f35a31c2fc1211601448c56972f77fe16e11e1f",
+      "current_sha256": "e5c7baed4e78088f692d09f69f35a31c2fc1211601448c56972f77fe16e11e1f"
+    },
+    {
+      "file": "enterprise_evidence_closure.py",
+      "unchanged": true,
+      "baseline_sha256": "e9e5a3c1a5ad62d1c6c313a112d6e305fd87739e913073ba03fc5435e7234ecd",
+      "current_sha256": "e9e5a3c1a5ad62d1c6c313a112d6e305fd87739e913073ba03fc5435e7234ecd"
+    },
+    {
+      "file": "enterprise_evidence_closure_policy.py",
+      "unchanged": true,
+      "baseline_sha256": "5e26295ea6bfef566dedc8ef07b03f31d308cb92c1996970674ed02377fccfd2",
+      "current_sha256": "5e26295ea6bfef566dedc8ef07b03f31d308cb92c1996970674ed02377fccfd2"
+    },
+    {
+      "file": "enterprise_family_suitability.py",
+      "unchanged": true,
+      "baseline_sha256": "65bc8ab9791062bc998eefd1bc4b0ffe53b90f1d5b7a8cad1d48bb6a8ff0b917",
+      "current_sha256": "65bc8ab9791062bc998eefd1bc4b0ffe53b90f1d5b7a8cad1d48bb6a8ff0b917"
+    },
+    {
+      "file": "enterprise_aware_experiment.py",
+      "unchanged": true,
+      "baseline_sha256": "8f73a9cfd5c3e70543f6b8da13abd6310a547359949ce24115672acf84b778d8",
+      "current_sha256": "8f73a9cfd5c3e70543f6b8da13abd6310a547359949ce24115672acf84b778d8"
+    },
+    {
+      "file": "capital_structure_overlay.py",
+      "unchanged": true,
+      "baseline_sha256": "87d9839b604d3da51a34f046e34d5b5930c0d1d4e360ab28f4b224017642f0d9",
+      "current_sha256": "87d9839b604d3da51a34f046e34d5b5930c0d1d4e360ab28f4b224017642f0d9"
+    },
+    {
+      "file": "last_reliable_valuation.py",
+      "unchanged": true,
+      "baseline_sha256": "b4a1d5631756474bb992960fa1b65858ed1d0438c0a1248019ac185d76d6d23c",
+      "current_sha256": "b4a1d5631756474bb992960fa1b65858ed1d0438c0a1248019ac185d76d6d23c"
+    },
+    {
+      "file": "peer_comparable.py",
+      "unchanged": true,
+      "baseline_sha256": "872ee9d6701ea38abb1384c0837fc3baa68a1fa3abcf0bb9ab0e9c49a782eea4",
+      "current_sha256": "872ee9d6701ea38abb1384c0837fc3baa68a1fa3abcf0bb9ab0e9c49a782eea4"
+    },
+    {
+      "file": "mag7_monitor.py",
+      "unchanged": true,
+      "baseline_sha256": "40346405bdd04feb064a4da0de38ea81bb48657b0e1a282f56abe358435821bc",
+      "current_sha256": "40346405bdd04feb064a4da0de38ea81bb48657b0e1a282f56abe358435821bc"
+    },
+    {
+      "file": "fundamental_acquisition.py",
+      "unchanged": true,
+      "baseline_sha256": "d878d9029a4d27f23b808eb0a1293f7ac2aedec8045998a44189612aaa579657",
+      "current_sha256": "d878d9029a4d27f23b808eb0a1293f7ac2aedec8045998a44189612aaa579657"
+    },
+    {
+      "file": "provider_recovery.py",
+      "unchanged": true,
+      "baseline_sha256": "41cd8f65d61f2bc98132c34a7e8a6af318efc6ec618c89ae98f995d3972afb97",
+      "current_sha256": "41cd8f65d61f2bc98132c34a7e8a6af318efc6ec618c89ae98f995d3972afb97"
+    },
+    {
+      "file": "production_input_wiring.py",
+      "unchanged": true,
+      "baseline_sha256": "93ef2edaec322450c3a049fc889f61868e6a51a2bba9c9761b67acc83a42e105",
+      "current_sha256": "93ef2edaec322450c3a049fc889f61868e6a51a2bba9c9761b67acc83a42e105"
+    }
+  ],
+  "tests": {
+    "new": 60,
+    "total": 1048,
+    "failures": 0,
+    "errors": 0,
+    "streamlit_widget_check": "PASS",
+    "diff_check": "PASS"
+  },
+  "cloud_steps": [
+    "Run new five-stock production snapshot once",
+    "Confirm ELIGIBLE",
+    "Run V5.0 then V5.1 then V5.2",
+    "Download v52_reporting_basis_resolution.json/CSV",
+    "Check identities and zero added provider calls",
+    "Review per-metric evidence and method-specific compatibility",
+    "Review coverage and V4.9 deltas plus production invariants"
+  ],
+  "v53_recommendation": "Governed Segment / Business Structure Evidence; recommend only, not implemented",
+  "commit_hash": "Implementation commit includes this report; retrieve with git log -1 -- reports/v52_reporting_basis_resolution.json"
+}

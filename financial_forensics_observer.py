@@ -53,6 +53,8 @@ def observe_financial_inputs():
 
 
 def observe_info(path,raw,status='AVAILABLE'):
+    from reporting_basis_resolution import observe_provider
+    observe_provider(path,raw)
     data=_OBSERVER.get()
     if data is None:return
     try:
@@ -69,6 +71,8 @@ def observe_info(path,raw,status='AVAILABLE'):
 
 
 def observe_statement(stage,path,frame,status='AVAILABLE'):
+    from reporting_basis_resolution import observe_statement as observe_reporting_statement
+    observe_reporting_statement(stage,path,frame)
     from enterprise_evidence_closure import observe_statement as observe_basis_statement
     observe_basis_statement(stage,path,frame)
     # Independent opt-in diagnostic observer; consumes the already loaded frame only.
