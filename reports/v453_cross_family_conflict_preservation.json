@@ -1,0 +1,911 @@
+{
+  "version": "V4.5.3",
+  "scope": "DIAGNOSTIC_GOVERNANCE_ONLY",
+  "evidence_note": "Default input replays approximate supplied Cloud observations, not a new Cloud execution. Missing EPS/capital inputs remain unknown.",
+  "stocks": [
+    {
+      "ticker": "GOOG",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "experimental_family_blend": {
+        "status": "MULTI_FAMILY_EXPERIMENT",
+        "production_fair": 253.81,
+        "active_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "executed_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "family_count": 2,
+        "family_representatives": {
+          "EARNINGS_MULTIPLE": {
+            "family": "EARNINGS_MULTIPLE",
+            "member_models": [
+              "forward_pe",
+              "growth_adjusted_pe"
+            ],
+            "members": [
+              {
+                "model": "forward_pe",
+                "mid": 348.83,
+                "low": null,
+                "high": null,
+                "base_weight": 0.35,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.5833333333333334
+              },
+              {
+                "model": "growth_adjusted_pe",
+                "mid": 303.33,
+                "low": null,
+                "high": null,
+                "base_weight": 0.25,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.4166666666666667
+              }
+            ],
+            "raw_model_count": 2,
+            "effective_model_count": 1.25,
+            "family_effective_model_count": 1.25,
+            "family_mid": 329.87166666666667,
+            "family_low": null,
+            "family_high": null,
+            "correlation_adjusted_family_mid": 329.87166666666667,
+            "family_base_weight_sum": 0.6,
+            "dependency_penalty": 0.375,
+            "family_dependency_penalty": 0.375,
+            "evidence_strength": 0.85,
+            "family_evidence_strength": 0.85
+          },
+          "CASH_FLOW_INTRINSIC": {
+            "family": "CASH_FLOW_INTRINSIC",
+            "member_models": [
+              "normalized_fcf_dcf"
+            ],
+            "members": [
+              {
+                "model": "normalized_fcf_dcf",
+                "mid": 139.72,
+                "low": null,
+                "high": null,
+                "base_weight": 0.4,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 1.0
+              }
+            ],
+            "raw_model_count": 1,
+            "effective_model_count": 1.0,
+            "family_effective_model_count": 1.0,
+            "family_mid": 139.72,
+            "family_low": null,
+            "family_high": null,
+            "correlation_adjusted_family_mid": 139.72,
+            "family_base_weight_sum": 0.4,
+            "dependency_penalty": 0.0,
+            "family_dependency_penalty": 0.0,
+            "evidence_strength": 0.7,
+            "family_evidence_strength": 0.7
+          }
+        },
+        "family_effective_model_count": {
+          "EARNINGS_MULTIPLE": 1.25,
+          "CASH_FLOW_INTRINSIC": 1.0
+        },
+        "family_evidence_strength": {
+          "EARNINGS_MULTIPLE": 0.85,
+          "CASH_FLOW_INTRINSIC": 0.7
+        },
+        "strategy_a_current_weight_aggregated": {
+          "fair": 253.811,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 0.6,
+            "CASH_FLOW_INTRINSIC": 0.4
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 0.6,
+            "CASH_FLOW_INTRINSIC": 0.4
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.6,
+            "CASH_FLOW_INTRINSIC": 0.4
+          },
+          "difference_vs_production_pct": 0.0003939955084630853,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "strategy_b_equal_family": {
+          "fair": 234.79583333333335,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 0.5,
+            "CASH_FLOW_INTRINSIC": 0.5
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 0.5,
+            "CASH_FLOW_INTRINSIC": 0.5
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0,
+            "CASH_FLOW_INTRINSIC": 1.0
+          },
+          "difference_vs_production_pct": -7.491496263609254,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "strategy_c_evidence_adjusted": {
+          "fair": 262.4761392405063,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 0.6455696202531646,
+            "CASH_FLOW_INTRINSIC": 0.3544303797468354
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 0.6455696202531646,
+            "CASH_FLOW_INTRINSIC": 0.3544303797468354
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.4335,
+            "CASH_FLOW_INTRINSIC": 0.23799999999999996
+          },
+          "difference_vs_production_pct": 3.414419936372215,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "experimental_current_weight_aggregated": 253.811,
+        "experimental_equal_family": 234.79583333333335,
+        "experimental_evidence_adjusted": 262.4761392405063,
+        "cross_family_governance_modifier": 0.85,
+        "family_conflict_flag": true,
+        "conflict_preserving_blend": true,
+        "family_weighting_sensitivity": "LOW_SENSITIVITY",
+        "production_family_suppressed": false,
+        "suppressed_family": [],
+        "suppression_reason": {},
+        "experimental_restored": false,
+        "single_family_numeric_stability": false,
+        "family_confidence_cap_recommended": false,
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "family_weighting_governance": "CROSS_FAMILY_CONFLICT_REQUIRES_REVIEW",
+        "limitation": "Family weighting cannot introduce independent evidence or repair a missing capital-structure/cashflow model.",
+        "scope": "EXPERIMENT_ONLY_NEVER_PRODUCTION_INPUT"
+      },
+      "independent_evidence_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 2,
+        "observed_family_count": 2,
+        "independent_family_count": 2,
+        "effective_independent_model_count": 2.25,
+        "observed_effective_independent_model_count": 2.25,
+        "family_suppression_status": "NONE",
+        "suppressed_families": [],
+        "suppressed_models": [],
+        "suppression_materiality": "NOT_APPLICABLE",
+        "suppressed_family_materiality": "NOT_APPLICABLE",
+        "production_vs_conflict_preserving_difference_pct": null,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "DIVERSIFIED_EVIDENCE",
+        "correlated_family_dominance": false,
+        "production_fair_dependency": "DIVERSIFIED",
+        "structural_gaps": [],
+        "cross_family_status": "CROSS_FAMILY_DISAGREEMENT",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "CROSS_FAMILY_CONFLICT",
+        "cross_family_conflict_preservation_required": false,
+        "hypothetical_guard_action": "REVIEW_ONLY",
+        "structural_valuation_readiness": "ACCEPTABLE_WITH_CONFLICT",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT"
+      }
+    },
+    {
+      "ticker": "MSFT",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "experimental_family_blend": {
+        "status": "MULTI_FAMILY_EXPERIMENT",
+        "production_fair": 657.05,
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "executed_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "family_count": 2,
+        "family_representatives": {
+          "EARNINGS_MULTIPLE": {
+            "family": "EARNINGS_MULTIPLE",
+            "member_models": [
+              "forward_pe",
+              "growth_adjusted_pe"
+            ],
+            "members": [
+              {
+                "model": "forward_pe",
+                "mid": 686.64,
+                "low": null,
+                "high": null,
+                "base_weight": 0.35,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.5833333333333334
+              },
+              {
+                "model": "growth_adjusted_pe",
+                "mid": 615.61,
+                "low": null,
+                "high": null,
+                "base_weight": 0.25,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.4166666666666667
+              }
+            ],
+            "raw_model_count": 2,
+            "effective_model_count": 1.25,
+            "family_effective_model_count": 1.25,
+            "family_mid": 657.0441666666667,
+            "family_low": null,
+            "family_high": null,
+            "correlation_adjusted_family_mid": 657.0441666666667,
+            "family_base_weight_sum": 0.6,
+            "dependency_penalty": 0.375,
+            "family_dependency_penalty": 0.375,
+            "evidence_strength": 0.85,
+            "family_evidence_strength": 0.85
+          },
+          "CASH_FLOW_INTRINSIC": {
+            "family": "CASH_FLOW_INTRINSIC",
+            "member_models": [
+              "normalized_fcf_dcf"
+            ],
+            "members": [
+              {
+                "model": "normalized_fcf_dcf",
+                "mid": 203.34,
+                "low": null,
+                "high": null,
+                "base_weight": 0.4,
+                "production_included": false,
+                "restored_outlier_only": true,
+                "family_internal_share": 1.0
+              }
+            ],
+            "raw_model_count": 1,
+            "effective_model_count": 1.0,
+            "family_effective_model_count": 1.0,
+            "family_mid": 203.34,
+            "family_low": null,
+            "family_high": null,
+            "correlation_adjusted_family_mid": 203.34,
+            "family_base_weight_sum": 0.4,
+            "dependency_penalty": 0.0,
+            "family_dependency_penalty": 0.0,
+            "evidence_strength": 0.7,
+            "family_evidence_strength": 0.7
+          }
+        },
+        "family_effective_model_count": {
+          "EARNINGS_MULTIPLE": 1.25,
+          "CASH_FLOW_INTRINSIC": 1.0
+        },
+        "family_evidence_strength": {
+          "EARNINGS_MULTIPLE": 0.85,
+          "CASH_FLOW_INTRINSIC": 0.7
+        },
+        "strategy_a_current_weight_aggregated": {
+          "fair": 475.5625,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 0.6,
+            "CASH_FLOW_INTRINSIC": 0.4
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 0.6,
+            "CASH_FLOW_INTRINSIC": 0.4
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.6,
+            "CASH_FLOW_INTRINSIC": 0.4
+          },
+          "difference_vs_production_pct": -27.62156609086066,
+          "family_weighting_sensitivity": "HIGH_SENSITIVITY"
+        },
+        "strategy_b_equal_family": {
+          "fair": 430.19208333333336,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 0.5,
+            "CASH_FLOW_INTRINSIC": 0.5
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 0.5,
+            "CASH_FLOW_INTRINSIC": 0.5
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0,
+            "CASH_FLOW_INTRINSIC": 1.0
+          },
+          "difference_vs_production_pct": -34.52673566192323,
+          "family_weighting_sensitivity": "HIGH_SENSITIVITY"
+        },
+        "strategy_c_evidence_adjusted": {
+          "fair": 496.2376265822785,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 0.6455696202531646,
+            "CASH_FLOW_INTRINSIC": 0.3544303797468354
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 0.6455696202531646,
+            "CASH_FLOW_INTRINSIC": 0.3544303797468354
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.4335,
+            "CASH_FLOW_INTRINSIC": 0.23799999999999996
+          },
+          "difference_vs_production_pct": -24.47490653949037,
+          "family_weighting_sensitivity": "MODERATE_SENSITIVITY"
+        },
+        "experimental_current_weight_aggregated": 475.5625,
+        "experimental_equal_family": 430.19208333333336,
+        "experimental_evidence_adjusted": 496.2376265822785,
+        "cross_family_governance_modifier": 0.85,
+        "family_conflict_flag": true,
+        "conflict_preserving_blend": true,
+        "family_weighting_sensitivity": "HIGH_SENSITIVITY",
+        "production_family_suppressed": true,
+        "suppressed_family": [
+          "CASH_FLOW_INTRINSIC"
+        ],
+        "suppression_reason": {
+          "normalized_fcf_dcf": "outlier_vs_other_models"
+        },
+        "experimental_restored": true,
+        "single_family_numeric_stability": false,
+        "family_confidence_cap_recommended": false,
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "family_weighting_governance": "CROSS_FAMILY_CONFLICT_REQUIRES_REVIEW",
+        "limitation": "Family weighting cannot introduce independent evidence or repair a missing capital-structure/cashflow model.",
+        "scope": "EXPERIMENT_ONLY_NEVER_PRODUCTION_INPUT"
+      },
+      "independent_evidence_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 1,
+        "observed_family_count": 2,
+        "independent_family_count": 2,
+        "effective_independent_model_count": 1.25,
+        "observed_effective_independent_model_count": 2.25,
+        "family_suppression_status": "INDEPENDENT_FAMILY_SUPPRESSED",
+        "suppressed_families": [
+          "CASH_FLOW_INTRINSIC"
+        ],
+        "suppressed_models": [
+          {
+            "model": "normalized_fcf_dcf",
+            "family": "CASH_FLOW_INTRINSIC",
+            "reason": "outlier_vs_other_models"
+          }
+        ],
+        "suppression_materiality": "HIGH",
+        "suppressed_family_materiality": "HIGH",
+        "production_vs_conflict_preserving_difference_pct": 32.40632406802349,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "DIVERSIFIED_BUT_SUPPRESSED",
+        "correlated_family_dominance": true,
+        "production_fair_dependency": "SUPPRESSED_CROSS_FAMILY_CONFLICT",
+        "structural_gaps": [],
+        "cross_family_status": "CROSS_FAMILY_DISAGREEMENT",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+        "cross_family_conflict_preservation_required": true,
+        "hypothetical_guard_action": "REQUIRE_CROSS_FAMILY_REVIEW",
+        "structural_valuation_readiness": "CROSS_FAMILY_CONFLICT_SUPPRESSED",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT"
+      }
+    },
+    {
+      "ticker": "ORCL",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "experimental_family_blend": {
+        "status": "SINGLE_FAMILY_EXPERIMENT",
+        "production_fair": 237.75,
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "executed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "family_count": 1,
+        "family_representatives": {
+          "EARNINGS_MULTIPLE": {
+            "family": "EARNINGS_MULTIPLE",
+            "member_models": [
+              "forward_pe",
+              "growth_adjusted_pe"
+            ],
+            "members": [
+              {
+                "model": "forward_pe",
+                "mid": 241.98,
+                "low": null,
+                "high": null,
+                "base_weight": 0.4,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.6153846153846154
+              },
+              {
+                "model": "growth_adjusted_pe",
+                "mid": 230.98,
+                "low": null,
+                "high": null,
+                "base_weight": 0.25,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.3846153846153846
+              }
+            ],
+            "raw_model_count": 2,
+            "effective_model_count": 1.25,
+            "family_effective_model_count": 1.25,
+            "family_mid": 237.74923076923076,
+            "family_low": null,
+            "family_high": null,
+            "correlation_adjusted_family_mid": 237.74923076923076,
+            "family_base_weight_sum": 0.65,
+            "dependency_penalty": 0.375,
+            "family_dependency_penalty": 0.375,
+            "evidence_strength": 0.85,
+            "family_evidence_strength": 0.85
+          }
+        },
+        "family_effective_model_count": {
+          "EARNINGS_MULTIPLE": 1.25
+        },
+        "family_evidence_strength": {
+          "EARNINGS_MULTIPLE": 0.85
+        },
+        "strategy_a_current_weight_aggregated": {
+          "fair": 237.74923076923076,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.65
+          },
+          "difference_vs_production_pct": -0.0003235460648731703,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "strategy_b_equal_family": {
+          "fair": 237.74923076923076,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "difference_vs_production_pct": -0.0003235460648731703,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "strategy_c_evidence_adjusted": {
+          "fair": 237.74923076923076,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.5525
+          },
+          "difference_vs_production_pct": -0.0003235460648731703,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "experimental_current_weight_aggregated": 237.74923076923076,
+        "experimental_equal_family": 237.74923076923076,
+        "experimental_evidence_adjusted": 237.74923076923076,
+        "cross_family_governance_modifier": 1.0,
+        "family_conflict_flag": false,
+        "conflict_preserving_blend": true,
+        "family_weighting_sensitivity": "LOW_SENSITIVITY",
+        "production_family_suppressed": false,
+        "suppressed_family": [],
+        "suppression_reason": {},
+        "experimental_restored": false,
+        "single_family_numeric_stability": true,
+        "family_confidence_cap_recommended": false,
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "family_weighting_governance": "SINGLE_FAMILY_LIMITATION",
+        "limitation": "Family weighting cannot introduce independent evidence or repair a missing capital-structure/cashflow model.",
+        "scope": "EXPERIMENT_ONLY_NEVER_PRODUCTION_INPUT"
+      },
+      "independent_evidence_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 1,
+        "observed_family_count": 1,
+        "independent_family_count": 1,
+        "effective_independent_model_count": 1.25,
+        "observed_effective_independent_model_count": 1.25,
+        "family_suppression_status": "NONE",
+        "suppressed_families": [],
+        "suppressed_models": [],
+        "suppression_materiality": "NOT_APPLICABLE",
+        "suppressed_family_materiality": "NOT_APPLICABLE",
+        "production_vs_conflict_preserving_difference_pct": null,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "WEAKLY_INDEPENDENT_EVIDENCE",
+        "correlated_family_dominance": true,
+        "production_fair_dependency": "HIGHLY_CONCENTRATED",
+        "structural_gaps": [],
+        "cross_family_status": "SINGLE_FAMILY_ONLY",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+        "cross_family_conflict_preservation_required": false,
+        "hypothetical_guard_action": "REQUIRE_INDEPENDENT_FAMILY_REVIEW",
+        "structural_valuation_readiness": "CONCENTRATED",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT"
+      }
+    },
+    {
+      "ticker": "NVDA",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "experimental_family_blend": {
+        "status": "SINGLE_FAMILY_EXPERIMENT",
+        "production_fair": 358.45,
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "executed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "family_count": 1,
+        "family_representatives": {
+          "EARNINGS_MULTIPLE": {
+            "family": "EARNINGS_MULTIPLE",
+            "member_models": [
+              "forward_pe",
+              "growth_adjusted_pe"
+            ],
+            "members": [
+              {
+                "model": "forward_pe",
+                "mid": 381.95,
+                "low": null,
+                "high": null,
+                "base_weight": 0.35,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.5384615384615385
+              },
+              {
+                "model": "growth_adjusted_pe",
+                "mid": 331.02,
+                "low": null,
+                "high": null,
+                "base_weight": 0.3,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.46153846153846156
+              }
+            ],
+            "raw_model_count": 2,
+            "effective_model_count": 1.25,
+            "family_effective_model_count": 1.25,
+            "family_mid": 358.44384615384615,
+            "family_low": null,
+            "family_high": null,
+            "correlation_adjusted_family_mid": 358.44384615384615,
+            "family_base_weight_sum": 0.6499999999999999,
+            "dependency_penalty": 0.375,
+            "family_dependency_penalty": 0.375,
+            "evidence_strength": 0.85,
+            "family_evidence_strength": 0.85
+          }
+        },
+        "family_effective_model_count": {
+          "EARNINGS_MULTIPLE": 1.25
+        },
+        "family_evidence_strength": {
+          "EARNINGS_MULTIPLE": 0.85
+        },
+        "strategy_a_current_weight_aggregated": {
+          "fair": 358.44384615384615,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.6499999999999999
+          },
+          "difference_vs_production_pct": -0.0017167934590167633,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "strategy_b_equal_family": {
+          "fair": 358.44384615384615,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "difference_vs_production_pct": -0.0017167934590167633,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "strategy_c_evidence_adjusted": {
+          "fair": 358.44384615384615,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.5524999999999999
+          },
+          "difference_vs_production_pct": -0.0017167934590167633,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "experimental_current_weight_aggregated": 358.44384615384615,
+        "experimental_equal_family": 358.44384615384615,
+        "experimental_evidence_adjusted": 358.44384615384615,
+        "cross_family_governance_modifier": 1.0,
+        "family_conflict_flag": false,
+        "conflict_preserving_blend": true,
+        "family_weighting_sensitivity": "LOW_SENSITIVITY",
+        "production_family_suppressed": false,
+        "suppressed_family": [],
+        "suppression_reason": {},
+        "experimental_restored": false,
+        "single_family_numeric_stability": true,
+        "family_confidence_cap_recommended": false,
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "family_weighting_governance": "SINGLE_FAMILY_LIMITATION",
+        "limitation": "Family weighting cannot introduce independent evidence or repair a missing capital-structure/cashflow model.",
+        "scope": "EXPERIMENT_ONLY_NEVER_PRODUCTION_INPUT"
+      },
+      "independent_evidence_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 1,
+        "observed_family_count": 1,
+        "independent_family_count": 1,
+        "effective_independent_model_count": 1.25,
+        "observed_effective_independent_model_count": 1.25,
+        "family_suppression_status": "NONE",
+        "suppressed_families": [],
+        "suppressed_models": [],
+        "suppression_materiality": "NOT_APPLICABLE",
+        "suppressed_family_materiality": "NOT_APPLICABLE",
+        "production_vs_conflict_preserving_difference_pct": null,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "WEAKLY_INDEPENDENT_EVIDENCE",
+        "correlated_family_dominance": true,
+        "production_fair_dependency": "HIGHLY_CONCENTRATED",
+        "structural_gaps": [],
+        "cross_family_status": "SINGLE_FAMILY_ONLY",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+        "cross_family_conflict_preservation_required": false,
+        "hypothetical_guard_action": "REQUIRE_INDEPENDENT_FAMILY_REVIEW",
+        "structural_valuation_readiness": "CONCENTRATED",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT"
+      }
+    },
+    {
+      "ticker": "AMZN",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "experimental_family_blend": {
+        "status": "SINGLE_FAMILY_EXPERIMENT",
+        "production_fair": 290.44,
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "executed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "family_count": 1,
+        "family_representatives": {
+          "EARNINGS_MULTIPLE": {
+            "family": "EARNINGS_MULTIPLE",
+            "member_models": [
+              "forward_pe",
+              "growth_adjusted_pe"
+            ],
+            "members": [
+              {
+                "model": "forward_pe",
+                "mid": 303.53,
+                "low": null,
+                "high": null,
+                "base_weight": 0.35,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.5833333333333334
+              },
+              {
+                "model": "growth_adjusted_pe",
+                "mid": 272.13,
+                "low": null,
+                "high": null,
+                "base_weight": 0.25,
+                "production_included": true,
+                "restored_outlier_only": false,
+                "family_internal_share": 0.4166666666666667
+              }
+            ],
+            "raw_model_count": 2,
+            "effective_model_count": 1.25,
+            "family_effective_model_count": 1.25,
+            "family_mid": 290.44666666666666,
+            "family_low": null,
+            "family_high": null,
+            "correlation_adjusted_family_mid": 290.44666666666666,
+            "family_base_weight_sum": 0.6,
+            "dependency_penalty": 0.375,
+            "family_dependency_penalty": 0.375,
+            "evidence_strength": 0.85,
+            "family_evidence_strength": 0.85
+          }
+        },
+        "family_effective_model_count": {
+          "EARNINGS_MULTIPLE": 1.25
+        },
+        "family_evidence_strength": {
+          "EARNINGS_MULTIPLE": 0.85
+        },
+        "strategy_a_current_weight_aggregated": {
+          "fair": 290.44666666666666,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.6
+          },
+          "difference_vs_production_pct": 0.0022953679474690958,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "strategy_b_equal_family": {
+          "fair": 290.44666666666666,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "difference_vs_production_pct": 0.0022953679474690958,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "strategy_c_evidence_adjusted": {
+          "fair": 290.44666666666666,
+          "family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "experimental_family_weights": {
+            "EARNINGS_MULTIPLE": 1.0
+          },
+          "raw_family_weights": {
+            "EARNINGS_MULTIPLE": 0.51
+          },
+          "difference_vs_production_pct": 0.0022953679474690958,
+          "family_weighting_sensitivity": "LOW_SENSITIVITY"
+        },
+        "experimental_current_weight_aggregated": 290.44666666666666,
+        "experimental_equal_family": 290.44666666666666,
+        "experimental_evidence_adjusted": 290.44666666666666,
+        "cross_family_governance_modifier": 1.0,
+        "family_conflict_flag": false,
+        "conflict_preserving_blend": true,
+        "family_weighting_sensitivity": "LOW_SENSITIVITY",
+        "production_family_suppressed": false,
+        "suppressed_family": [],
+        "suppression_reason": {},
+        "experimental_restored": false,
+        "single_family_numeric_stability": true,
+        "family_confidence_cap_recommended": false,
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "family_weighting_governance": "SINGLE_FAMILY_LIMITATION",
+        "limitation": "Family weighting cannot introduce independent evidence or repair a missing capital-structure/cashflow model.",
+        "scope": "EXPERIMENT_ONLY_NEVER_PRODUCTION_INPUT"
+      },
+      "independent_evidence_governance": {
+        "status": "DIAGNOSTIC_ONLY",
+        "active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "observed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "active_family_count": 1,
+        "observed_family_count": 1,
+        "independent_family_count": 1,
+        "effective_independent_model_count": 1.25,
+        "observed_effective_independent_model_count": 1.25,
+        "family_suppression_status": "NONE",
+        "suppressed_families": [],
+        "suppressed_models": [],
+        "suppression_materiality": "NOT_APPLICABLE",
+        "suppressed_family_materiality": "NOT_APPLICABLE",
+        "production_vs_conflict_preserving_difference_pct": null,
+        "difference_definition": "(production fair / Strategy C - 1) * 100; Strategy C is the reference denominator; materiality uses absolute value",
+        "independent_evidence_status": "WEAKLY_INDEPENDENT_EVIDENCE",
+        "correlated_family_dominance": true,
+        "production_fair_dependency": "HIGHLY_CONCENTRATED",
+        "structural_gaps": [
+          "CAPEX_DISTORTION_REMOVES_INDEPENDENT_CASH_FLOW_CONFIRMATION"
+        ],
+        "cross_family_status": "SINGLE_FAMILY_ONLY",
+        "growth_overlap_risk": "MODERATE",
+        "capital_structure_flags": [],
+        "numeric_stability": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+        "cross_family_conflict_preservation_required": false,
+        "hypothetical_guard_action": "REQUIRE_INDEPENDENT_FAMILY_REVIEW",
+        "structural_valuation_readiness": "CONCENTRATED_WITH_STRUCTURAL_GAP",
+        "strategy_c_as_sensitivity_probe": true,
+        "strategy_c_description": "conflict-preserving diagnostic reference; not recommended production valuation",
+        "scope": "DIAGNOSTIC_GOVERNANCE_ONLY_NO_PRODUCTION_EFFECT"
+      }
+    }
+  ],
+  "v46_recommendations": [
+    "Consider reliability-only cross-family conflict governance after eligible Cloud validation; do not change fair.",
+    "Evaluate an independent-family minimum for precise confidence and correlation-aware evidence counts in a sandbox.",
+    "Investigate a capital-structure-aware earnings overlay using verified debt/cash inputs.",
+    "Research a separate CapEx-normalized owner earnings model with documented normalization."
+  ],
+  "production_activation": "NONE"
+}

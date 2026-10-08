@@ -19,6 +19,7 @@ from financial_forensics import snapshot_json
 from calibration_snapshot_guard import calibration_eligibility,batch_eligibility,reference_snapshot
 from model_family_governance import governance_audit
 from experimental_family_blend import family_blend_experiment,experiment_summary
+from independent_evidence_governance import independent_evidence_audit,EXPORT_FIELDS
 
 _LOCK=threading.Lock()
 _LAST_RUN={}
@@ -166,6 +167,7 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
             stock.update(calibration_eligibility(stock,reference))
             stock['correlation_cross_family_governance']=governance_audit(stock)
             stock['experimental_family_blend']=family_blend_experiment(stock)
+            stock['independent_evidence_governance']=independent_evidence_audit(stock)
             stock['reference_snapshot_read_status']=reference_status
             stock.update(batch_id=batch_id,batch_generated_at=stamp)
             stocks.append(stock)
@@ -185,14 +187,16 @@ def csv_payload(report):
     fields=('ticker','model_name','model_mid','base_weight','normalized_weight','contribution_to_blended_mid','included','excluded_reason')+summary_fields
     experimental_fields=tuple('experimental_family_blend.'+key for key in ('A_fair','B_fair','C_fair',
         'A_difference_pct','B_difference_pct','C_difference_pct','family_weighting_sensitivity','family_weighting_governance','experiment_status'))
-    fields+=experimental_fields
+    evidence_fields=tuple('independent_evidence_governance.'+key for key in EXPORT_FIELDS)
+    fields+=experimental_fields+evidence_fields
     writer=csv.DictWriter(buffer,fieldnames=fields);writer.writeheader()
     for stock in report['stocks']:
         governance=stock.get('correlation_cross_family_governance',{})
         for model in stock.get('models',[]):writer.writerow({'ticker':stock['ticker'],
-            **{k:model.get(k) for k in fields if k!='ticker' and k not in summary_fields and k not in experimental_fields},
+            **{k:model.get(k) for k in fields if k!='ticker' and k not in summary_fields and k not in experimental_fields and k not in evidence_fields},
             **{k:governance.get(k) for k in summary_fields},
-            **{k:experiment_summary(stock).get(k.split('.',1)[1]) for k in experimental_fields}})
+            **{k:experiment_summary(stock).get(k.split('.',1)[1]) for k in experimental_fields},
+            **{k:stock.get('independent_evidence_governance',{}).get(k.split('.',1)[1]) for k in evidence_fields}})
     return buffer.getvalue().encode('utf-8-sig')
 
 
@@ -246,5 +250,15 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
     for stock in report['stocks']:
         with st.expander(stock['ticker']+' — experimental family members / weights'):
             st.json(stock.get('experimental_family_blend',{}))
+    st.markdown('**Independent Evidence & Family Suppression**')
+    st.caption('DIAGNOSTIC ONLY · Strategy C 仅为 conflict-preserving diagnostic reference；不改变生产 confidence、reliability、fair 或 zones。')
+    st.dataframe([{'ticker':stock['ticker'],**{k:stock.get('independent_evidence_governance',{}).get(k) for k in EXPORT_FIELDS}}
+        for stock in report['stocks']],hide_index=True,use_container_width=True)
+    for stock in report['stocks']:
+        evidence=stock.get('independent_evidence_governance',{})
+        if 'CASH_FLOW_INTRINSIC' in evidence.get('suppressed_families',[]):
+            st.warning(stock['ticker']+' — Independent cash-flow family suppressed')
+        with st.expander(stock['ticker']+' — independent evidence governance'):
+            st.json(evidence)
     st.download_button('下载 V4.5 JSON',snapshot_json(report),'v45_cloud_production_analysis.json','application/json',key='v45_export_json')
     st.download_button('下载模型贡献 CSV',csv_payload(report),'v45_cloud_model_contributions.csv','text/csv',key='v45_export_csv')
