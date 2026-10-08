@@ -101,6 +101,7 @@ def audit_analysis(ticker,result):
     values and live failed inputs must not be treated as one historical result.
     """
     from model_family_governance import governance_audit
+    from experimental_family_blend import family_blend_experiment
     governance_result=governance_audit(result)
     if result.get('source_status','live')!='live':
         return {'ticker':ticker,'status':'NEEDS_ORIGINAL_RELIABLE_INPUTS','reason':'cached display cannot be paired with current live inputs',
@@ -145,6 +146,7 @@ def audit_analysis(ticker,result):
             direction.append({'model':row['model_name'],'position':'BELOW_BLEND' if row['mid']<fair else 'ABOVE_BLEND' if row['mid']>fair else 'AT_BLEND',
                               'weighted_offset_from_blend':(row['mid']-fair)*row['weight_after_normalization']})
     return {'ticker':ticker,'status':'CAPTURE_REPLAY_MATCH' if same else 'CAPTURE_REPLAY_MISMATCH',
+        'experimental_family_blend':family_blend_experiment(result) if same else {'status':'CAPTURE_REPLAY_MISMATCH'},
         'correlation_cross_family_governance':governance_result,
         'profile':profile.to_dict(),'assumptions':deepcopy(profile.spec),'inputs':{k:f.get(k) for k in KEYS},
         'fair':fair,'confidence':blend.get('confidence'),'dispersion':blend.get('dispersion'),
