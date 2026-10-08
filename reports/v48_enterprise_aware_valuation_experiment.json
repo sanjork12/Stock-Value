@@ -1,0 +1,705 @@
+{
+  "version": "V4.8",
+  "scope": "DIAGNOSTIC_ONLY_NO_PRODUCTION_EFFECT",
+  "evidence_note": "Default report reuses prior approximate Cloud model observations, not a new Cloud execution. Full same-run cash/debt, shares, EBITDA/revenue and captured class ranges are unavailable. No values are inferred from supplied ratios or fair estimates.",
+  "stocks": [
+    {
+      "ticker": "GOOG",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "enterprise_aware_experiment": {
+        "applicability": {
+          "applicable": false,
+          "valid_method_count": 0,
+          "global_reasons": [],
+          "currency_safe": false,
+          "model_reasons": {
+            "ev_ebitda": [
+              "missing_or_nonpositive_ebitda",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ],
+            "ev_revenue": [
+              "missing_or_nonpositive_revenue",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ]
+          }
+        },
+        "diagnostic_family_map": {
+          "ev_ebitda": "ENTERPRISE_MULTIPLE",
+          "ev_revenue": "ENTERPRISE_MULTIPLE"
+        },
+        "experimental_family": true,
+        "production_included": false,
+        "ev_ebitda_model": {
+          "model_name": "ev_ebitda",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_ebitda",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "ev_revenue_model": {
+          "model_name": "ev_revenue",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_revenue",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "enterprise_family": {
+          "low": null,
+          "mid": null,
+          "high": null,
+          "family": "ENTERPRISE_MULTIPLE",
+          "confidence": "UNAVAILABLE",
+          "weights": {},
+          "single_method_only": false,
+          "valid_method_count": 0,
+          "negative_equity_signal": false
+        },
+        "enterprise_family_low": null,
+        "enterprise_family_mid": null,
+        "enterprise_family_high": null,
+        "enterprise_family_confidence": "UNAVAILABLE",
+        "single_method_only": false,
+        "method_spread_pct": null,
+        "enterprise_method_spread_pct": null,
+        "method_consistency": "UNAVAILABLE",
+        "method_spread_reason": "requires_two_methods_and_positive_median",
+        "earnings_family_mid": 329.87166666666667,
+        "difference_vs_earnings_pct": null,
+        "difference_band": "UNAVAILABLE",
+        "difference_direction": null,
+        "enterprise_evidence_status": "UNAVAILABLE",
+        "experimental_observed_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "experimental_independent_family_count": 2,
+        "production_active_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "earnings_enterprise_equal_weight_fair": null,
+        "production_fair": 253.81,
+        "difference_vs_production_pct": null,
+        "production_readiness": "NOT_READY",
+        "enterprise_family_production_readiness": "NOT_READY",
+        "capital_burden_band": "UNAVAILABLE",
+        "business_mix_warning": null,
+        "business_mix_warning_reason": "not_present_in_captured_production_fields",
+        "cash_flow_family_mid": 139.72,
+        "nearest_observed_family": null,
+        "observed_family_distances": {},
+        "warnings": [],
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL_OR_RELIABILITY_INPUT"
+      }
+    },
+    {
+      "ticker": "MSFT",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "enterprise_aware_experiment": {
+        "applicability": {
+          "applicable": false,
+          "valid_method_count": 0,
+          "global_reasons": [],
+          "currency_safe": false,
+          "model_reasons": {
+            "ev_ebitda": [
+              "missing_or_nonpositive_ebitda",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ],
+            "ev_revenue": [
+              "missing_or_nonpositive_revenue",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ]
+          }
+        },
+        "diagnostic_family_map": {
+          "ev_ebitda": "ENTERPRISE_MULTIPLE",
+          "ev_revenue": "ENTERPRISE_MULTIPLE"
+        },
+        "experimental_family": true,
+        "production_included": false,
+        "ev_ebitda_model": {
+          "model_name": "ev_ebitda",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_ebitda",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "ev_revenue_model": {
+          "model_name": "ev_revenue",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_revenue",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "enterprise_family": {
+          "low": null,
+          "mid": null,
+          "high": null,
+          "family": "ENTERPRISE_MULTIPLE",
+          "confidence": "UNAVAILABLE",
+          "weights": {},
+          "single_method_only": false,
+          "valid_method_count": 0,
+          "negative_equity_signal": false
+        },
+        "enterprise_family_low": null,
+        "enterprise_family_mid": null,
+        "enterprise_family_high": null,
+        "enterprise_family_confidence": "UNAVAILABLE",
+        "single_method_only": false,
+        "method_spread_pct": null,
+        "enterprise_method_spread_pct": null,
+        "method_consistency": "UNAVAILABLE",
+        "method_spread_reason": "requires_two_methods_and_positive_median",
+        "earnings_family_mid": 657.0441666666667,
+        "difference_vs_earnings_pct": null,
+        "difference_band": "UNAVAILABLE",
+        "difference_direction": null,
+        "enterprise_evidence_status": "UNAVAILABLE",
+        "experimental_observed_families": [
+          "CASH_FLOW_INTRINSIC",
+          "EARNINGS_MULTIPLE"
+        ],
+        "experimental_independent_family_count": 2,
+        "production_active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "earnings_enterprise_equal_weight_fair": null,
+        "production_fair": 657.05,
+        "difference_vs_production_pct": null,
+        "production_readiness": "NOT_READY",
+        "enterprise_family_production_readiness": "NOT_READY",
+        "capital_burden_band": "UNAVAILABLE",
+        "business_mix_warning": null,
+        "business_mix_warning_reason": "not_present_in_captured_production_fields",
+        "cash_flow_family_mid": 203.34,
+        "nearest_observed_family": null,
+        "observed_family_distances": {},
+        "warnings": [],
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL_OR_RELIABILITY_INPUT"
+      }
+    },
+    {
+      "ticker": "ORCL",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "enterprise_aware_experiment": {
+        "applicability": {
+          "applicable": false,
+          "valid_method_count": 0,
+          "global_reasons": [],
+          "currency_safe": false,
+          "model_reasons": {
+            "ev_ebitda": [
+              "missing_or_nonpositive_ebitda",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ],
+            "ev_revenue": [
+              "missing_or_nonpositive_revenue",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ]
+          }
+        },
+        "diagnostic_family_map": {
+          "ev_ebitda": "ENTERPRISE_MULTIPLE",
+          "ev_revenue": "ENTERPRISE_MULTIPLE"
+        },
+        "experimental_family": true,
+        "production_included": false,
+        "ev_ebitda_model": {
+          "model_name": "ev_ebitda",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_ebitda",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "ev_revenue_model": {
+          "model_name": "ev_revenue",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_revenue",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "enterprise_family": {
+          "low": null,
+          "mid": null,
+          "high": null,
+          "family": "ENTERPRISE_MULTIPLE",
+          "confidence": "UNAVAILABLE",
+          "weights": {},
+          "single_method_only": false,
+          "valid_method_count": 0,
+          "negative_equity_signal": false
+        },
+        "enterprise_family_low": null,
+        "enterprise_family_mid": null,
+        "enterprise_family_high": null,
+        "enterprise_family_confidence": "UNAVAILABLE",
+        "single_method_only": false,
+        "method_spread_pct": null,
+        "enterprise_method_spread_pct": null,
+        "method_consistency": "UNAVAILABLE",
+        "method_spread_reason": "requires_two_methods_and_positive_median",
+        "earnings_family_mid": 237.74923076923076,
+        "difference_vs_earnings_pct": null,
+        "difference_band": "UNAVAILABLE",
+        "difference_direction": null,
+        "enterprise_evidence_status": "UNAVAILABLE",
+        "experimental_observed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "experimental_independent_family_count": 1,
+        "production_active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "earnings_enterprise_equal_weight_fair": null,
+        "production_fair": 237.75,
+        "difference_vs_production_pct": null,
+        "production_readiness": "NOT_READY",
+        "enterprise_family_production_readiness": "NOT_READY",
+        "capital_burden_band": "UNAVAILABLE",
+        "business_mix_warning": null,
+        "business_mix_warning_reason": "not_present_in_captured_production_fields",
+        "cash_flow_family_mid": null,
+        "nearest_observed_family": null,
+        "observed_family_distances": {},
+        "warnings": [],
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL_OR_RELIABILITY_INPUT"
+      }
+    },
+    {
+      "ticker": "NVDA",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "enterprise_aware_experiment": {
+        "applicability": {
+          "applicable": false,
+          "valid_method_count": 0,
+          "global_reasons": [],
+          "currency_safe": false,
+          "model_reasons": {
+            "ev_ebitda": [
+              "missing_or_nonpositive_ebitda",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ],
+            "ev_revenue": [
+              "missing_or_nonpositive_revenue",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ]
+          }
+        },
+        "diagnostic_family_map": {
+          "ev_ebitda": "ENTERPRISE_MULTIPLE",
+          "ev_revenue": "ENTERPRISE_MULTIPLE"
+        },
+        "experimental_family": true,
+        "production_included": false,
+        "ev_ebitda_model": {
+          "model_name": "ev_ebitda",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_ebitda",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "ev_revenue_model": {
+          "model_name": "ev_revenue",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_revenue",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "enterprise_family": {
+          "low": null,
+          "mid": null,
+          "high": null,
+          "family": "ENTERPRISE_MULTIPLE",
+          "confidence": "UNAVAILABLE",
+          "weights": {},
+          "single_method_only": false,
+          "valid_method_count": 0,
+          "negative_equity_signal": false
+        },
+        "enterprise_family_low": null,
+        "enterprise_family_mid": null,
+        "enterprise_family_high": null,
+        "enterprise_family_confidence": "UNAVAILABLE",
+        "single_method_only": false,
+        "method_spread_pct": null,
+        "enterprise_method_spread_pct": null,
+        "method_consistency": "UNAVAILABLE",
+        "method_spread_reason": "requires_two_methods_and_positive_median",
+        "earnings_family_mid": 358.44384615384615,
+        "difference_vs_earnings_pct": null,
+        "difference_band": "UNAVAILABLE",
+        "difference_direction": null,
+        "enterprise_evidence_status": "UNAVAILABLE",
+        "experimental_observed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "experimental_independent_family_count": 1,
+        "production_active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "earnings_enterprise_equal_weight_fair": null,
+        "production_fair": 358.45,
+        "difference_vs_production_pct": null,
+        "production_readiness": "NOT_READY",
+        "enterprise_family_production_readiness": "NOT_READY",
+        "capital_burden_band": "UNAVAILABLE",
+        "business_mix_warning": null,
+        "business_mix_warning_reason": "not_present_in_captured_production_fields",
+        "cash_flow_family_mid": null,
+        "nearest_observed_family": null,
+        "observed_family_distances": {},
+        "warnings": [],
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL_OR_RELIABILITY_INPUT"
+      }
+    },
+    {
+      "ticker": "AMZN",
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "enterprise_aware_experiment": {
+        "applicability": {
+          "applicable": false,
+          "valid_method_count": 0,
+          "global_reasons": [],
+          "currency_safe": false,
+          "model_reasons": {
+            "ev_ebitda": [
+              "missing_or_nonpositive_ebitda",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ],
+            "ev_revenue": [
+              "missing_or_nonpositive_revenue",
+              "missing_or_nonpositive_canonical_shares",
+              "missing_or_negative_cash_debt",
+              "capital_currency_unsafe_or_unknown",
+              "missing_or_invalid_captured_class_range"
+            ]
+          }
+        },
+        "diagnostic_family_map": {
+          "ev_ebitda": "ENTERPRISE_MULTIPLE",
+          "ev_revenue": "ENTERPRISE_MULTIPLE"
+        },
+        "experimental_family": true,
+        "production_included": false,
+        "ev_ebitda_model": {
+          "model_name": "ev_ebitda",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_ebitda",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "ev_revenue_model": {
+          "model_name": "ev_revenue",
+          "model_family": "ENTERPRISE_MULTIPLE",
+          "experimental_family": true,
+          "production_included": false,
+          "valid": false,
+          "applicable": false,
+          "executed": false,
+          "reasons": [
+            "missing_or_nonpositive_revenue",
+            "missing_or_nonpositive_canonical_shares",
+            "missing_or_negative_cash_debt",
+            "capital_currency_unsafe_or_unknown",
+            "missing_or_invalid_captured_class_range"
+          ],
+          "inputs_used": {
+            "basis": null,
+            "canonical_shares": null,
+            "cash": null,
+            "debt": null,
+            "net_debt": null,
+            "class_range": null
+          },
+          "low": null,
+          "mid": null,
+          "high": null,
+          "enterprise_values": null,
+          "equity_values": null,
+          "negative_equity_signal": false
+        },
+        "enterprise_family": {
+          "low": null,
+          "mid": null,
+          "high": null,
+          "family": "ENTERPRISE_MULTIPLE",
+          "confidence": "UNAVAILABLE",
+          "weights": {},
+          "single_method_only": false,
+          "valid_method_count": 0,
+          "negative_equity_signal": false
+        },
+        "enterprise_family_low": null,
+        "enterprise_family_mid": null,
+        "enterprise_family_high": null,
+        "enterprise_family_confidence": "UNAVAILABLE",
+        "single_method_only": false,
+        "method_spread_pct": null,
+        "enterprise_method_spread_pct": null,
+        "method_consistency": "UNAVAILABLE",
+        "method_spread_reason": "requires_two_methods_and_positive_median",
+        "earnings_family_mid": 290.44666666666666,
+        "difference_vs_earnings_pct": null,
+        "difference_band": "UNAVAILABLE",
+        "difference_direction": null,
+        "enterprise_evidence_status": "UNAVAILABLE",
+        "experimental_observed_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "experimental_independent_family_count": 1,
+        "production_active_families": [
+          "EARNINGS_MULTIPLE"
+        ],
+        "earnings_enterprise_equal_weight_fair": null,
+        "production_fair": 290.44,
+        "difference_vs_production_pct": null,
+        "production_readiness": "NOT_READY",
+        "enterprise_family_production_readiness": "NOT_READY",
+        "capital_burden_band": "UNAVAILABLE",
+        "business_mix_warning": null,
+        "business_mix_warning_reason": "not_present_in_captured_production_fields",
+        "cash_flow_family_mid": null,
+        "nearest_observed_family": null,
+        "observed_family_distances": {},
+        "warnings": [],
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL_OR_RELIABILITY_INPUT"
+      }
+    }
+  ]
+}

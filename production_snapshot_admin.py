@@ -22,6 +22,7 @@ from experimental_family_blend import family_blend_experiment,experiment_summary
 from independent_evidence_governance import independent_evidence_audit,EXPORT_FIELDS
 from production_reliability_governance import VERSION as GOVERNANCE_VERSION
 from capital_structure_overlay import capital_overlay,overlay_summary
+from enterprise_aware_experiment import enterprise_experiment,enterprise_summary
 
 _LOCK=threading.Lock()
 _LAST_RUN={}
@@ -173,6 +174,7 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
             stock['experimental_family_blend']=family_blend_experiment(stock)
             stock['independent_evidence_governance']=independent_evidence_audit(stock)
             stock['capital_structure_overlay']=capital_overlay(stock)
+            stock['enterprise_aware_experiment']=enterprise_experiment(stock)
             stock['reference_snapshot_read_status']=reference_status
             stock.update(batch_id=batch_id,batch_generated_at=stamp)
             stocks.append(stock)
@@ -197,16 +199,20 @@ def csv_payload(report):
         'net_debt','net_debt_to_market_cap','net_debt_to_ebitda','interest_coverage','production_fair',
         'earnings_family_fair','burden_score','burden_band','burden_overlay_fair','ev_bridge_fair','consistency_status','governance',
         'burden_overlay_materiality','ev_bridge_materiality','burden_overlay_direction','ev_bridge_direction','consistency_rule_version'))
-    fields+=experimental_fields+evidence_fields+overlay_fields
+    enterprise_fields=tuple('enterprise_aware_experiment.'+key for key in ('production_fair','earnings_family_mid',
+        'ev_ebitda_mid','ev_revenue_mid','enterprise_family_mid','enterprise_family_confidence','method_spread_pct',
+        'difference_vs_earnings_pct','enterprise_evidence_status','evidence_status','production_readiness'))
+    fields+=experimental_fields+evidence_fields+overlay_fields+enterprise_fields
     writer=csv.DictWriter(buffer,fieldnames=fields);writer.writeheader()
     for stock in report['stocks']:
         governance=stock.get('correlation_cross_family_governance',{})
         for model in stock.get('models',[]):writer.writerow({'ticker':stock['ticker'],
-            **{k:model.get(k) for k in fields if k!='ticker' and k not in summary_fields and k not in experimental_fields and k not in evidence_fields and k not in overlay_fields},
+            **{k:model.get(k) for k in fields if k!='ticker' and k not in summary_fields and k not in experimental_fields and k not in evidence_fields and k not in overlay_fields and k not in enterprise_fields},
             **{k:governance.get(k) for k in summary_fields},
             **{k:experiment_summary(stock).get(k.split('.',1)[1]) for k in experimental_fields},
             **{k:stock.get('independent_evidence_governance',{}).get(k.split('.',1)[1]) for k in evidence_fields},
-            **{k:overlay_summary(stock).get(k.split('.',1)[1]) for k in overlay_fields}})
+            **{k:overlay_summary(stock).get(k.split('.',1)[1]) for k in overlay_fields},
+            **{k:enterprise_summary(stock).get(k.split('.',1)[1]) for k in enterprise_fields}})
     return buffer.getvalue().encode('utf-8-sig')
 
 
@@ -295,6 +301,12 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
         with st.expander(stock['ticker']+' — capital structure overlay'):
             st.json(stock.get('capital_structure_overlay',{}))
     audits=governance_audit_rows(report)
+    st.markdown('**Enterprise-Aware Valuation Experiment**')
+    st.caption('DIAGNOSTIC ONLY · 企业价值方法不进入生产 blend、可靠性或 Last Reliable；不是推荐估值。')
+    st.dataframe([enterprise_summary(stock) for stock in report['stocks']],hide_index=True,use_container_width=True)
+    for stock in report['stocks']:
+        with st.expander(stock['ticker']+' — enterprise-aware inputs / models'):
+            st.json(stock.get('enterprise_aware_experiment',{}))
     st.caption('Governance: Applied to production reliability · Scope: Reliability / Confidence / Precise Exit · Fair value effect: None（新生成的 live 治理结果）')
     st.dataframe([{k:a.get(k) for k in ('ticker','source_status','fair_before','fair_after','fair_unchanged',
         'reliability_before','reliability_after','confidence_before','confidence_after','precise_exit_before','precise_exit_after',
