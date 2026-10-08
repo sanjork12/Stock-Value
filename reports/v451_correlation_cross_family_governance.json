@@ -1,0 +1,1913 @@
+{
+  "version": "V4.5.1",
+  "scope": "DIAGNOSTIC_ONLY_NO_PRODUCTION_CHANGES",
+  "model_family_map": {
+    "forward_pe": "EARNINGS_MULTIPLE",
+    "growth_adjusted_pe": "EARNINGS_MULTIPLE",
+    "normalized_pe": "CYCLE_NORMALIZED",
+    "normalized_cycle_earnings": "CYCLE_NORMALIZED",
+    "normalized_fcf_dcf": "CASH_FLOW_INTRINSIC",
+    "ev_ebitda": "ENTERPRISE_MULTIPLE",
+    "revenue_multiple": "REVENUE_MULTIPLE",
+    "price_to_book_roe": "BOOK_VALUE",
+    "residual_income": "BOOK_VALUE",
+    "unsupported": "SPECIALIZED"
+  },
+  "weighted_core_drivers": {
+    "forward_pe": {
+      "EPS_BASIS": 4,
+      "EARNINGS_MULTIPLE_POLICY": 2
+    },
+    "growth_adjusted_pe": {
+      "EPS_BASIS": 4,
+      "EARNINGS_MULTIPLE_POLICY": 2,
+      "SUSTAINABLE_GROWTH": 1
+    },
+    "normalized_pe": {
+      "EPS_BASIS": 4,
+      "EARNINGS_MULTIPLE_POLICY": 2,
+      "CYCLE_NORMALIZATION": 2
+    },
+    "normalized_cycle_earnings": {
+      "EPS_BASIS": 4,
+      "CYCLE_NORMALIZATION": 2
+    },
+    "normalized_fcf_dcf": {
+      "FCF": 3,
+      "CAPITAL_BRIDGE": 4,
+      "SHARES": 2,
+      "DISCOUNT_TERMINAL": 1
+    },
+    "ev_ebitda": {
+      "EBITDA": 3,
+      "CAPITAL_BRIDGE": 4,
+      "SHARES": 2,
+      "ENTERPRISE_MULTIPLE_POLICY": 1
+    },
+    "revenue_multiple": {
+      "REVENUE": 3,
+      "CAPITAL_BRIDGE": 4,
+      "SHARES": 2,
+      "SALES_MULTIPLE_POLICY": 1
+    },
+    "price_to_book_roe": {
+      "BOOK_VALUE": 4,
+      "ROE": 2,
+      "COST_OF_EQUITY": 1
+    },
+    "residual_income": {
+      "BOOK_VALUE": 4,
+      "ROE": 2,
+      "COST_OF_EQUITY": 1,
+      "RESIDUAL_GROWTH": 1
+    }
+  },
+  "stocks": [
+    {
+      "ticker": "GOOG",
+      "reported_fair": 253.81,
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "weight_evidence": "current source base weights normalized over user-reported included set; not a captured Cloud weight payload",
+      "missing_evidence": [
+        "forward_eps",
+        "trailing_eps",
+        "cash",
+        "debt",
+        "market_cap",
+        "exact_inputs_used"
+      ],
+      "audit_status": "DIAGNOSTIC_ONLY",
+      "model_families": {
+        "forward_pe": "EARNINGS_MULTIPLE",
+        "growth_adjusted_pe": "EARNINGS_MULTIPLE",
+        "normalized_fcf_dcf": "CASH_FLOW_INTRINSIC"
+      },
+      "model_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "pair_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "model_count_included": 3,
+      "included_models": [
+        "forward_pe",
+        "growth_adjusted_pe",
+        "normalized_fcf_dcf"
+      ],
+      "effective_independent_model_count": 2.25,
+      "active_families": [
+        "CASH_FLOW_INTRINSIC",
+        "EARNINGS_MULTIPLE"
+      ],
+      "executed_families": [
+        "CASH_FLOW_INTRINSIC",
+        "EARNINGS_MULTIPLE"
+      ],
+      "family_weight_concentration": {
+        "EARNINGS_MULTIPLE": 0.6,
+        "CASH_FLOW_INTRINSIC": 0.4
+      },
+      "dominant_family": "EARNINGS_MULTIPLE",
+      "dominant_family_weight": 0.6,
+      "family_concentration_status": "MODERATE_FAMILY_CONCENTRATION",
+      "family_representatives": {
+        "EARNINGS_MULTIPLE": {
+          "family_model_count": 2,
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "family_mid_median": 326.08,
+          "family_mid_min": 303.33,
+          "family_mid_max": 348.83
+        },
+        "CASH_FLOW_INTRINSIC": {
+          "family_model_count": 1,
+          "models": [
+            "normalized_fcf_dcf"
+          ],
+          "family_mid_median": 139.72,
+          "family_mid_min": 139.72,
+          "family_mid_max": 139.72
+        }
+      },
+      "cross_family_status": "CROSS_FAMILY_DISAGREEMENT",
+      "cross_family_spread_pct": 80.01717475311293,
+      "max_family_pairwise_difference_pct": 80.01717475311293,
+      "outlier_governance_flags": [],
+      "outlier_governance_review": [],
+      "forward_to_trailing_eps_ratio": null,
+      "forecast_step_up_status": "UNKNOWN",
+      "growth_overlap_risk": "MODERATE",
+      "growth_overlap_reasons": [
+        "included_earnings_models_share_eps_basis_and_growth_multiple_overlay",
+        "forward_trailing_eps_ratio_unavailable",
+        "active_cash_flow_family_provides_separate_structural_evidence"
+      ],
+      "capital_structure": {
+        "cash": null,
+        "debt": null,
+        "net_debt": null,
+        "net_debt_to_market_cap": null
+      },
+      "capital_structure_flags": [],
+      "governance_classification": "CROSS_FAMILY_CONFLICT",
+      "governance_review_status": "CROSS_FAMILY_REVIEW_REQUIRED",
+      "governance_summary": "CROSS_FAMILY_CONFLICT",
+      "scope": "structural evidence diagnostics only; no production eligibility, weight, outlier or reliability changes"
+    },
+    {
+      "ticker": "MSFT",
+      "reported_fair": 657.05,
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "weight_evidence": "current source base weights normalized over user-reported included set; not a captured Cloud weight payload",
+      "missing_evidence": [
+        "forward_eps",
+        "trailing_eps",
+        "cash",
+        "debt",
+        "market_cap",
+        "exact_inputs_used"
+      ],
+      "audit_status": "DIAGNOSTIC_ONLY",
+      "model_families": {
+        "forward_pe": "EARNINGS_MULTIPLE",
+        "growth_adjusted_pe": "EARNINGS_MULTIPLE",
+        "normalized_fcf_dcf": "CASH_FLOW_INTRINSIC"
+      },
+      "model_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "pair_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "model_count_included": 2,
+      "included_models": [
+        "forward_pe",
+        "growth_adjusted_pe"
+      ],
+      "effective_independent_model_count": 1.25,
+      "active_families": [
+        "EARNINGS_MULTIPLE"
+      ],
+      "executed_families": [
+        "CASH_FLOW_INTRINSIC",
+        "EARNINGS_MULTIPLE"
+      ],
+      "family_weight_concentration": {
+        "EARNINGS_MULTIPLE": 1.0
+      },
+      "dominant_family": "EARNINGS_MULTIPLE",
+      "dominant_family_weight": 1.0,
+      "family_concentration_status": "HIGH_FAMILY_CONCENTRATION",
+      "family_representatives": {
+        "EARNINGS_MULTIPLE": {
+          "family_model_count": 2,
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "family_mid_median": 651.125,
+          "family_mid_min": 615.61,
+          "family_mid_max": 686.64
+        },
+        "CASH_FLOW_INTRINSIC": {
+          "family_model_count": 1,
+          "models": [
+            "normalized_fcf_dcf"
+          ],
+          "family_mid_median": 203.34,
+          "family_mid_min": 203.34,
+          "family_mid_max": 203.34
+        }
+      },
+      "cross_family_status": "CROSS_FAMILY_DISAGREEMENT",
+      "cross_family_spread_pct": 104.8106124885162,
+      "max_family_pairwise_difference_pct": 104.8106124885162,
+      "outlier_governance_flags": [
+        "CROSS_FAMILY_SIGNAL_SUPPRESSED"
+      ],
+      "outlier_governance_review": [
+        {
+          "model": "normalized_fcf_dcf",
+          "family": "CASH_FLOW_INTRINSIC",
+          "flag": "CROSS_FAMILY_SIGNAL_SUPPRESSED",
+          "production_exclusion_remains_unchanged": true,
+          "exact_production_reason": "outlier_vs_other_models"
+        }
+      ],
+      "forward_to_trailing_eps_ratio": null,
+      "forecast_step_up_status": "UNKNOWN",
+      "growth_overlap_risk": "MODERATE",
+      "growth_overlap_reasons": [
+        "included_earnings_models_share_eps_basis_and_growth_multiple_overlay",
+        "forward_trailing_eps_ratio_unavailable"
+      ],
+      "capital_structure": {
+        "cash": null,
+        "debt": null,
+        "net_debt": null,
+        "net_debt_to_market_cap": null
+      },
+      "capital_structure_flags": [],
+      "governance_classification": "CROSS_FAMILY_CONFLICT",
+      "governance_review_status": "CROSS_FAMILY_REVIEW_REQUIRED",
+      "governance_summary": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+      "scope": "structural evidence diagnostics only; no production eligibility, weight, outlier or reliability changes"
+    },
+    {
+      "ticker": "ORCL",
+      "reported_fair": 237.75,
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "weight_evidence": "current source base weights normalized over user-reported included set; not a captured Cloud weight payload",
+      "missing_evidence": [
+        "forward_eps",
+        "trailing_eps",
+        "cash",
+        "debt",
+        "market_cap",
+        "exact_inputs_used"
+      ],
+      "audit_status": "DIAGNOSTIC_ONLY",
+      "model_families": {
+        "forward_pe": "EARNINGS_MULTIPLE",
+        "growth_adjusted_pe": "EARNINGS_MULTIPLE",
+        "normalized_fcf_dcf": "CASH_FLOW_INTRINSIC"
+      },
+      "model_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "pair_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "model_count_included": 2,
+      "included_models": [
+        "forward_pe",
+        "growth_adjusted_pe"
+      ],
+      "effective_independent_model_count": 1.25,
+      "active_families": [
+        "EARNINGS_MULTIPLE"
+      ],
+      "executed_families": [
+        "EARNINGS_MULTIPLE"
+      ],
+      "family_weight_concentration": {
+        "EARNINGS_MULTIPLE": 1.0
+      },
+      "dominant_family": "EARNINGS_MULTIPLE",
+      "dominant_family_weight": 1.0,
+      "family_concentration_status": "HIGH_FAMILY_CONCENTRATION",
+      "family_representatives": {
+        "EARNINGS_MULTIPLE": {
+          "family_model_count": 2,
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "family_mid_median": 236.48,
+          "family_mid_min": 230.98,
+          "family_mid_max": 241.98
+        }
+      },
+      "cross_family_status": "SINGLE_FAMILY_ONLY",
+      "cross_family_spread_pct": null,
+      "max_family_pairwise_difference_pct": null,
+      "outlier_governance_flags": [],
+      "outlier_governance_review": [],
+      "forward_to_trailing_eps_ratio": null,
+      "forecast_step_up_status": "UNKNOWN",
+      "growth_overlap_risk": "MODERATE",
+      "growth_overlap_reasons": [
+        "included_earnings_models_share_eps_basis_and_growth_multiple_overlay",
+        "forward_trailing_eps_ratio_unavailable"
+      ],
+      "capital_structure": {
+        "cash": null,
+        "debt": null,
+        "net_debt": null,
+        "net_debt_to_market_cap": null
+      },
+      "capital_structure_flags": [],
+      "governance_classification": "SINGLE_FAMILY_ONLY",
+      "governance_review_status": "STRUCTURALLY_CONCENTRATED",
+      "governance_summary": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+      "scope": "structural evidence diagnostics only; no production eligibility, weight, outlier or reliability changes"
+    },
+    {
+      "ticker": "NVDA",
+      "reported_fair": 358.45,
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "weight_evidence": "current source base weights normalized over user-reported included set; not a captured Cloud weight payload",
+      "missing_evidence": [
+        "forward_eps",
+        "trailing_eps",
+        "cash",
+        "debt",
+        "market_cap",
+        "exact_inputs_used"
+      ],
+      "audit_status": "DIAGNOSTIC_ONLY",
+      "model_families": {
+        "forward_pe": "EARNINGS_MULTIPLE",
+        "growth_adjusted_pe": "EARNINGS_MULTIPLE",
+        "normalized_fcf_dcf": "CASH_FLOW_INTRINSIC"
+      },
+      "model_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "pair_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "model_count_included": 2,
+      "included_models": [
+        "forward_pe",
+        "growth_adjusted_pe"
+      ],
+      "effective_independent_model_count": 1.25,
+      "active_families": [
+        "EARNINGS_MULTIPLE"
+      ],
+      "executed_families": [
+        "EARNINGS_MULTIPLE"
+      ],
+      "family_weight_concentration": {
+        "EARNINGS_MULTIPLE": 1.0
+      },
+      "dominant_family": "EARNINGS_MULTIPLE",
+      "dominant_family_weight": 1.0,
+      "family_concentration_status": "HIGH_FAMILY_CONCENTRATION",
+      "family_representatives": {
+        "EARNINGS_MULTIPLE": {
+          "family_model_count": 2,
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "family_mid_median": 356.485,
+          "family_mid_min": 331.02,
+          "family_mid_max": 381.95
+        }
+      },
+      "cross_family_status": "SINGLE_FAMILY_ONLY",
+      "cross_family_spread_pct": null,
+      "max_family_pairwise_difference_pct": null,
+      "outlier_governance_flags": [],
+      "outlier_governance_review": [],
+      "forward_to_trailing_eps_ratio": null,
+      "forecast_step_up_status": "UNKNOWN",
+      "growth_overlap_risk": "MODERATE",
+      "growth_overlap_reasons": [
+        "included_earnings_models_share_eps_basis_and_growth_multiple_overlay",
+        "forward_trailing_eps_ratio_unavailable"
+      ],
+      "capital_structure": {
+        "cash": null,
+        "debt": null,
+        "net_debt": null,
+        "net_debt_to_market_cap": null
+      },
+      "capital_structure_flags": [],
+      "governance_classification": "SINGLE_FAMILY_ONLY",
+      "governance_review_status": "STRUCTURALLY_CONCENTRATED",
+      "governance_summary": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+      "scope": "structural evidence diagnostics only; no production eligibility, weight, outlier or reliability changes"
+    },
+    {
+      "ticker": "AMZN",
+      "reported_fair": 290.44,
+      "evidence_origin": "user_supplied_approximate_Cloud_model_observations",
+      "weight_evidence": "current source base weights normalized over user-reported included set; not a captured Cloud weight payload",
+      "missing_evidence": [
+        "forward_eps",
+        "trailing_eps",
+        "cash",
+        "debt",
+        "market_cap",
+        "exact_inputs_used"
+      ],
+      "audit_status": "DIAGNOSTIC_ONLY",
+      "model_families": {
+        "forward_pe": "EARNINGS_MULTIPLE",
+        "growth_adjusted_pe": "EARNINGS_MULTIPLE",
+        "normalized_fcf_dcf": "CASH_FLOW_INTRINSIC"
+      },
+      "model_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "pair_dependencies": [
+        {
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "shared_inputs": [
+            "eps_basis",
+            "eps_source",
+            "quote_currency",
+            "valuation_class_assumptions"
+          ],
+          "shared_input_count": 4,
+          "shared_core_driver_count": 2,
+          "shared_core_drivers": [
+            "EARNINGS_MULTIPLE_POLICY",
+            "EPS_BASIS"
+          ],
+          "distinct_core_drivers": {
+            "forward_pe": [],
+            "growth_adjusted_pe": [
+              "SUSTAINABLE_GROWTH"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "pe_range"
+            ],
+            "growth_adjusted_pe": [
+              "fair_pe",
+              "normalized_growth",
+              "peg_target"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "growth_adjusted_pe": {}
+          },
+          "dependency_overlap_score": 0.8571428571428571,
+          "model_pair_governance_status": "HIGH_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "forward_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "forward_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "forward_pe": [
+              "eps_basis",
+              "eps_source",
+              "pe_range",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "forward_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        },
+        {
+          "models": [
+            "growth_adjusted_pe",
+            "normalized_fcf_dcf"
+          ],
+          "shared_inputs": [
+            "quote_currency"
+          ],
+          "shared_input_count": 1,
+          "shared_core_driver_count": 0,
+          "shared_core_drivers": [],
+          "distinct_core_drivers": {
+            "growth_adjusted_pe": [
+              "EARNINGS_MULTIPLE_POLICY",
+              "EPS_BASIS",
+              "SUSTAINABLE_GROWTH"
+            ],
+            "normalized_fcf_dcf": [
+              "CAPITAL_BRIDGE",
+              "DISCOUNT_TERMINAL",
+              "FCF",
+              "SHARES"
+            ]
+          },
+          "additional_inputs": {
+            "growth_adjusted_pe": [
+              "eps_basis",
+              "eps_source",
+              "fair_pe",
+              "normalized_growth",
+              "peg_target",
+              "valuation_class_assumptions"
+            ],
+            "normalized_fcf_dcf": [
+              "canonical_shares",
+              "cash",
+              "dcf_growth",
+              "debt",
+              "discount_rate",
+              "fcf",
+              "financial_currency",
+              "terminal_growth"
+            ]
+          },
+          "actual_recorded_inputs": {
+            "growth_adjusted_pe": {},
+            "normalized_fcf_dcf": {}
+          },
+          "dependency_overlap_score": 0.0,
+          "model_pair_governance_status": "LOW_DEPENDENCY",
+          "methodology": "weighted core-driver Jaccard; declared structural dependencies, not Pearson correlation"
+        }
+      ],
+      "model_count_included": 2,
+      "included_models": [
+        "forward_pe",
+        "growth_adjusted_pe"
+      ],
+      "effective_independent_model_count": 1.25,
+      "active_families": [
+        "EARNINGS_MULTIPLE"
+      ],
+      "executed_families": [
+        "EARNINGS_MULTIPLE"
+      ],
+      "family_weight_concentration": {
+        "EARNINGS_MULTIPLE": 1.0
+      },
+      "dominant_family": "EARNINGS_MULTIPLE",
+      "dominant_family_weight": 1.0,
+      "family_concentration_status": "HIGH_FAMILY_CONCENTRATION",
+      "family_representatives": {
+        "EARNINGS_MULTIPLE": {
+          "family_model_count": 2,
+          "models": [
+            "forward_pe",
+            "growth_adjusted_pe"
+          ],
+          "family_mid_median": 287.83,
+          "family_mid_min": 272.13,
+          "family_mid_max": 303.53
+        }
+      },
+      "cross_family_status": "SINGLE_FAMILY_ONLY",
+      "cross_family_spread_pct": null,
+      "max_family_pairwise_difference_pct": null,
+      "outlier_governance_flags": [],
+      "outlier_governance_review": [],
+      "forward_to_trailing_eps_ratio": null,
+      "forecast_step_up_status": "UNKNOWN",
+      "growth_overlap_risk": "MODERATE",
+      "growth_overlap_reasons": [
+        "included_earnings_models_share_eps_basis_and_growth_multiple_overlay",
+        "forward_trailing_eps_ratio_unavailable"
+      ],
+      "capital_structure": {
+        "cash": null,
+        "debt": null,
+        "net_debt": null,
+        "net_debt_to_market_cap": null
+      },
+      "capital_structure_flags": [],
+      "governance_classification": "SINGLE_FAMILY_ONLY",
+      "governance_review_status": "STRUCTURALLY_CONCENTRATED",
+      "governance_summary": "NUMERICALLY_STABLE_BUT_CONCENTRATED",
+      "scope": "structural evidence diagnostics only; no production eligibility, weight, outlier or reliability changes"
+    }
+  ],
+  "recommended_v452_experiments": [
+    "Offline family-level versus model-level weighting experiment, with the original blend frozen as control.",
+    "Test correlation-adjusted evidence weighting separately from production reliability.",
+    "Review family-disagreement reliability penalties in a sandbox; preserve the current outlier decision as baseline.",
+    "Validate capital-structure-aware earnings diagnostics using actual debt/cash/share inputs.",
+    "Evaluate capex-cycle-normalized cashflow scenarios without relaxing existing applicability guards."
+  ]
+}

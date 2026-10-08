@@ -100,13 +100,17 @@ def audit_analysis(ticker,result):
     Snapshot replay must agree before sensitivities are accepted. Cached final
     values and live failed inputs must not be treated as one historical result.
     """
+    from model_family_governance import governance_audit
+    governance_result=governance_audit(result)
     if result.get('source_status','live')!='live':
-        return {'ticker':ticker,'status':'NEEDS_ORIGINAL_RELIABLE_INPUTS','reason':'cached display cannot be paired with current live inputs'}
+        return {'ticker':ticker,'status':'NEEDS_ORIGINAL_RELIABLE_INPUTS','reason':'cached display cannot be paired with current live inputs',
+                'correlation_cross_family_governance':governance_result}
     from calibration_snapshot_guard import calibration_eligibility
     governance=calibration_eligibility(result,result.get('reference_snapshot'))
     if result.get('calibration_eligibility',governance['calibration_eligibility'])!='ELIGIBLE' or governance['calibration_eligibility']!='ELIGIBLE':
         return {'ticker':ticker,'status':'CALIBRATION_INPUT_INELIGIBLE',
                 **governance,'sensitivity':None,'models':None,
+                'correlation_cross_family_governance':governance_result,
                 'reason':'Degraded data-state may be diagnosed but must not be used for calibration.'}
     f=NormalizedFinancialInputs(deepcopy(result.get('normalized_inputs',result['financials'])))
     blend=deepcopy(result['blend'])
@@ -141,6 +145,7 @@ def audit_analysis(ticker,result):
             direction.append({'model':row['model_name'],'position':'BELOW_BLEND' if row['mid']<fair else 'ABOVE_BLEND' if row['mid']>fair else 'AT_BLEND',
                               'weighted_offset_from_blend':(row['mid']-fair)*row['weight_after_normalization']})
     return {'ticker':ticker,'status':'CAPTURE_REPLAY_MATCH' if same else 'CAPTURE_REPLAY_MISMATCH',
+        'correlation_cross_family_governance':governance_result,
         'profile':profile.to_dict(),'assumptions':deepcopy(profile.spec),'inputs':{k:f.get(k) for k in KEYS},
         'fair':fair,'confidence':blend.get('confidence'),'dispersion':blend.get('dispersion'),
         'models':rows,'waterfall_sum':total,'waterfall_matches':matches,'relative_model_direction':direction,

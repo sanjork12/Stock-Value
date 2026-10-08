@@ -17,6 +17,7 @@ from finnhub_admin_diagnostics import is_cloud_runtime,verified_admin
 from financial_forensics_admin import _secret_strings
 from financial_forensics import snapshot_json
 from calibration_snapshot_guard import calibration_eligibility,batch_eligibility,reference_snapshot
+from model_family_governance import governance_audit
 
 _LOCK=threading.Lock()
 _LAST_RUN={}
@@ -162,6 +163,7 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
                     reference_status='AVAILABLE' if reference else 'NO_DATA'
                 except Exception:reference_status='READ_UNAVAILABLE'
             stock.update(calibration_eligibility(stock,reference))
+            stock['correlation_cross_family_governance']=governance_audit(stock)
             stock['reference_snapshot_read_status']=reference_status
             stock.update(batch_id=batch_id,batch_generated_at=stamp)
             stocks.append(stock)
@@ -175,10 +177,16 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
 
 def csv_payload(report):
     buffer=io.StringIO(newline='')
-    fields=('ticker','model_name','model_mid','base_weight','normalized_weight','contribution_to_blended_mid','included','excluded_reason')
+    summary_fields=('effective_independent_model_count','dominant_family','dominant_family_weight',
+        'family_concentration_status','cross_family_status','cross_family_spread_pct','growth_overlap_risk',
+        'governance_classification','governance_review_status')
+    fields=('ticker','model_name','model_mid','base_weight','normalized_weight','contribution_to_blended_mid','included','excluded_reason')+summary_fields
     writer=csv.DictWriter(buffer,fieldnames=fields);writer.writeheader()
     for stock in report['stocks']:
-        for model in stock.get('models',[]):writer.writerow({'ticker':stock['ticker'],**{k:model.get(k) for k in fields if k!='ticker'}})
+        governance=stock.get('correlation_cross_family_governance',{})
+        for model in stock.get('models',[]):writer.writerow({'ticker':stock['ticker'],
+            **{k:model.get(k) for k in fields if k!='ticker' and k not in summary_fields},
+            **{k:governance.get(k) for k in summary_fields}})
     return buffer.getvalue().encode('utf-8-sig')
 
 
@@ -216,5 +224,15 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
         'calibration_eligibility','calibration_eligibility_reasons','transient_input_degradation')}
         for stock in report['stocks']],hide_index=True,use_container_width=True)
     st.info('如显示 cached_last_reliable，当前 live inputs 与历史 blend 分开导出，不可将两者用于同一轮校准。')
+    st.markdown('**Correlation & Cross-Family Governance**')
+    st.caption('结构性 dependency overlap，不是统计相关系数；被 outlier 排除的有效跨家族信号仍参与诊断。生产估值保持不变。')
+    summary_fields=('model_count_included','effective_independent_model_count','dominant_family',
+        'dominant_family_weight','family_concentration_status','cross_family_status',
+        'cross_family_spread_pct','growth_overlap_risk','capital_structure_flags','governance_classification')
+    st.dataframe([{'ticker':stock['ticker'],**{k:stock.get('correlation_cross_family_governance',{}).get(k) for k in summary_fields}}
+        for stock in report['stocks']],hide_index=True,use_container_width=True)
+    for stock in report['stocks']:
+        with st.expander(stock['ticker']+' — family / pair diagnostics'):
+            st.json(stock.get('correlation_cross_family_governance',{}))
     st.download_button('下载 V4.5 JSON',snapshot_json(report),'v45_cloud_production_analysis.json','application/json',key='v45_export_json')
     st.download_button('下载模型贡献 CSV',csv_payload(report),'v45_cloud_model_contributions.csv','text/csv',key='v45_export_csv')
