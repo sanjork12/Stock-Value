@@ -11,7 +11,7 @@ from financial_forensics import snapshot_json
 
 
 def build_report(stocks):
-    return {'version':'V4.7','scope':'DIAGNOSTIC_ONLY_NO_PRODUCTION_EFFECT',
+    return {'version':'V4.7.1','scope':'DIAGNOSTIC_ONLY_NO_PRODUCTION_EFFECT',
         'evidence_note':'Default input contains prior approximate Cloud model mids but lacks actual capital structure inputs. It is not a fresh Cloud capture. No financial values are estimated.',
         'score_weights':COMPONENT_WEIGHTS,'component_band_scores':RISK_SCORES,'discount_fractions':DISCOUNTS,
         'stocks':[{'ticker':s['ticker'],'evidence_origin':s.get('evidence_origin','provided_Cloud_snapshot'),
@@ -34,7 +34,7 @@ def markdown(report):
         'Discount fractions LOW0, MODERATE.05, HIGH.10, VERY_HIGH.15. Burden overlay fair = earnings family per-share fair ×(1−discount). capital_structure_adjusted_equity_value is that per-share value × canonical shares; capital_structure_adjusted_equity_fair is the per-share value. This is a diagnostic heuristic, never a production adjustment.',
         '', '## G. EV bridge experiment','',
         'Class midpoint EV/EBITDA ×positive EBITDA = diagnostic enterprise value. Subtract net debt, divide by canonical shares. This experiment does not use the burden discount or P/E fair. Retain nonpositive results and mark negative_equity_signal. Missing range/EBITDA produces null with reason. Per-method differences = (method fair/production fair−1)×100; between methods = (EV bridge/burden overlay−1)×100.',
-        'Consistency requires both methods: both absolute differences<=10% → CONSISTENT; both downward differences>25% → CAPITAL_STRUCTURE_CONFLICT; otherwise MODERATE_CONCERN. Missing method/comparison → UNAVAILABLE. A single divergent or upward method cannot alone establish a debt-driven conflict. Governance: VERY_HIGH burden or conflict → MATERIAL_CAPITAL_STRUCTURE_CONFLICT; HIGH burden → REVIEW_REQUIRED; MODERATE burden or moderate concern → MONITOR; LOW and consistent → NO_CONCERN; otherwise UNAVAILABLE.', '']
+        'Consistency v4.7.1: burden absolute difference <=5/10% gives LOW/MODERATE, above10% HIGH; EV uses10/25%. FLAT within2%, otherwise UP/DOWN. Both unavailable → UNAVAILABLE; one unavailable → MATERIAL_CONCERN; both LOW → CONSISTENT; opposite directions → MIXED_SIGNAL; HIGH+LOW → MATERIAL_CONCERN; same-direction HIGH+MODERATE/HIGH → CAPITAL_STRUCTURE_CONFLICT; remaining combinations → MATERIAL_CONCERN. Governance retains the burden hierarchy: conflict → MATERIAL_CAPITAL_STRUCTURE_CONFLICT; new concern/mixed labels retain the former moderate-concern MONITOR category unless burden requires a stronger result.', '']
     for letter,stock in zip('HIJKL',report['stocks']):
         o=stock['capital_structure_overlay']
         lines.extend(['## '+letter+'. '+stock['ticker'],'',
@@ -49,7 +49,7 @@ def markdown(report):
     lines.extend(['',
         'Default five-stock evidence cannot establish ORCL debt burden or rank it against MSFT/GOOG/NVDA/AMZN: actual capital inputs are missing. Synthetic tests verify generic high-debt elevation, low net-cash burden, interest/leverage boundaries, missing-component reweighting and negative bridge equity without claiming those fixtures are actual company data.',
         'Run the existing ADMIN_EMAIL-only V4.5/V4.6 five-stock capture in Cloud. Inspect Capital Structure Overlay; download the existing v45_cloud_production_analysis.json and model-contribution CSV containing namespace-prefixed overlay columns. Recompute offline with python scripts/audit_capital_structure_overlay.py --input-json <export>. Interest/EBIT unavailable in the current production normalized input remain null; this implementation does not introduce alternate data fetching.',
-        'Validation: 599 tests PASS,0 FAIL/ERROR; Streamlit five-stock display/download/access-revocation validation PASS. No push.',
+        'Validation: see the current completion report for the full test count. Streamlit five-stock display/download/access-revocation validation covers the overlay section. No push.',
         '', '## N. Recommendation for V4.8','',
         'Wait for actual eligible Cloud ratios/coverage/consistency. If persistent confirmed capital gaps remain, investigate an enterprise-value earnings model or independent-family expansion. For capex-driven gaps with low debt burden, prioritize CapEx-normalized owner earnings. A production penalty or debt-adjusted P/E range would require separate validation, including the risk of double counting financing costs already reflected in EPS. No V4.8 change is implemented; no candidate is selected based on benchmark proximity.'])
     return '\n'.join(lines)+'\n'

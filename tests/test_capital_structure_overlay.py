@@ -67,7 +67,7 @@ class CapitalOverlayTests(unittest.TestCase):
         s=fixture();s['profile_assumptions'].pop('ev_ebitda_range')
         o=capital_overlay(s)
         self.assertIsNone(o['ev_bridge_fair'])
-        self.assertEqual(o['consistency_status'],'UNAVAILABLE')
+        self.assertEqual(o['consistency_status'],'MATERIAL_CONCERN')
 
     def test_benchmark_price_peer_not_inputs(self):
         s=fixture();before=capital_overlay(s)

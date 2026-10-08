@@ -1,0 +1,697 @@
+{
+  "baseline_commit": "bb83a593913e8e3bbca2033c7ea193ba5eaa18bf",
+  "evidence": "synthetic fixtures, not actual financial statements",
+  "cases": [
+    {
+      "name": "heavy_debt",
+      "input_changes": {},
+      "remove_ev_range": false,
+      "overlay": {
+        "applicability": {
+          "applicable": true,
+          "reasons": [],
+          "profitability_source": "net_income",
+          "currency_safe": true
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": 20.0,
+          "total_debt": 100.0,
+          "market_cap": 200.0,
+          "ebitda": 20.0,
+          "revenue": 100.0,
+          "interest_expense": 5.0,
+          "ebit": 25.0,
+          "canonical_shares": 10.0,
+          "net_income": 10.0,
+          "trailing_eps": null,
+          "net_debt": 80.0,
+          "enterprise_value": 280.0,
+          "quote_currency": "USD",
+          "financial_currency": "USD"
+        },
+        "input_reasons": {
+          "trailing_eps": "missing_or_nonfinite"
+        },
+        "production_fair": 237.75,
+        "earnings_family_fair": 237.74923076923076,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {
+          "net_debt_to_market_cap": 0.4,
+          "debt_to_market_cap": 0.5,
+          "net_debt_to_ebitda": 4.0,
+          "debt_to_ebitda": 5.0,
+          "interest_coverage": 5.0,
+          "implied_ev_to_ebitda": 122.8746153846154,
+          "implied_ev_to_revenue": 24.574923076923078
+        },
+        "ratio_reasons": {},
+        "bands": {
+          "net_debt_band": "HIGH",
+          "leverage_band": "VERY_HIGH",
+          "interest_coverage_band": "ADEQUATE",
+          "implied_ev_ebitda_vs_class_range": "FAR_ABOVE_RANGE",
+          "implied_ev_revenue_vs_class_range": "FAR_ABOVE_RANGE"
+        },
+        "class_ranges": {
+          "ev_ebitda_range": [
+            10.0,
+            16.0
+          ],
+          "sales_multiple_range": [
+            3.0,
+            6.0
+          ]
+        },
+        "class_range_reasons": {},
+        "earnings_equity_value": 2377.492307692308,
+        "implied_enterprise_value": 2457.492307692308,
+        "burden_score": 76.5,
+        "capital_structure_burden_score": 76.5,
+        "burden_band": "VERY_HIGH",
+        "capital_structure_burden_band": "VERY_HIGH",
+        "score_components": {
+          "net_debt_to_market_cap": {
+            "raw_score": 70.0,
+            "base_weight": 0.35,
+            "normalized_weight": 0.35,
+            "contribution": 24.5
+          },
+          "net_debt_to_ebitda": {
+            "raw_score": 100.0,
+            "base_weight": 0.3,
+            "normalized_weight": 0.3,
+            "contribution": 30.0
+          },
+          "interest_coverage": {
+            "raw_score": 35.0,
+            "base_weight": 0.2,
+            "normalized_weight": 0.2,
+            "contribution": 7.0
+          },
+          "enterprise_multiple_stretch": {
+            "raw_score": 100.0,
+            "base_weight": 0.15,
+            "normalized_weight": 0.15,
+            "contribution": 15.0
+          }
+        },
+        "score_components_used": [
+          "net_debt_to_market_cap",
+          "net_debt_to_ebitda",
+          "interest_coverage",
+          "enterprise_multiple_stretch"
+        ],
+        "score_weight_coverage": 1.0,
+        "score_components_missing": {},
+        "burden_discount_pct": 0.15,
+        "experimental_discount_pct": 0.15,
+        "burden_overlay_fair": 202.08684615384615,
+        "capital_structure_adjusted_equity_value": 2020.8684615384616,
+        "capital_structure_adjusted_equity_fair": 202.08684615384615,
+        "class_range_ev_bridge": {
+          "midpoint": 13.0,
+          "diagnostic_enterprise_value": 260.0,
+          "diagnostic_equity_value": 180.0,
+          "reason": null
+        },
+        "ev_bridge_fair": 18.0,
+        "negative_equity_signal": false,
+        "difference_vs_production_pct": {
+          "burden_overlay": -15.00027501415514,
+          "ev_bridge": -92.42902208201893
+        },
+        "difference_between_overlay_methods_pct": -91.09293833686888,
+        "consistency_status": "MODERATE_CONCERN",
+        "consistency_reason": "both_methods_required; >25% downward difference on both methods required for conflict",
+        "governance": "MATERIAL_CAPITAL_STRUCTURE_CONFLICT",
+        "capital_structure_governance": "MATERIAL_CAPITAL_STRUCTURE_CONFLICT"
+      }
+    },
+    {
+      "name": "net_cash",
+      "input_changes": {
+        "cash": 120,
+        "ebitda": 100,
+        "ebit": 100
+      },
+      "remove_ev_range": false,
+      "overlay": {
+        "applicability": {
+          "applicable": true,
+          "reasons": [],
+          "profitability_source": "net_income",
+          "currency_safe": true
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": 120.0,
+          "total_debt": 100.0,
+          "market_cap": 200.0,
+          "ebitda": 100.0,
+          "revenue": 100.0,
+          "interest_expense": 5.0,
+          "ebit": 100.0,
+          "canonical_shares": 10.0,
+          "net_income": 10.0,
+          "trailing_eps": null,
+          "net_debt": -20.0,
+          "enterprise_value": 180.0,
+          "quote_currency": "USD",
+          "financial_currency": "USD"
+        },
+        "input_reasons": {
+          "trailing_eps": "missing_or_nonfinite"
+        },
+        "production_fair": 237.75,
+        "earnings_family_fair": 237.74923076923076,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {
+          "net_debt_to_market_cap": -0.1,
+          "debt_to_market_cap": 0.5,
+          "net_debt_to_ebitda": -0.2,
+          "debt_to_ebitda": 1.0,
+          "interest_coverage": 20.0,
+          "implied_ev_to_ebitda": 23.574923076923078,
+          "implied_ev_to_revenue": 23.574923076923078
+        },
+        "ratio_reasons": {},
+        "bands": {
+          "net_debt_band": "NET_CASH",
+          "leverage_band": "LOW",
+          "interest_coverage_band": "STRONG",
+          "implied_ev_ebitda_vs_class_range": "FAR_ABOVE_RANGE",
+          "implied_ev_revenue_vs_class_range": "FAR_ABOVE_RANGE"
+        },
+        "class_ranges": {
+          "ev_ebitda_range": [
+            10.0,
+            16.0
+          ],
+          "sales_multiple_range": [
+            3.0,
+            6.0
+          ]
+        },
+        "class_range_reasons": {},
+        "earnings_equity_value": 2377.492307692308,
+        "implied_enterprise_value": 2357.492307692308,
+        "burden_score": 15.0,
+        "capital_structure_burden_score": 15.0,
+        "burden_band": "LOW",
+        "capital_structure_burden_band": "LOW",
+        "score_components": {
+          "net_debt_to_market_cap": {
+            "raw_score": 0.0,
+            "base_weight": 0.35,
+            "normalized_weight": 0.35,
+            "contribution": 0.0
+          },
+          "net_debt_to_ebitda": {
+            "raw_score": 0.0,
+            "base_weight": 0.3,
+            "normalized_weight": 0.3,
+            "contribution": 0.0
+          },
+          "interest_coverage": {
+            "raw_score": 0.0,
+            "base_weight": 0.2,
+            "normalized_weight": 0.2,
+            "contribution": 0.0
+          },
+          "enterprise_multiple_stretch": {
+            "raw_score": 100.0,
+            "base_weight": 0.15,
+            "normalized_weight": 0.15,
+            "contribution": 15.0
+          }
+        },
+        "score_components_used": [
+          "net_debt_to_market_cap",
+          "net_debt_to_ebitda",
+          "interest_coverage",
+          "enterprise_multiple_stretch"
+        ],
+        "score_weight_coverage": 1.0,
+        "score_components_missing": {},
+        "burden_discount_pct": 0.0,
+        "experimental_discount_pct": 0.0,
+        "burden_overlay_fair": 237.74923076923076,
+        "capital_structure_adjusted_equity_value": 2377.492307692308,
+        "capital_structure_adjusted_equity_fair": 237.74923076923076,
+        "class_range_ev_bridge": {
+          "midpoint": 13.0,
+          "diagnostic_enterprise_value": 1300.0,
+          "diagnostic_equity_value": 1320.0,
+          "reason": null
+        },
+        "ev_bridge_fair": 132.0,
+        "negative_equity_signal": false,
+        "difference_vs_production_pct": {
+          "burden_overlay": -0.0003235460648731703,
+          "ev_bridge": -44.479495268138805
+        },
+        "difference_between_overlay_methods_pct": -44.47931563314934,
+        "consistency_status": "MODERATE_CONCERN",
+        "consistency_reason": "both_methods_required; >25% downward difference on both methods required for conflict",
+        "governance": "MONITOR",
+        "capital_structure_governance": "MONITOR"
+      }
+    },
+    {
+      "name": "negative_equity",
+      "input_changes": {
+        "debt": 500
+      },
+      "remove_ev_range": false,
+      "overlay": {
+        "applicability": {
+          "applicable": true,
+          "reasons": [],
+          "profitability_source": "net_income",
+          "currency_safe": true
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": 20.0,
+          "total_debt": 500.0,
+          "market_cap": 200.0,
+          "ebitda": 20.0,
+          "revenue": 100.0,
+          "interest_expense": 5.0,
+          "ebit": 25.0,
+          "canonical_shares": 10.0,
+          "net_income": 10.0,
+          "trailing_eps": null,
+          "net_debt": 480.0,
+          "enterprise_value": 680.0,
+          "quote_currency": "USD",
+          "financial_currency": "USD"
+        },
+        "input_reasons": {
+          "trailing_eps": "missing_or_nonfinite"
+        },
+        "production_fair": 237.75,
+        "earnings_family_fair": 237.74923076923076,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {
+          "net_debt_to_market_cap": 2.4,
+          "debt_to_market_cap": 2.5,
+          "net_debt_to_ebitda": 24.0,
+          "debt_to_ebitda": 25.0,
+          "interest_coverage": 5.0,
+          "implied_ev_to_ebitda": 142.8746153846154,
+          "implied_ev_to_revenue": 28.574923076923078
+        },
+        "ratio_reasons": {},
+        "bands": {
+          "net_debt_band": "VERY_HIGH",
+          "leverage_band": "VERY_HIGH",
+          "interest_coverage_band": "ADEQUATE",
+          "implied_ev_ebitda_vs_class_range": "FAR_ABOVE_RANGE",
+          "implied_ev_revenue_vs_class_range": "FAR_ABOVE_RANGE"
+        },
+        "class_ranges": {
+          "ev_ebitda_range": [
+            10.0,
+            16.0
+          ],
+          "sales_multiple_range": [
+            3.0,
+            6.0
+          ]
+        },
+        "class_range_reasons": {},
+        "earnings_equity_value": 2377.492307692308,
+        "implied_enterprise_value": 2857.492307692308,
+        "burden_score": 87.0,
+        "capital_structure_burden_score": 87.0,
+        "burden_band": "VERY_HIGH",
+        "capital_structure_burden_band": "VERY_HIGH",
+        "score_components": {
+          "net_debt_to_market_cap": {
+            "raw_score": 100.0,
+            "base_weight": 0.35,
+            "normalized_weight": 0.35,
+            "contribution": 35.0
+          },
+          "net_debt_to_ebitda": {
+            "raw_score": 100.0,
+            "base_weight": 0.3,
+            "normalized_weight": 0.3,
+            "contribution": 30.0
+          },
+          "interest_coverage": {
+            "raw_score": 35.0,
+            "base_weight": 0.2,
+            "normalized_weight": 0.2,
+            "contribution": 7.0
+          },
+          "enterprise_multiple_stretch": {
+            "raw_score": 100.0,
+            "base_weight": 0.15,
+            "normalized_weight": 0.15,
+            "contribution": 15.0
+          }
+        },
+        "score_components_used": [
+          "net_debt_to_market_cap",
+          "net_debt_to_ebitda",
+          "interest_coverage",
+          "enterprise_multiple_stretch"
+        ],
+        "score_weight_coverage": 1.0,
+        "score_components_missing": {},
+        "burden_discount_pct": 0.15,
+        "experimental_discount_pct": 0.15,
+        "burden_overlay_fair": 202.08684615384615,
+        "capital_structure_adjusted_equity_value": 2020.8684615384616,
+        "capital_structure_adjusted_equity_fair": 202.08684615384615,
+        "class_range_ev_bridge": {
+          "midpoint": 13.0,
+          "diagnostic_enterprise_value": 260.0,
+          "diagnostic_equity_value": -220.0,
+          "reason": null
+        },
+        "ev_bridge_fair": -22.0,
+        "negative_equity_signal": true,
+        "difference_vs_production_pct": {
+          "burden_overlay": -15.00027501415514,
+          "ev_bridge": -109.25341745531021
+        },
+        "difference_between_overlay_methods_pct": -110.88640869938249,
+        "consistency_status": "MODERATE_CONCERN",
+        "consistency_reason": "both_methods_required; >25% downward difference on both methods required for conflict",
+        "governance": "MATERIAL_CAPITAL_STRUCTURE_CONFLICT",
+        "capital_structure_governance": "MATERIAL_CAPITAL_STRUCTURE_CONFLICT"
+      }
+    },
+    {
+      "name": "missing_ev_range",
+      "input_changes": {},
+      "remove_ev_range": true,
+      "overlay": {
+        "applicability": {
+          "applicable": true,
+          "reasons": [],
+          "profitability_source": "net_income",
+          "currency_safe": true
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": 20.0,
+          "total_debt": 100.0,
+          "market_cap": 200.0,
+          "ebitda": 20.0,
+          "revenue": 100.0,
+          "interest_expense": 5.0,
+          "ebit": 25.0,
+          "canonical_shares": 10.0,
+          "net_income": 10.0,
+          "trailing_eps": null,
+          "net_debt": 80.0,
+          "enterprise_value": 280.0,
+          "quote_currency": "USD",
+          "financial_currency": "USD"
+        },
+        "input_reasons": {
+          "trailing_eps": "missing_or_nonfinite"
+        },
+        "production_fair": 237.75,
+        "earnings_family_fair": 237.74923076923076,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {
+          "net_debt_to_market_cap": 0.4,
+          "debt_to_market_cap": 0.5,
+          "net_debt_to_ebitda": 4.0,
+          "debt_to_ebitda": 5.0,
+          "interest_coverage": 5.0,
+          "implied_ev_to_ebitda": 122.8746153846154,
+          "implied_ev_to_revenue": 24.574923076923078
+        },
+        "ratio_reasons": {},
+        "bands": {
+          "net_debt_band": "HIGH",
+          "leverage_band": "VERY_HIGH",
+          "interest_coverage_band": "ADEQUATE",
+          "implied_ev_ebitda_vs_class_range": "UNAVAILABLE",
+          "implied_ev_revenue_vs_class_range": "FAR_ABOVE_RANGE"
+        },
+        "class_ranges": {
+          "ev_ebitda_range": null,
+          "sales_multiple_range": [
+            3.0,
+            6.0
+          ]
+        },
+        "class_range_reasons": {
+          "ev_ebitda_range": "missing_or_invalid_captured_class_range"
+        },
+        "earnings_equity_value": 2377.492307692308,
+        "implied_enterprise_value": 2457.492307692308,
+        "burden_score": 76.5,
+        "capital_structure_burden_score": 76.5,
+        "burden_band": "VERY_HIGH",
+        "capital_structure_burden_band": "VERY_HIGH",
+        "score_components": {
+          "net_debt_to_market_cap": {
+            "raw_score": 70.0,
+            "base_weight": 0.35,
+            "normalized_weight": 0.35,
+            "contribution": 24.5
+          },
+          "net_debt_to_ebitda": {
+            "raw_score": 100.0,
+            "base_weight": 0.3,
+            "normalized_weight": 0.3,
+            "contribution": 30.0
+          },
+          "interest_coverage": {
+            "raw_score": 35.0,
+            "base_weight": 0.2,
+            "normalized_weight": 0.2,
+            "contribution": 7.0
+          },
+          "enterprise_multiple_stretch": {
+            "raw_score": 100.0,
+            "base_weight": 0.15,
+            "normalized_weight": 0.15,
+            "contribution": 15.0
+          }
+        },
+        "score_components_used": [
+          "net_debt_to_market_cap",
+          "net_debt_to_ebitda",
+          "interest_coverage",
+          "enterprise_multiple_stretch"
+        ],
+        "score_weight_coverage": 1.0,
+        "score_components_missing": {},
+        "burden_discount_pct": 0.15,
+        "experimental_discount_pct": 0.15,
+        "burden_overlay_fair": 202.08684615384615,
+        "capital_structure_adjusted_equity_value": 2020.8684615384616,
+        "capital_structure_adjusted_equity_fair": 202.08684615384615,
+        "class_range_ev_bridge": {
+          "midpoint": null,
+          "diagnostic_enterprise_value": null,
+          "diagnostic_equity_value": null,
+          "reason": "missing_class_ev_range_or_positive_ebitda"
+        },
+        "ev_bridge_fair": null,
+        "negative_equity_signal": false,
+        "difference_vs_production_pct": {
+          "burden_overlay": -15.00027501415514,
+          "ev_bridge": null
+        },
+        "difference_between_overlay_methods_pct": null,
+        "consistency_status": "UNAVAILABLE",
+        "consistency_reason": "both_methods_required; >25% downward difference on both methods required for conflict",
+        "governance": "MATERIAL_CAPITAL_STRUCTURE_CONFLICT",
+        "capital_structure_governance": "MATERIAL_CAPITAL_STRUCTURE_CONFLICT"
+      }
+    },
+    {
+      "name": "unsafe_currency",
+      "input_changes": {
+        "financial_currency": "EUR"
+      },
+      "remove_ev_range": false,
+      "overlay": {
+        "applicability": {
+          "applicable": false,
+          "reasons": [
+            "capital_currency_unsafe_or_unknown"
+          ],
+          "profitability_source": "net_income",
+          "currency_safe": false
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": 20.0,
+          "total_debt": 100.0,
+          "market_cap": 200.0,
+          "ebitda": 20.0,
+          "revenue": 100.0,
+          "interest_expense": 5.0,
+          "ebit": 25.0,
+          "canonical_shares": 10.0,
+          "net_income": 10.0,
+          "trailing_eps": null,
+          "net_debt": 80.0,
+          "enterprise_value": 280.0,
+          "quote_currency": "USD",
+          "financial_currency": "EUR"
+        },
+        "input_reasons": {
+          "trailing_eps": "missing_or_nonfinite"
+        },
+        "production_fair": 237.75,
+        "earnings_family_fair": 237.74923076923076,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {},
+        "bands": {},
+        "burden_score": null,
+        "burden_band": "UNAVAILABLE",
+        "score_components": {},
+        "score_components_used": [],
+        "burden_overlay_fair": null,
+        "ev_bridge_fair": null,
+        "consistency_status": "UNAVAILABLE",
+        "governance": "UNAVAILABLE"
+      }
+    },
+    {
+      "name": "missing_interest",
+      "input_changes": {
+        "interest_expense": null
+      },
+      "remove_ev_range": false,
+      "overlay": {
+        "applicability": {
+          "applicable": true,
+          "reasons": [],
+          "profitability_source": "net_income",
+          "currency_safe": true
+        },
+        "overlay_role": "PRIMARY_STRUCTURAL_DIAGNOSTIC",
+        "inputs": {
+          "cash": 20.0,
+          "total_debt": 100.0,
+          "market_cap": 200.0,
+          "ebitda": 20.0,
+          "revenue": 100.0,
+          "interest_expense": null,
+          "ebit": 25.0,
+          "canonical_shares": 10.0,
+          "net_income": 10.0,
+          "trailing_eps": null,
+          "net_debt": 80.0,
+          "enterprise_value": 280.0,
+          "quote_currency": "USD",
+          "financial_currency": "USD"
+        },
+        "input_reasons": {
+          "interest_expense": "missing_or_nonfinite",
+          "trailing_eps": "missing_or_nonfinite"
+        },
+        "production_fair": 237.75,
+        "earnings_family_fair": 237.74923076923076,
+        "scope": "DIAGNOSTIC_ONLY_NOT_A_PRODUCTION_MODEL",
+        "fair_value_effect": "NONE",
+        "ratios": {
+          "net_debt_to_market_cap": 0.4,
+          "debt_to_market_cap": 0.5,
+          "net_debt_to_ebitda": 4.0,
+          "debt_to_ebitda": 5.0,
+          "interest_coverage": null,
+          "implied_ev_to_ebitda": 122.8746153846154,
+          "implied_ev_to_revenue": 24.574923076923078
+        },
+        "ratio_reasons": {
+          "interest_coverage": "missing_numerator_or_nonpositive_denominator"
+        },
+        "bands": {
+          "net_debt_band": "HIGH",
+          "leverage_band": "VERY_HIGH",
+          "interest_coverage_band": "UNAVAILABLE",
+          "implied_ev_ebitda_vs_class_range": "FAR_ABOVE_RANGE",
+          "implied_ev_revenue_vs_class_range": "FAR_ABOVE_RANGE"
+        },
+        "class_ranges": {
+          "ev_ebitda_range": [
+            10.0,
+            16.0
+          ],
+          "sales_multiple_range": [
+            3.0,
+            6.0
+          ]
+        },
+        "class_range_reasons": {},
+        "earnings_equity_value": 2377.492307692308,
+        "implied_enterprise_value": 2457.492307692308,
+        "burden_score": 86.875,
+        "capital_structure_burden_score": 86.875,
+        "burden_band": "VERY_HIGH",
+        "capital_structure_burden_band": "VERY_HIGH",
+        "score_components": {
+          "net_debt_to_market_cap": {
+            "raw_score": 70.0,
+            "base_weight": 0.35,
+            "normalized_weight": 0.4375,
+            "contribution": 30.625
+          },
+          "net_debt_to_ebitda": {
+            "raw_score": 100.0,
+            "base_weight": 0.3,
+            "normalized_weight": 0.375,
+            "contribution": 37.5
+          },
+          "enterprise_multiple_stretch": {
+            "raw_score": 100.0,
+            "base_weight": 0.15,
+            "normalized_weight": 0.1875,
+            "contribution": 18.75
+          }
+        },
+        "score_components_used": [
+          "net_debt_to_market_cap",
+          "net_debt_to_ebitda",
+          "enterprise_multiple_stretch"
+        ],
+        "score_weight_coverage": 0.7999999999999999,
+        "score_components_missing": {
+          "interest_coverage": "input_or_class_range_unavailable"
+        },
+        "burden_discount_pct": 0.15,
+        "experimental_discount_pct": 0.15,
+        "burden_overlay_fair": 202.08684615384615,
+        "capital_structure_adjusted_equity_value": 2020.8684615384616,
+        "capital_structure_adjusted_equity_fair": 202.08684615384615,
+        "class_range_ev_bridge": {
+          "midpoint": 13.0,
+          "diagnostic_enterprise_value": 260.0,
+          "diagnostic_equity_value": 180.0,
+          "reason": null
+        },
+        "ev_bridge_fair": 18.0,
+        "negative_equity_signal": false,
+        "difference_vs_production_pct": {
+          "burden_overlay": -15.00027501415514,
+          "ev_bridge": -92.42902208201893
+        },
+        "difference_between_overlay_methods_pct": -91.09293833686888,
+        "consistency_status": "MODERATE_CONCERN",
+        "consistency_reason": "both_methods_required; >25% downward difference on both methods required for conflict",
+        "governance": "MATERIAL_CAPITAL_STRUCTURE_CONFLICT",
+        "capital_structure_governance": "MATERIAL_CAPITAL_STRUCTURE_CONFLICT"
+      }
+    }
+  ]
+}

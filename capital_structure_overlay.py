@@ -2,6 +2,7 @@
 from model_family_governance import governance_audit
 from experimental_family_blend import family_blend_experiment
 from valuation_primitives import fnum
+from math import isclose
 
 NET_DEBT_THRESHOLDS=(.10,.25,.50)
 LEVERAGE_THRESHOLDS=(1.,2.,3.5)
@@ -13,8 +14,36 @@ RISK_SCORES={'LOW':0.,'MODERATE':35.,'HIGH':70.,'VERY_HIGH':100.,'NET_CASH':0.,
     'BELOW_RANGE':0.,'WITHIN_RANGE':0.,'ABOVE_RANGE':60.,'FAR_ABOVE_RANGE':100.}
 DISCOUNTS={'LOW':0.,'MODERATE':.05,'HIGH':.10,'VERY_HIGH':.15}
 STRETCH_TOLERANCE=.20
-CONSISTENCY_NEAR_PCT=10.
-CONSISTENCY_CONFLICT_PCT=25.
+CONSISTENCY_RULE_VERSION='v4.7.1'
+BURDEN_MATERIALITY_THRESHOLDS=(5.,10.)
+EV_MATERIALITY_THRESHOLDS=(10.,25.)
+DIRECTION_FLAT_PCT=2.
+
+
+def consistency_assessment(burden_difference,ev_difference):
+    """Compare each method on its own design scale; percentages, not fractions."""
+    def within(value,limit):return value<=limit or isclose(value,limit,rel_tol=0,abs_tol=1e-9)
+    def classify(value,limits):
+        if value is None:return 'UNAVAILABLE'
+        return 'LOW' if within(abs(value),limits[0]) else 'MODERATE' if within(abs(value),limits[1]) else 'HIGH'
+    def direction(value):
+        if value is None:return None
+        return 'FLAT' if within(abs(value),DIRECTION_FLAT_PCT) else 'UP' if value>0 else 'DOWN'
+    burden_difference,ev_difference=fnum(burden_difference),fnum(ev_difference)
+    bm,em=classify(burden_difference,BURDEN_MATERIALITY_THRESHOLDS),classify(ev_difference,EV_MATERIALITY_THRESHOLDS)
+    bd,ed=direction(burden_difference),direction(ev_difference)
+    if bm==em=='UNAVAILABLE':status,reason='UNAVAILABLE','both_overlay_methods_unavailable'
+    elif 'UNAVAILABLE' in (bm,em):status,reason='MATERIAL_CONCERN','one_overlay_method_unavailable'
+    elif bm==em=='LOW':status,reason='CONSISTENT','both_methods_low_materiality'
+    elif {bd,ed}=={'UP','DOWN'}:status,reason='MIXED_SIGNAL','overlay_methods_have_opposite_directions'
+    elif 'HIGH' in (bm,em) and 'LOW' in (bm,em):status,reason='MATERIAL_CONCERN','high_materiality_not_confirmed_by_low_materiality_method'
+    elif bd==ed and 'HIGH' in (bm,em):status,reason='CAPITAL_STRUCTURE_CONFLICT','same_direction_high_materiality_confirmed_by_at_least_moderate_method'
+    elif bd==ed and bm==em=='MODERATE':status,reason='MATERIAL_CONCERN','same_direction_moderate_materiality_on_both_methods'
+    else:status,reason='MATERIAL_CONCERN','moderate_or_unconfirmed_materiality'
+    return {'burden_overlay_materiality':bm,'ev_bridge_materiality':em,
+        'burden_overlay_direction':bd,'ev_bridge_direction':ed,
+        'consistency_rule_version':CONSISTENCY_RULE_VERSION,
+        'consistency_status':status,'capital_structure_consistency_status':status,'consistency_reason':reason}
 
 
 def ascending_band(value,thresholds,labels=('LOW','MODERATE','HIGH','VERY_HIGH')):
@@ -93,7 +122,7 @@ def capital_overlay(stock):
     if failures:
         return {**result,'ratios':{},'bands':{},'burden_score':None,'burden_band':'UNAVAILABLE',
             'score_components':{},'score_components_used':[],'burden_overlay_fair':None,'ev_bridge_fair':None,
-            'consistency_status':'UNAVAILABLE','governance':'UNAVAILABLE'}
+            **consistency_assessment(None,None),'governance':'UNAVAILABLE'}
     ratios={};ratio_reasons={}
     def ratio(name,numerator,denominator):
         ratios[name]=numerator/denominator if numerator is not None and denominator is not None and denominator>0 else None
@@ -122,12 +151,10 @@ def capital_overlay(stock):
     ev_bridge=(sum(ev_range)/2*inputs['ebitda']-net)/shares if ev_range and inputs['ebitda'] is not None and inputs['ebitda']>0 else None
     def diff(value,reference):return (value/reference-1)*100 if value is not None and reference is not None and reference>0 else None
     differences={'burden_overlay':diff(overlay,production),'ev_bridge':diff(ev_bridge,production)}
-    ds=list(differences.values())
-    consistency=('UNAVAILABLE' if any(v is None for v in ds) else
-        'CONSISTENT' if max(abs(v) for v in ds)<=CONSISTENCY_NEAR_PCT else
-        'CAPITAL_STRUCTURE_CONFLICT' if all(v<-CONSISTENCY_CONFLICT_PCT for v in ds) else 'MODERATE_CONCERN')
+    assessment=consistency_assessment(differences['burden_overlay'],differences['ev_bridge'])
+    consistency=assessment['consistency_status']
     governance=('MATERIAL_CAPITAL_STRUCTURE_CONFLICT' if burden=='VERY_HIGH' or consistency=='CAPITAL_STRUCTURE_CONFLICT' else
-        'REVIEW_REQUIRED' if burden=='HIGH' else 'MONITOR' if burden=='MODERATE' or consistency=='MODERATE_CONCERN' else
+        'REVIEW_REQUIRED' if burden=='HIGH' else 'MONITOR' if burden=='MODERATE' or consistency in ('MATERIAL_CONCERN','MIXED_SIGNAL') else
         'NO_CONCERN' if burden=='LOW' and consistency=='CONSISTENT' else 'UNAVAILABLE')
     return {**result,'ratios':ratios,'ratio_reasons':ratio_reasons,'bands':bands,
         'class_ranges':{'ev_ebitda_range':ev_range,'sales_multiple_range':sales_range},
@@ -145,7 +172,7 @@ def capital_overlay(stock):
             'reason':None if ev_bridge is not None else 'missing_class_ev_range_or_positive_ebitda'},
         'ev_bridge_fair':ev_bridge,'negative_equity_signal':ev_bridge is not None and ev_bridge<=0,
         'difference_vs_production_pct':differences,'difference_between_overlay_methods_pct':diff(ev_bridge,overlay),
-        'consistency_status':consistency,'consistency_reason':'both_methods_required; >25% downward difference on both methods required for conflict',
+        **assessment,
         'governance':governance,'capital_structure_governance':governance}
 
 
@@ -154,6 +181,7 @@ def overlay_summary(stock):
     return {'ticker':stock['ticker'],'applicable':o.get('applicability',{}).get('applicable'),
         'reason':o.get('applicability',{}).get('reasons'),
         **{k:o.get(k) for k in ('overlay_role','production_fair','earnings_family_fair','burden_score','burden_band',
-            'burden_overlay_fair','ev_bridge_fair','consistency_status','governance')},
+            'burden_overlay_fair','ev_bridge_fair','consistency_status','governance',
+            'burden_overlay_materiality','ev_bridge_materiality','burden_overlay_direction','ev_bridge_direction','consistency_rule_version')},
         'net_debt':o.get('inputs',{}).get('net_debt'),
         **{k:o.get('ratios',{}).get(k) for k in ('net_debt_to_market_cap','net_debt_to_ebitda','interest_coverage')}}

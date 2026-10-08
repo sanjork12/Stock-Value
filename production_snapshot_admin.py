@@ -195,7 +195,8 @@ def csv_payload(report):
     evidence_fields=tuple('independent_evidence_governance.'+key for key in EXPORT_FIELDS)
     overlay_fields=tuple('capital_structure_overlay.'+key for key in ('applicable','reason','overlay_role',
         'net_debt','net_debt_to_market_cap','net_debt_to_ebitda','interest_coverage','production_fair',
-        'earnings_family_fair','burden_score','burden_band','burden_overlay_fair','ev_bridge_fair','consistency_status','governance'))
+        'earnings_family_fair','burden_score','burden_band','burden_overlay_fair','ev_bridge_fair','consistency_status','governance',
+        'burden_overlay_materiality','ev_bridge_materiality','burden_overlay_direction','ev_bridge_direction','consistency_rule_version'))
     fields+=experimental_fields+evidence_fields+overlay_fields
     writer=csv.DictWriter(buffer,fieldnames=fields);writer.writeheader()
     for stock in report['stocks']:
