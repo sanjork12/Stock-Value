@@ -48,9 +48,16 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
             assert any('本批次仅用于输入降级诊断，不应用于估值校准。' in w.value for w in app.warning)
         assert all('enterprise_family_suitability' in s for s in report['stocks'])
         assert any('V4.9 Enterprise Family Suitability Audit' in e.value for e in app.markdown)
+        assert all('production_input_trace' in s for s in report['stocks'])
+        assert any('Production Input Wiring Trace' in e.value for e in app.markdown)
         assert len(app.get('download_button'))==5
         assert any('V4.6 Reliability Governance Audit' in element.value for element in app.markdown)
         import production_snapshot_admin as admin
+        previous_batch=app.session_state['_v45_export_result']['report']['batch_id']
+        admin._LAST_RUN.clear()
+        next(b for b in app.button if b.label=='运行五股生产分析快照').click().run()
+        assert not app.exception
+        assert app.session_state['_v45_export_result']['report']['batch_id']!=previous_batch
         legacy=deepcopy(app.session_state['_v45_export_result'])
         original_batch=legacy['report']['batch_id']
         original_stamp=legacy['report']['generated_at']

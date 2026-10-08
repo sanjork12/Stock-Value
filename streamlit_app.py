@@ -1549,8 +1549,9 @@ if st.session_state.get("_v45_export_open"):
             if is_rls_or_auth_error(exc):
                 raise
             return dict(live, source_status='live', reliable_cache_status='storage_unavailable')
+    from production_input_wiring import snapshot_fundamentals
     render_snapshot_export(st, db, user_id, history_loader=history_cached,
-                           fundamentals_loader=fundamentals_cached, display_resolver=v45_display_readonly,
+                           fundamentals_loader=snapshot_fundamentals, display_resolver=v45_display_readonly,
                            reference_loader=v45_reference_readonly)
     st.stop()
 

@@ -314,6 +314,15 @@ class RawAcquisitionCache:
                     self.counters['logical_acquisition_count']+=1
                     self.counters['fresh_recovery_count']+=int(meta['fresh_recovery_attempted'])
                     self.counters['fresh_recovery_success_count']+=int(meta['fresh_recovery_used'])
+            # Public three-field observation and identity before normalization.
+            # No raw dictionary or credentials are retained in the diagnostic metadata.
+            meta.update(input_batch_id=batch_id,production_raw_fields={
+                field:{'value':deepcopy(info.get(raw) if raw!='financialCurrency' else
+                    info.get('financialCurrency') or info.get('financialCurrencyCode')),
+                    'source':meta['field_sources'].get(raw) or
+                        (meta['field_sources'].get('financialCurrencyCode') if raw=='financialCurrency' else None)}
+                for field,raw in (('forward_eps','forwardEps'),('quote_currency','currency'),
+                    ('financial_currency','financialCurrency'))})
             result=normalize(deepcopy(info),t,deepcopy(meta))
             promoted=False;fresh_degraded=False
             if not hit:

@@ -1,6 +1,7 @@
 """Temporary Cloud production snapshot export; request-local observation only."""
 from enterprise_family_suitability import attach_report, audit_export, csv_export, summary as suitability_summary
 from copy import deepcopy
+from production_input_wiring import build_trace, summary as wiring_summary
 from datetime import date,datetime,timezone
 import csv
 import io
@@ -82,6 +83,10 @@ def readonly_display(live,load_snapshot):
 
 def capture_analysis(ticker,*,history_loader,fundamentals_loader,display_resolver=None):
     observed={}
+    def observed_fundamentals(t):
+        result=fundamentals_loader(t)
+        observed['acquired_inputs']=deepcopy(result)
+        return result
     def outliers(models):
         observed['models_before_outlier']=deepcopy(models)
         result=engine._flag_outliers(models)
@@ -107,10 +112,13 @@ def capture_analysis(ticker,*,history_loader,fundamentals_loader,display_resolve
     # monkeypatch shared services or invoke a second valuation implementation.
     analyze=clone(analysis_service.analyze_ticker,valuate=valuate,
                   _attach_peer_diagnostics=lambda result,*args,**kwargs:result)
-    live=analyze(ticker,history_loader=history_loader,fundamentals_loader=fundamentals_loader,
+    live=analyze(ticker,history_loader=history_loader,fundamentals_loader=observed_fundamentals,
                  peer_mode='diagnostic')
     displayed=display_resolver(deepcopy(live)) if display_resolver else deepcopy(live)
-    return project_snapshot(live,displayed,observed)
+    stock=project_snapshot(live,displayed,observed)
+    stock['production_input_trace']=build_trace(ticker,observed.get('acquired_inputs') or {},
+        observed.get('normalized_inputs') or {},stock.get('normalized_inputs') or {})
+    return stock
 
 
 def project_snapshot(live,displayed,observed):
@@ -229,6 +237,19 @@ def _run_batch_impl(client,user_id,secrets,*,history_loader,fundamentals_loader,
                     reference=reference_snapshot(reference_loader(ticker),ticker)
                     reference_status='AVAILABLE' if reference else 'NO_DATA'
                 except Exception:reference_status='READ_UNAVAILABLE'
+            trace=stock.get('production_input_trace')
+            if trace:
+                observed_ids=[v.get('input_batch_id') for v in trace['stage_identities'].values()]
+                if any(v is not None and v!=batch_id for v in observed_ids):
+                    trace['divergence']='BATCH_ACQUISITION_DIVERGENCE'
+                    trace['acceptance_status']='FAIL'
+                    if 'input_batch_id' not in trace['identity_divergent_fields']:trace['identity_divergent_fields'].append('input_batch_id')
+                trace['input_batch_id']=batch_id
+                # Capture the actual guard argument immediately at its boundary.
+                calibration_inputs=stock.get('normalized_inputs') or {}
+                for field in ('forward_eps','quote_currency','financial_currency'):
+                    trace[field]['calibration_input']=deepcopy(calibration_inputs.get(field))
+                trace['stage_identities']['calibration']={k:calibration_inputs.get(k) for k in ('input_batch_id','fundamentals_acquisition_id')}
             stock.update(calibration_eligibility(stock,reference))
             stock['correlation_cross_family_governance']=governance_audit(stock)
             stock['experimental_family_blend']=family_blend_experiment(stock)
@@ -378,6 +399,8 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
         with st.expander(stock['ticker']+' — capital structure overlay'):
             st.json(stock.get('capital_structure_overlay',{}))
     audits=governance_audit_rows(report)
+    st.markdown('**Production Input Wiring Trace**')
+    st.dataframe([wiring_summary(stock) for stock in report['stocks']],hide_index=True,use_container_width=True)
     st.markdown('**Enterprise-Aware Valuation Experiment**')
     st.caption('DIAGNOSTIC ONLY · 企业价值方法不进入生产 blend、可靠性或 Last Reliable；不是推荐估值。')
     st.dataframe([enterprise_summary(stock) for stock in report['stocks']],hide_index=True,use_container_width=True)
