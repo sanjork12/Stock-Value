@@ -1490,7 +1490,16 @@ with header_right:
             st.rerun()
 
 if st.session_state.get("_peer_diagnostic_open"):
-    render_peer_diagnostics(st, db, user_id)
+    def peer_internal_readonly(ticker):
+        from peer_diagnostic_admin import _NoPeerRequests
+        from last_reliable_valuation import resolve_live_result
+        live = analyze_ticker(ticker, history_loader=history_cached,
+                              fundamentals_loader=fundamentals_cached,
+                              peer_mode="diagnostic", peer_provider=_NoPeerRequests())
+        return resolve_live_result(live,
+            lambda: get_cloud_snapshot(db, user_id, live['ticker'], date.today().isoformat()),
+            lambda result: None)
+    render_peer_diagnostics(st, db, user_id, internal_loader=peer_internal_readonly)
     st.stop()
 
 if st.session_state.get("_finnhub_audit_open"):

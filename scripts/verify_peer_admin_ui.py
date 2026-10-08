@@ -18,7 +18,7 @@ import peer_diagnostic_admin as admin
 test=PeerAdminTests()
 test.setUp()
 original=admin.run_cloud_peer_diagnostic
-def run(client,user,secrets,tickers):
+def run(client,user,secrets,tickers,**kwargs):
     return original(client,user,secrets,tickers,provider=PublicFixture(),internal_loader=lambda _:test.baseline)
 with patch.object(admin,'run_cloud_peer_diagnostic',side_effect=run):
     admin.render_peer_diagnostics(st,test.client,'u')

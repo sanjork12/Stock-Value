@@ -88,14 +88,24 @@ class PeerAdminTests(unittest.TestCase):
         loader.assert_not_called()
         self.assertTrue(all(r['diagnostic_status']=='NOT_CONFIGURED' for r in report['comparison']))
 
-    def test_internal_capture_explicitly_diagnostic_without_estimates(self):
+    def test_internal_capture_uses_normal_production_fundamentals(self):
         with patch('analysis_service.analyze_ticker') as analyze, patch('mag7_monitor.get_live_fundamentals') as load:
             admin._live_internal('NVDA')
             args=analyze.call_args.kwargs
             self.assertEqual(args['peer_mode'],'diagnostic')
             self.assertNotIn('market_reference_provider',args)
             args['fundamentals_loader']('NVDA')
-            load.assert_called_once_with('NVDA',allow_estimates=False)
+            load.assert_called_once_with('NVDA')
+
+    def test_pipeline_preserves_exact_exclusion_reasons(self):
+        p=PublicFixture();original=p.get_basic_financials
+        p.get_basic_financials=lambda t:({'status':'NO_DATA','data':{}} if t=='MRVL' else original(t))
+        report=self.run_report(['NVDA'],p)
+        trace=report['peer_results'][0]['pipeline_trace']
+        self.assertEqual(trace['initial_candidates'],3)
+        self.assertEqual(trace['after_data_availability'],2)
+        self.assertEqual(next(x for x in trace['peers'] if x['ticker']=='MRVL')['exact_exclusion_reason'],'NO_DATA')
+        self.assertEqual(report['internal_source_audit'][0]['production_analysis_internal_fair'],290.44)
 
 
 if __name__=='__main__':unittest.main()

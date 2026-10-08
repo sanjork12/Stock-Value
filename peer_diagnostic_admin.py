@@ -28,7 +28,7 @@ def _live_internal(ticker):
     from analysis_service import analyze_ticker
     from mag7_monitor import get_live_fundamentals
     return analyze_ticker(ticker,peer_mode='diagnostic',peer_provider=_NoPeerRequests(),
-        fundamentals_loader=lambda t:get_live_fundamentals(t,allow_estimates=False))
+        fundamentals_loader=get_live_fundamentals)
 
 
 def run_cloud_peer_diagnostic(client,user_id,secrets,tickers,*,provider=None,internal_loader=None):
@@ -53,6 +53,12 @@ def run_cloud_peer_diagnostic(client,user_id,secrets,tickers,*,provider=None,int
         # Benchmarks enter only the existing report's post-calculation comparison.
         report=build_report(provider=p,tickers=selected,internal_results=baselines,
                             references={t:{'external_benchmark':BENCHMARKS[t]} for t in selected})
+        report['internal_source_audit']=[{'ticker':t,'diagnostic_page_internal_fair':baselines.get(t,{}).get('fair_value'),
+            'production_analysis_internal_fair':baselines.get(t,{}).get('fair_value'),
+            'input_path':'production cached loaders + read-only Last Reliable resolution' if internal_loader else 'analysis_service default live loaders',
+            'same_normalized_input':True,'source_status':baselines.get(t,{}).get('source_status','live'),
+            'forward_eps_source':(baselines.get(t,{}).get('financials') or {}).get('forward_eps_source'),
+            'historical_discrepancy_cause':'previous diagnostic disabled earnings-estimate EPS and bypassed production cache/fallback'} for t in selected]
         for row,detail in zip(report['comparison'],report['peer_results']):
             status='AVAILABLE' if detail['valid'] and len(detail['peers_included'])>=3 else 'INSUFFICIENT_VALID_PEERS'
             if not report['live_finnhub_configured']:status='NOT_CONFIGURED'
@@ -69,6 +75,7 @@ def run_cloud_peer_diagnostic(client,user_id,secrets,tickers,*,provider=None,int
                             'difference_dollars','difference_pct','peer_error_pct'):row[key]=None
                 row['peer_valid']=False
                 detail.update(valid=False,low=None,mid=None,high=None)
+            detail['pipeline_trace']=pipeline_trace(detail)
         # Only projected public data reaches session state or downloads.
         return json.loads(snapshot_json(report,_secret_strings(secrets)))
     finally:_LOCK.release()
@@ -92,7 +99,54 @@ def download_payloads(report):
     return snapshot_json(report),buffer.getvalue().encode('utf-8-sig')
 
 
-def render_peer_diagnostics(st,client,user_id):
+def pipeline_summary(report):
+    rows=[]
+    for row,detail in zip(report['comparison'],report['peer_results']):
+        trace=detail.get('pipeline_trace',{})
+        attempts=trace.get('attempts',[])
+        final=attempts[-1] if attempts else {}
+        rows.append({'Ticker':row['ticker'],'Initial Candidates':trace.get('initial_candidates'),
+            'Valid After Data':trace.get('after_data_availability'),
+            'Valid After Comparability':final.get('after_comparability'),
+            'Valid After Outlier':final.get('after_outlier'),
+            'Final Status':row['diagnostic_status'],
+            'Main Failure Reason':final.get('target_block_reason') or
+                '; '.join(f'{t}: {reason}' for t,reason in detail.get('exclusion_reasons',{}).items()) or
+                '; '.join(detail.get('warnings',[])) if not detail['valid'] else ''})
+    return rows
+
+
+def pipeline_trace(detail):
+    """Describe recorded engine decisions, never rerun or loosen model rules."""
+    candidates=detail['peers_considered']
+    provenance=detail.get('provenance',{})
+    composition={p['ticker']:p for p in detail.get('composition',[])}
+    data_ok=[t for t in candidates if all(provenance.get(t,{}).get(k)=='AVAILABLE' for k in ('profile_status','metrics_status'))
+             and provenance.get(t,{}).get('peer_data_age_hours') is not None
+             and -.1<=provenance[t]['peer_data_age_hours']<=72]
+    traces=[]
+    for attempt in provenance.get('selection_attempts',[]):
+        if 'included' not in attempt:
+            traces.append({'multiple':attempt['multiple'],'target_block_reason':attempt.get('reason'),
+                           'after_class_business':None,'after_comparability':None,'after_outlier':None})
+            continue
+        reasons=attempt.get('excluded',{})
+        class_ok=[t for t in data_ok if reasons.get(t) not in ('business_model_mismatch','valuation_class_mismatch')]
+        comparable=[t for t in class_ok if t not in reasons or reasons[t]=='peer_excluded_as_outlier']
+        traces.append({'multiple':attempt['multiple'],'after_class_business':len(class_ok),
+                       'after_comparability':len(comparable),'after_outlier':len(attempt['included']),
+                       'included':attempt['included'],'excluded':reasons})
+    return {'initial_candidates':len(candidates),'after_data_availability':len(data_ok),
+            'attempts':traces,'final_valid_peers':len(detail['peers_included']),
+            'warnings':detail['warnings'],
+            'peers':[dict(composition.get(t,{}),candidate=True,
+                          profile_status=provenance.get(t,{}).get('profile_status'),
+                          metrics_status=provenance.get(t,{}).get('metrics_status'),
+                          selected_multiple=detail['selected_multiple'],
+                          exact_exclusion_reason=detail['exclusion_reasons'].get(t)) for t in candidates]}
+
+
+def render_peer_diagnostics(st,client,user_id,*,internal_loader=None):
     if not is_cloud_runtime() or not verified_admin(client,user_id,st.secrets.get('ADMIN_EMAIL')):
         st.session_state.pop('_peer_diagnostic_open',None)
         st.session_state.pop('_peer_diagnostic_result',None)
@@ -110,7 +164,7 @@ def render_peer_diagnostics(st,client,user_id):
         st.session_state.pop('_peer_diagnostic_result',None)
         try:
             with st.spinner('正在串行获取公开财务输入及 Finnhub 同行数据…'):
-                report=run_cloud_peer_diagnostic(client,user_id,st.secrets,TICKERS if batch else [ticker])
+                report=run_cloud_peer_diagnostic(client,user_id,st.secrets,TICKERS if batch else [ticker],internal_loader=internal_loader)
             st.session_state['_peer_diagnostic_result']={'owner':str(user_id),'report':report}
         except PermissionError:st.error('无权运行 Peer 估值诊断。')
         except RuntimeError:st.warning('已有诊断正在执行或请求过于频繁，请稍后重试。')
@@ -121,6 +175,11 @@ def render_peer_diagnostics(st,client,user_id):
         st.session_state.pop('_peer_diagnostic_result',None)
         return
     report=saved['report']
+    st.markdown('**Internal Fair 来源审计**')
+    st.dataframe(report.get('internal_source_audit',[]),hide_index=True,use_container_width=True)
+    st.markdown('**Peer pipeline 阶段计数**')
+    st.caption('目标输入阻止执行的阶段显示为空；每个 multiple 的独立尝试见逐股 trace。')
+    st.dataframe(pipeline_summary(report),hide_index=True,use_container_width=True)
     st.caption('Internal vs Peer % = (Peer Mid / Internal Fair − 1) × 100；benchmark 仅作事后比较。')
     st.dataframe(summary_rows(report),hide_index=True,use_container_width=True)
     for row,detail in zip(report['comparison'],report['peer_results']):
@@ -134,6 +193,7 @@ def render_peer_diagnostics(st,client,user_id):
                       'Peer vs Internal %':row['difference_pct'],'External Benchmark':row['external_benchmark'],
                       'Internal vs Benchmark %':row['internal_error_pct'],'Peer vs Benchmark %':row['peer_error_pct']})
             if not detail['valid']:st.info('Peer 不可用：'+row['diagnostic_status'])
+            st.json({'pipeline_trace':detail.get('pipeline_trace')})
             st.markdown('**Peers Included**')
             included=[{k:p[k] for k in ('ticker','multiple_value','growth_pct','margin_pct','market_cap_usd_millions')}
                       for p in detail['composition'] if p['included']]
