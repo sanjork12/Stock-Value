@@ -1,0 +1,142 @@
+{
+  "version": "v5.1",
+  "mode": "DIAGNOSTIC_ONLY",
+  "frozen_commit": "ac5206a23488b6f7a5025d6fbef42d4512c7ee18",
+  "user_reported_cloud_batch": "da36c6d6-8401-426b-abb4-dd1bf5b53040",
+  "cloud_acceptance": "PENDING_NEW_CLOUD_EXPORT",
+  "stocks": [
+    {
+      "ticker": "GOOG",
+      "reported_coverage_before": 67.5,
+      "coverage_after": null,
+      "metric_basis": null,
+      "business_structure": null,
+      "v49_after": null,
+      "status": "PENDING_CLOUD_EVIDENCE"
+    },
+    {
+      "ticker": "MSFT",
+      "reported_coverage_before": 67.5,
+      "coverage_after": null,
+      "metric_basis": null,
+      "business_structure": null,
+      "v49_after": null,
+      "status": "PENDING_CLOUD_EVIDENCE"
+    },
+    {
+      "ticker": "ORCL",
+      "reported_coverage_before": 67.5,
+      "coverage_after": null,
+      "metric_basis": null,
+      "business_structure": null,
+      "v49_after": null,
+      "status": "PENDING_CLOUD_EVIDENCE"
+    },
+    {
+      "ticker": "NVDA",
+      "reported_coverage_before": 67.5,
+      "coverage_after": null,
+      "metric_basis": null,
+      "business_structure": null,
+      "v49_after": null,
+      "status": "PENDING_CLOUD_EVIDENCE"
+    },
+    {
+      "ticker": "AMZN",
+      "reported_coverage_before": 67.5,
+      "coverage_after": null,
+      "metric_basis": null,
+      "business_structure": null,
+      "v49_after": null,
+      "status": "PENDING_CLOUD_EVIDENCE"
+    }
+  ],
+  "production_invariants": [
+    {
+      "file": "valuation_engine.py",
+      "baseline_sha256": "f25b7bbb5c9ca0fc3b99dc6ffaa55dd14bdbb4bb518937dde09f73084c167430",
+      "current_sha256": "f25b7bbb5c9ca0fc3b99dc6ffaa55dd14bdbb4bb518937dde09f73084c167430",
+      "unchanged": true
+    },
+    {
+      "file": "valuation_primitives.py",
+      "baseline_sha256": "7d2c551b7ee5321869b3147dc06cd6a5aadbf00e90481afec2fb67315b62b83a",
+      "current_sha256": "7d2c551b7ee5321869b3147dc06cd6a5aadbf00e90481afec2fb67315b62b83a",
+      "unchanged": true
+    },
+    {
+      "file": "financial_normalization.py",
+      "baseline_sha256": "6273f6ca22e142173faf521710bae32673ed05b2015ab8af63fd5ebffa4dd35f",
+      "current_sha256": "6273f6ca22e142173faf521710bae32673ed05b2015ab8af63fd5ebffa4dd35f",
+      "unchanged": true
+    },
+    {
+      "file": "analysis_service.py",
+      "baseline_sha256": "8d0634adb97cd57a1e8098d5dcdcaf8b9a0cf5c4d6a7ff6adc5d7141cb00f84e",
+      "current_sha256": "8d0634adb97cd57a1e8098d5dcdcaf8b9a0cf5c4d6a7ff6adc5d7141cb00f84e",
+      "unchanged": true
+    },
+    {
+      "file": "enterprise_evidence.py",
+      "baseline_sha256": "aada0a02e74a6b62ecab3985b5f469e21fd0e8278bcb6b3a8d656c6d0787f3df",
+      "current_sha256": "aada0a02e74a6b62ecab3985b5f469e21fd0e8278bcb6b3a8d656c6d0787f3df",
+      "unchanged": true
+    },
+    {
+      "file": "enterprise_evidence_policy.py",
+      "baseline_sha256": "e5c7baed4e78088f692d09f69f35a31c2fc1211601448c56972f77fe16e11e1f",
+      "current_sha256": "e5c7baed4e78088f692d09f69f35a31c2fc1211601448c56972f77fe16e11e1f",
+      "unchanged": true
+    },
+    {
+      "file": "enterprise_family_suitability.py",
+      "baseline_sha256": "65bc8ab9791062bc998eefd1bc4b0ffe53b90f1d5b7a8cad1d48bb6a8ff0b917",
+      "current_sha256": "65bc8ab9791062bc998eefd1bc4b0ffe53b90f1d5b7a8cad1d48bb6a8ff0b917",
+      "unchanged": true
+    },
+    {
+      "file": "enterprise_aware_experiment.py",
+      "baseline_sha256": "8f73a9cfd5c3e70543f6b8da13abd6310a547359949ce24115672acf84b778d8",
+      "current_sha256": "8f73a9cfd5c3e70543f6b8da13abd6310a547359949ce24115672acf84b778d8",
+      "unchanged": true
+    },
+    {
+      "file": "capital_structure_overlay.py",
+      "baseline_sha256": "87d9839b604d3da51a34f046e34d5b5930c0d1d4e360ab28f4b224017642f0d9",
+      "current_sha256": "87d9839b604d3da51a34f046e34d5b5930c0d1d4e360ab28f4b224017642f0d9",
+      "unchanged": true
+    },
+    {
+      "file": "last_reliable_valuation.py",
+      "baseline_sha256": "b4a1d5631756474bb992960fa1b65858ed1d0438c0a1248019ac185d76d6d23c",
+      "current_sha256": "b4a1d5631756474bb992960fa1b65858ed1d0438c0a1248019ac185d76d6d23c",
+      "unchanged": true
+    },
+    {
+      "file": "peer_comparable.py",
+      "baseline_sha256": "872ee9d6701ea38abb1384c0837fc3baa68a1fa3abcf0bb9ab0e9c49a782eea4",
+      "current_sha256": "872ee9d6701ea38abb1384c0837fc3baa68a1fa3abcf0bb9ab0e9c49a782eea4",
+      "unchanged": true
+    },
+    {
+      "file": "mag7_monitor.py",
+      "baseline_sha256": "40346405bdd04feb064a4da0de38ea81bb48657b0e1a282f56abe358435821bc",
+      "current_sha256": "40346405bdd04feb064a4da0de38ea81bb48657b0e1a282f56abe358435821bc",
+      "unchanged": true
+    }
+  ],
+  "telemetry": {
+    "added_logical_calls": 0,
+    "added_provider_calls": 0
+  },
+  "next_recommendation": "Keep diagnostic-only; segment/SOTP evidence research before class governance if mix remains unresolved",
+  "commit_hash": "See git log -- reports/v51_enterprise_evidence_closure.json (report included in implementation commit)",
+  "tests": {
+    "total": 956,
+    "new": 41,
+    "failures": 0,
+    "errors": 0,
+    "streamlit_widget_check": "PASS",
+    "diff_check": "PASS"
+  }
+}

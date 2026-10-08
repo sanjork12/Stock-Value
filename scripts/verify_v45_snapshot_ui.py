@@ -65,6 +65,17 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
             assert old['live_blend']==new['live_blend']
             assert 'enterprise_structural_evidence' in new and 'v49_evidence_delta' in new
         assert any('Enterprise Evidence Completion' in x.value for x in app.markdown)
+        with patch.object(admin,'capture_analysis',side_effect=AssertionError('Closure must not fetch')):
+            next(b for b in app.button if b.label=='运行 V5.1 Evidence Closure').click().run()
+        assert not app.exception
+        v51=app.session_state['_v45_export_result']['report']
+        assert v51['batch_id']==v50['batch_id']
+        assert len(app.get('download_button'))==9
+        for old,new in zip(v50['stocks'],v51['stocks']):
+            assert old['normalized_inputs']==new['normalized_inputs']
+            assert old['live_blend']==new['live_blend']
+            assert old['enterprise_structural_evidence']==new['enterprise_structural_evidence']
+            assert new['enterprise_evidence_closure']['telemetry']['added_provider_calls']==0
         previous_batch=app.session_state['_v45_export_result']['report']['batch_id']
         admin._LAST_RUN.clear()
         next(b for b in app.button if b.label=='运行五股生产分析快照').click().run()
