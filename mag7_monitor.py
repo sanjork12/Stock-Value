@@ -467,9 +467,25 @@ def _load_statement(ticker: str, t, stage: str, attrs: tuple[str, ...], methods:
     return None
 
 
-def get_live_fundamentals(ticker: str, *, allow_estimates=True):
-    t = _yfinance().Ticker(ticker)
-    info = _merge_ticker_info(ticker, t)
+def get_live_fundamentals(ticker: str, *, allow_estimates=True, force_refresh=False):
+    from fundamental_acquisition import RAW_CACHE, flags
+    options = flags()
+    if not options.quality_cache:
+        return _get_live_fundamentals_impl(ticker, allow_estimates=allow_estimates)
+    return RAW_CACHE.get(ticker, factory=_yfinance().Ticker, options=options,
+        force_refresh=force_refresh, allow_estimates=allow_estimates,
+        normalize=lambda info, t, meta: _get_live_fundamentals_impl(ticker,
+            allow_estimates=allow_estimates, _raw_context=(info, t, meta)))
+
+
+def _get_live_fundamentals_impl(ticker: str, *, allow_estimates=True, _raw_context=None):
+    if _raw_context is None:
+        t = _yfinance().Ticker(ticker)
+        info = _merge_ticker_info(ticker, t)
+    else:
+        info, t, acquisition_meta = _raw_context
+        from financial_forensics_observer import observe_info
+        observe_info('ticker.get_info', info)
 
     current = fnum(info.get("currentPrice") or info.get("regularMarketPrice"))
     forward_eps = fnum(info.get("forwardEps"))
@@ -571,7 +587,7 @@ def get_live_fundamentals(ticker: str, *, allow_estimates=True):
     if (forward_eps is None or forward_eps <= 0) and fnum(info.get("epsForward")):
         forward_eps = fnum(info.get("epsForward"))
         forward_eps_source = "epsForward"
-    if (forward_eps is None or forward_eps <= 0) and current and fnum(info.get("forwardPE")):
+    if _raw_context is None and (forward_eps is None or forward_eps <= 0) and current and fnum(info.get("forwardPE")):
         pe = fnum(info.get("forwardPE"))
         if pe and pe > 0:
             forward_eps = current / pe
@@ -750,7 +766,31 @@ def get_live_fundamentals(ticker: str, *, allow_estimates=True):
         "warnings": list(normalized.get("warnings") or []) + extra_warnings,
         "data_source": "Yahoo Finance / yfinance",
     }
-    return fill_fundamental_fallbacks(payload)
+    result = fill_fundamental_fallbacks(payload)
+    if _raw_context is not None:
+        from fundamental_acquisition import decorate_inputs
+        acquisition_meta['statement_context'] = {}
+        if inc is not None and not inc.empty:
+            acquisition_meta['statement_context']['income_stmt'] = {'period':str(list(inc.columns)[0])[:10],
+                'diluted_average_shares':next((row for row in ('Diluted Average Shares','Basic Average Shares') if row in inc.index), None)}
+        if bs is not None and not bs.empty:
+            period = str(list(bs.columns)[0])[:10]
+            acquisition_meta['statement_context']['balance_sheet'] = {'period':period,
+                'cash':next((row for row in ('Cash And Cash Equivalents', 'Cash Cash Equivalents And Short Term Investments', 'Cash Financial') if row in bs.index), None),
+                'debt':next((row for row in ('Total Debt', 'Long Term Debt And Capital Lease Obligation', 'Net Debt') if row in bs.index), None)}
+        result = decorate_inputs(result, info, acquisition_meta)
+        estimate = t.recorded.get('get_earnings_estimate')
+        selected = None
+        if estimate is not None and not getattr(estimate, 'empty', True) and 'avg' in estimate.columns:
+            selected = next((row for row in ('0y','+1y','0q','+1q') if row in estimate.index and fnum(estimate.loc[row,'avg']) is not None and fnum(estimate.loc[row,'avg']) > 0), None)
+            if selected is None and forward_eps_source == 'earnings_estimate':
+                selected = 'FIRST_AVAILABLE_AVG'
+        result['existing_earnings_estimate_audit'] = {'source':'yfinance._analysis.earnings_estimate',
+            'endpoint_module':'Yahoo quoteSummary / earningsTrend',
+            'selected_period':selected, 'returned_direct_estimate':forward_eps_source=='earnings_estimate',
+            'currency_evidence':financial_currency, 'share_basis':'PROVIDER_ESTIMATE_NOT_INDEPENDENTLY_VERIFIED',
+            'freshness':'ACQUISITION_TIME_ONLY_PROVIDER_EFFECTIVE_TIME_UNKNOWN', 'policy_expanded':False}
+    return result
 
 
 def fill_fundamental_fallbacks(financials: dict | None) -> dict:

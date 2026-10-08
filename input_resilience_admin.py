@@ -11,6 +11,23 @@ from input_resilience_audit import run_audit
 
 _LOCK=threading.Lock()
 _LAST_RUN={}
+_LAST_SIM={}
+
+
+def run_cloud_simulation(client,user_id,secrets,*,factory=None,provider=None):
+    if not is_cloud_runtime() or not verified_admin(client,user_id,secrets.get('ADMIN_EMAIL')):
+        raise PermissionError('Cloud 管理员专用。')
+    if not _LOCK.acquire(blocking=False):raise RuntimeError('已有审计正在运行。')
+    try:
+        if time.monotonic()-_LAST_SIM.get(str(user_id),-1e12)<300:raise RuntimeError('Cooldown')
+        _LAST_SIM[str(user_id)]=time.monotonic()
+        if factory is None:
+            from mag7_monitor import _yfinance
+            factory=_yfinance().Ticker
+        from acquisition_simulation import run_simulation
+        result=run_simulation(factory=factory,provider=provider or get_finnhub_provider())
+        return json.loads(snapshot_json(result,_secret_strings(secrets)))
+    finally:_LOCK.release()
 
 
 def run_cloud_audit(client,user_id,secrets,*,production_report=None,yahoo_factory=None,provider=None):
@@ -51,11 +68,32 @@ def summary_rows(report):
 def render_input_resilience(st,client,user_id):
     if not is_cloud_runtime() or not verified_admin(client,user_id,st.secrets.get('ADMIN_EMAIL')):
         st.session_state.pop('_v481_result',None)
+        st.session_state.pop('_v482_simulation',None)
         st.warning('仅限 Cloud 中 ADMIN_EMAIL 对应的已登录管理员。');return
     st.header('Cloud Input Resilience Audit')
     st.caption('V4.8.1 · 只读逐字段取证 · 不实施 fallback，不修改生产估值或 Calibration Guard')
     if st.button('返回',key='v481_back'):
         st.session_state.pop('_v481_open',None);st.rerun()
+    st.markdown('**V4.8.2 Acquisition Simulation**')
+    st.caption('每股先读取一次真实 baseline；五种场景仅重放该 baseline 的直接字段，不写 production cache，不重算 eligibility。')
+    if st.button('运行五股 Acquisition Simulation',key='v482_simulate'):
+        try:
+            with st.spinner('取得 baseline 后执行隔离重放。'):
+                simulation=run_cloud_simulation(client,user_id,st.secrets)
+            st.session_state['_v482_simulation']={'owner':str(user_id),'report':simulation}
+        except Exception:st.error('模拟未完成，请确认 baseline 数据健康或稍后重试。')
+    simulated=st.session_state.get('_v482_simulation') or {}
+    if simulated.get('owner')==str(user_id):
+        sr=simulated['report']
+        rows=[{k:v for k,v in row.items() if k!='metadata'} for stock in sr['stocks'] for row in stock['scenarios']]
+        if rows:st.dataframe(rows,hide_index=True,use_container_width=True)
+        st.json(sr)
+        st.download_button('下载 Acquisition Simulation JSON',snapshot_json(sr),
+            'v482_acquisition_simulation.json','application/json',key='v482_sim_download')
+    else:st.session_state.pop('_v482_simulation',None)
+    from fundamental_acquisition import RAW_CACHE,HEALTH_TTLS,flags
+    st.json({'production_acquisition_telemetry':RAW_CACHE.telemetry(),
+        'health_ttls':HEALTH_TTLS,'feature_flags':vars(flags()),'http_count':'HTTP_COUNT_UNAVAILABLE'})
     if st.button('运行五股 Provider Audit',key='v481_run'):
         saved=st.session_state.get('_v45_export_result') or {}
         production=saved.get('report') if saved.get('owner')==str(user_id) else None

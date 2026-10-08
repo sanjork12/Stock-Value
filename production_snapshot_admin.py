@@ -193,13 +193,27 @@ def _public(value):
 
 
 def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,display_resolver=None,reference_loader=None):
+    from fundamental_acquisition import acquisition_batch
+    with acquisition_batch(force_refresh=True) as scope:
+        # Request-local copies coalesce even an injected loader; no stale session reuse.
+        def scoped_fundamentals(ticker):
+            key=(scope['batch_id'],ticker,'production_fundamentals')
+            if key not in scope['request_scope_cache']:
+                scope['request_scope_cache'][key]=deepcopy(fundamentals_loader(ticker))
+            return deepcopy(scope['request_scope_cache'][key])
+        return _run_batch_impl(client,user_id,secrets,history_loader=history_loader,
+            fundamentals_loader=scoped_fundamentals,display_resolver=display_resolver,
+            reference_loader=reference_loader,input_batch_id=scope['batch_id'])
+
+
+def _run_batch_impl(client,user_id,secrets,*,history_loader,fundamentals_loader,display_resolver=None,reference_loader=None,input_batch_id=None):
     if not is_cloud_runtime() or not verified_admin(client,user_id,secrets.get('ADMIN_EMAIL')):
         raise PermissionError('Cloud admin only')
     if not _LOCK.acquire(blocking=False):raise RuntimeError('Busy')
     try:
         if time.monotonic()-_LAST_RUN.get(str(user_id),-1e12)<30:raise RuntimeError('Cooldown')
         _LAST_RUN[str(user_id)]=time.monotonic()
-        batch_id=str(uuid4());stamp=datetime.now(timezone.utc).isoformat()
+        batch_id=input_batch_id or str(uuid4());stamp=datetime.now(timezone.utc).isoformat()
         stocks=[]
         for ticker in TICKERS:
             try:
@@ -221,11 +235,17 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
             stock['capital_structure_overlay']=capital_overlay(stock)
             stock['enterprise_aware_experiment']=wired_enterprise_result(stock,batch_id=batch_id)
             stock['reference_snapshot_read_status']=reference_status
-            stock.update(batch_id=batch_id,batch_generated_at=stamp)
+            inputs=stock.get('normalized_inputs') or {}
+            stock.update(batch_id=batch_id,batch_generated_at=stamp,input_batch_id=batch_id,
+                fundamentals_acquisition_id=inputs.get('fundamentals_acquisition_id'),
+                batch_input_health=(inputs.get('provider_health') or {}).get('overall_state','UNOBSERVED'))
             stocks.append(stock)
         report={'schema_version':'v4.5.0','batch_id':batch_id,'batch_generated_at':stamp,'generated_at':stamp,
             'mode':'read_only_diagnostic','execution':'serial single Cloud batch; underlying cached input ages may differ',
-            'stocks':stocks}
+            'stocks':stocks,'input_batch_id':batch_id,
+            'batch_input_health':'DEGRADED' if any(s['batch_input_health'] in ('DEGRADED','UNAVAILABLE') for s in stocks)
+                else 'UNOBSERVED' if any(s['batch_input_health']=='UNOBSERVED' for s in stocks)
+                else 'PARTIAL' if any(s['batch_input_health']=='PARTIAL' for s in stocks) else 'HEALTHY'}
         report.update(batch_eligibility(stocks,TICKERS))
         return json.loads(snapshot_json(_public(report),_secret_strings(secrets)))
     finally:_LOCK.release()
@@ -306,6 +326,11 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
     st.session_state['_v45_export_result']=saved
     if report['enterprise_experiment_wiring']['repaired_tickers']:
         st.info('已从当前保存批次的原始输入补算 V4.8 诊断；未重新抓取财务数据，批次时间保持不变。')
+    st.caption('Input batch: '+str(report.get('input_batch_id',report.get('batch_id')))+
+        ' · health: '+str(report.get('batch_input_health','LEGACY_UNOBSERVED'))+
+        ' · '+str(report.get('generated_at')))
+    if report.get('batch_input_health')=='DEGRADED':
+        st.warning('该批次包含降级财务输入。点击“运行五股生产分析快照”会创建新 acquisition batch；当前显示保留原批次时间。')
     st.markdown('**Calibration Batch Status**')
     st.write(report.get('batch_calibration_eligibility','INELIGIBLE'))
     if report.get('batch_calibration_eligibility')!='ELIGIBLE':

@@ -88,7 +88,13 @@ def disagreements(paths):
         sources=[(name,p['values'].get(field)) for name,p in paths.items()
                  if p['values'].get(field) is not None]
         for (a,x),(b,y) in combinations(sources,2):
-            if field in ('quote_currency','financial_currency','industry','exchange','last_split_factor'):
+            if field=='last_split_factor':
+                from fundamental_acquisition import split_ratio
+                result=numeric_disagreement(split_ratio(x),split_ratio(y))
+            elif field=='last_split_date':
+                from fundamental_acquisition import split_day
+                result={'provider_disagreement_pct':None,'status':'CONSISTENT' if split_day(x)==split_day(y) else 'MATERIAL_DIFFERENCE'}
+            elif field in ('quote_currency','financial_currency','industry','exchange'):
                 result={'provider_disagreement_pct':None,'status':'CONSISTENT' if x==y else 'MATERIAL_DIFFERENCE'}
             else:result=numeric_disagreement(x,y)
             if result:out.append({'field':field,'source_a':a,'source_b':b,'value_a':x,'value_b':y,**result})
@@ -374,6 +380,7 @@ def environment():
 
 
 def run_audit(*,yahoo_factory,provider,production_report=None):
+    from fundamental_acquisition import HEALTH_TTLS,flags
     batch_id=str(uuid4());stocks=[];blocked=False
     prior={s['ticker']:s for s in (production_report or {}).get('stocks',[])}
     for ticker in TICKERS:
@@ -386,13 +393,15 @@ def run_audit(*,yahoo_factory,provider,production_report=None):
         'mode':'READ_ONLY_PROVIDER_AUDIT','environment':environment(),'stocks':stocks,
         'production_fallback_implemented':False,'rate_limit_stopped_remaining_finnhub':blocked,
         'cache_audit':{'production_history_ttl_seconds':900,'production_fundamentals_ttl_seconds':900,
-            'production_cache_key':'history_cached(ticker, as_of) / fundamentals_cached(ticker)',
+            'production_quality_ttls':HEALTH_TTLS if flags().quality_cache else None,
+            'production_policy_version':'v4.8.2' if flags().quality_cache else 'legacy',
+            'production_cache_key':'RawAcquisitionCache(ticker, factory, flags, allow_estimates, policy_version)',
             'production_cache_hit':None,'production_cache_age':None,
-            'degraded_response_cached':'POSSIBLE_BY_SOURCE_CODE_NOT_RUNTIME_CONFIRMED',
+            'degraded_response_cached':'SHORT_TTL_AT_MOST_60_SECONDS' if flags().quality_cache else 'POSSIBLE_BY_SOURCE_CODE_NOT_RUNTIME_CONFIRMED',
             'session_batch_has_no_ttl':True,'session_batch_generated_at':(production_report or {}).get('generated_at'),
             'diagnostic_bypasses_streamlit_fundamentals_cache':True,'policy_changed':False},
-        'source_audit':{'production_info_path':'get_info; info only when result empty; fast_info shares/market_cap/price',
-            'partial_nonempty_info_skips_info_alternative':True,'info_get_info_independent':False,
+        'source_audit':{'production_info_path':'quality-aware get_info; one fresh Ticker on critical degradation; direct alternates',
+            'partial_nonempty_info_skips_info_alternative':not flags().fresh_recovery,'info_get_info_independent':False,
             'forward_eps_estimate_path':'existing get_earnings_estimate fallback; not invoked by this provider audit',
             'root_network_failure':'UNCONFIRMED_UNTIL_CLOUD_RUNTIME_EXPORT',
             'production_repeated_http_requests':'UNOBSERVABLE_FROM_METHOD_COUNTS'}}

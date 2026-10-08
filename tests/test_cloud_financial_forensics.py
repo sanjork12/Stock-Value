@@ -100,7 +100,8 @@ class ForensicsTests(unittest.TestCase):
         self.assertEqual(baseline['financials'],observed['financials'])
 
     def test_real_loader_observer_does_not_change_payload(self):
-        with patch('mag7_monitor._yfinance',return_value=SimpleNamespace(Ticker=lambda _:YahooFixture())):
+        from fundamental_acquisition import acquisition_batch
+        with patch('mag7_monitor._yfinance',return_value=SimpleNamespace(Ticker=lambda _:YahooFixture())), acquisition_batch():
             baseline=get_live_fundamentals('NVDA')
             with observe_financial_inputs():observed=get_live_fundamentals('NVDA')
         self.assertEqual(baseline,observed)

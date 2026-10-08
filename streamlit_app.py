@@ -524,7 +524,15 @@ def history_cached(ticker: str, as_of: str | None):
 
 
 @st.cache_data(ttl=900, show_spinner=False)
+def _legacy_fundamentals_cached(ticker: str):
+    return get_live_fundamentals(ticker)
+
+
 def fundamentals_cached(ticker: str):
+    from fundamental_acquisition import flags
+    if not flags().quality_cache:
+        return _legacy_fundamentals_cached(ticker)
+    # The acquisition layer owns health-aware raw cache TTL; no 900-sec outer cache.
     return get_live_fundamentals(ticker)
 
 
@@ -1442,6 +1450,7 @@ audit_admin = is_cloud_runtime() and verified_admin(db, user_id, st.secrets.get(
 if not audit_admin:
     st.session_state.pop("_v481_open", None)
     st.session_state.pop("_v481_result", None)
+    st.session_state.pop("_v482_simulation", None)
     st.session_state.pop("_v45_export_open", None)
     st.session_state.pop("_v45_export_result", None)
     st.session_state.pop("_peer_diagnostic_open", None)
