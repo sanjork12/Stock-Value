@@ -1,6 +1,8 @@
 """Offline real-widget check of Cloud export with synthetic production inputs."""
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from copy import deepcopy
+from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
 
 
@@ -47,6 +49,24 @@ admin.render_snapshot_export(st,test.client,'u',history_loader=history,
         assert len(app.get('download_button'))==3
         assert any('V4.6 Reliability Governance Audit' in element.value for element in app.markdown)
         import production_snapshot_admin as admin
+        legacy=deepcopy(app.session_state['_v45_export_result'])
+        original_batch=legacy['report']['batch_id']
+        original_stamp=legacy['report']['generated_at']
+        for stock in legacy['report']['stocks']:
+            stock.pop('enterprise_aware_experiment',None)
+        app.session_state['_v45_export_result']=legacy
+        with patch.object(admin,'capture_analysis',side_effect=AssertionError('Legacy rerender must not fetch')):
+            app.run()
+        assert not app.exception
+        repaired=app.session_state['_v45_export_result']['report']
+        assert len(repaired['enterprise_experiment_wiring']['repaired_tickers'])==5
+        assert repaired['batch_id']==original_batch and repaired['generated_at']==original_stamp
+        for stock in repaired['stocks']:
+            experiment=stock['enterprise_aware_experiment']
+            assert experiment['production_fair']==stock['production_analysis_fair']
+            assert isinstance(experiment['enterprise_evidence_status'],str)
+            assert isinstance(experiment['production_readiness'],str)
+            assert 'input_snapshot' in experiment
         admin._LAST_RUN.clear()
         next(b for b in app.button if b.label=='V4.6 Reliability Governance Audit').click().run()
         assert not app.exception

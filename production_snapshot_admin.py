@@ -21,11 +21,56 @@ from model_family_governance import governance_audit
 from experimental_family_blend import family_blend_experiment,experiment_summary
 from independent_evidence_governance import independent_evidence_audit,EXPORT_FIELDS
 from production_reliability_governance import VERSION as GOVERNANCE_VERSION
-from capital_structure_overlay import capital_overlay,overlay_summary
+from capital_structure_overlay import capital_overlay,overlay_summary,valid_range
 from enterprise_aware_experiment import enterprise_experiment,enterprise_summary
 
 _LOCK=threading.Lock()
 _LAST_RUN={}
+ENTERPRISE_WIRING_VERSION='v4.8.wiring.1'
+
+
+def wired_enterprise_result(stock,*,batch_id=None,existing=None):
+    """Use only this captured stock; input trace is metadata, never model input."""
+    result=deepcopy(existing) if existing is not None else enterprise_experiment(stock)
+    financials=stock.get('normalized_inputs',stock.get('financials')) or {}
+    assumptions=stock.get('profile_assumptions') or {}
+    result['input_snapshot']={k:engine.fnum(financials.get(k)) for k in
+        ('cash','debt','ebitda','revenue','canonical_shares')}
+    result['input_snapshot'].update(
+        ev_ebitda_range=valid_range(assumptions.get('ev_ebitda_range')),
+        sales_multiple_range=valid_range(assumptions.get('sales_multiple_range')))
+    result['wiring']={'version':ENTERPRISE_WIRING_VERSION,'batch_id':batch_id,
+        'input_source':'captured_admin_production_snapshot',
+        'financials_path':'normalized_inputs' if 'normalized_inputs' in stock else 'financials',
+        'class_ranges_path':'profile_assumptions',
+        'result_path':'stocks[].enterprise_aware_experiment',
+        'uses_existing_snapshot_only':True}
+    return result
+
+
+def prepare_enterprise_report(report):
+    """Repair missing legacy session sidecars, without fetches or production writes.
+
+    Keep the original batch timestamp/inputs. Current complete results are not
+    recalculated; all UI/export consumers receive the same namespace contract.
+    """
+    out=deepcopy(report)
+    repaired=[]
+    required=('production_fair','earnings_family_mid','enterprise_family',
+        'ev_ebitda_model','ev_revenue_model','applicability')
+    for stock in out.get('stocks',[]):
+        existing=stock.get('enterprise_aware_experiment')
+        complete=(isinstance(existing,dict) and all(k in existing for k in required)
+            and isinstance(existing.get('enterprise_family_confidence'),str)
+            and isinstance(existing.get('enterprise_evidence_status'),str)
+            and isinstance(existing.get('production_readiness'),str))
+        if not complete:repaired.append(stock['ticker'])
+        stock['enterprise_aware_experiment']=wired_enterprise_result(stock,
+            batch_id=out.get('batch_id'),existing=existing if complete else None)
+    out['enterprise_experiment_wiring']={'version':ENTERPRISE_WIRING_VERSION,
+        'repaired_tickers':repaired,'input_fetch_performed':False,
+        'note':'Derived from original batch inputs; original timestamps preserved.'}
+    return out
 
 
 def readonly_display(live,load_snapshot):
@@ -174,7 +219,7 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
             stock['experimental_family_blend']=family_blend_experiment(stock)
             stock['independent_evidence_governance']=independent_evidence_audit(stock)
             stock['capital_structure_overlay']=capital_overlay(stock)
-            stock['enterprise_aware_experiment']=enterprise_experiment(stock)
+            stock['enterprise_aware_experiment']=wired_enterprise_result(stock,batch_id=batch_id)
             stock['reference_snapshot_read_status']=reference_status
             stock.update(batch_id=batch_id,batch_generated_at=stamp)
             stocks.append(stock)
@@ -187,6 +232,7 @@ def run_batch(client,user_id,secrets,*,history_loader,fundamentals_loader,displa
 
 
 def csv_payload(report):
+    report=prepare_enterprise_report(report)
     buffer=io.StringIO(newline='')
     summary_fields=('effective_independent_model_count','dominant_family','dominant_family_weight',
         'family_concentration_status','cross_family_status','cross_family_spread_pct','growth_overlap_risk',
@@ -255,7 +301,11 @@ def render_snapshot_export(st,client,user_id,*,history_loader,fundamentals_loade
     if not saved:return
     if saved.get('owner')!=str(user_id):
         st.session_state.pop('_v45_export_result',None);return
-    report=saved['report']
+    report=prepare_enterprise_report(saved['report'])
+    saved['report']=report
+    st.session_state['_v45_export_result']=saved
+    if report['enterprise_experiment_wiring']['repaired_tickers']:
+        st.info('已从当前保存批次的原始输入补算 V4.8 诊断；未重新抓取财务数据，批次时间保持不变。')
     st.markdown('**Calibration Batch Status**')
     st.write(report.get('batch_calibration_eligibility','INELIGIBLE'))
     if report.get('batch_calibration_eligibility')!='ELIGIBLE':
